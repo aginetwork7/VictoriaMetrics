@@ -159,6 +159,9 @@ func Init() {
 	if len(*remoteWriteURLs) == 0 {
 		logger.Fatalf("at least one `-remoteWrite.url` command-line flag must be set")
 	}
+
+	configReloaderStopCh = make(chan struct{})
+
 	if *maxHourlySeries > 0 {
 		hourlySeriesLimiter = bloomfilter.NewLimiter(*maxHourlySeries, time.Hour)
 		_ = metrics.NewGauge(`vmagent_hourly_series_limit_max_series`, func() float64 {
@@ -330,7 +333,7 @@ func newRemoteWriteCtxs(at *auth.Token, urls []string) []*remoteWriteCtx {
 }
 
 var (
-	configReloaderStopCh = make(chan struct{})
+	configReloaderStopCh chan struct{}
 	configReloaderWG     sync.WaitGroup
 )
 
