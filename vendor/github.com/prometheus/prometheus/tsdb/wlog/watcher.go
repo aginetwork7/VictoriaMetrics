@@ -57,7 +57,6 @@ type WriteTo interface {
 	AppendHistograms([]record.RefHistogramSample) bool
 	AppendFloatHistograms([]record.RefFloatHistogramSample) bool
 	StoreSeries([]record.RefSeries, int)
-	StoreMetadata([]record.RefMetadata)
 
 	// Next two methods are intended for garbage-collection: first we call
 	// UpdateSeriesSegment on all current series
@@ -89,7 +88,6 @@ type Watcher struct {
 	lastCheckpoint string
 	sendExemplars  bool
 	sendHistograms bool
-	sendMetadata   bool
 	metrics        *WatcherMetrics
 	readerMetrics  *LiveReaderMetrics
 
@@ -172,7 +170,7 @@ func NewWatcherMetrics(reg prometheus.Registerer) *WatcherMetrics {
 }
 
 // NewWatcher creates a new WAL watcher for a given WriteTo.
-func NewWatcher(metrics *WatcherMetrics, readerMetrics *LiveReaderMetrics, logger log.Logger, name string, writer WriteTo, dir string, sendExemplars, sendHistograms, sendMetadata bool) *Watcher {
+func NewWatcher(metrics *WatcherMetrics, readerMetrics *LiveReaderMetrics, logger log.Logger, name string, writer WriteTo, dir string, sendExemplars, sendHistograms bool) *Watcher {
 	if logger == nil {
 		logger = log.NewNopLogger()
 	}
@@ -185,7 +183,6 @@ func NewWatcher(metrics *WatcherMetrics, readerMetrics *LiveReaderMetrics, logge
 		name:           name,
 		sendExemplars:  sendExemplars,
 		sendHistograms: sendHistograms,
-		sendMetadata:   sendMetadata,
 
 		readNotify: make(chan struct{}),
 		quit:       make(chan struct{}),
@@ -543,7 +540,6 @@ func (w *Watcher) readSegment(r *LiveReader, segmentNum int, tail bool) error {
 		histogramsToSend      []record.RefHistogramSample
 		floatHistograms       []record.RefFloatHistogramSample
 		floatHistogramsToSend []record.RefFloatHistogramSample
-		metadata              []record.RefMetadata
 	)
 	for r.Next() && !isClosed(w.quit) {
 		rec := r.Record()
@@ -655,17 +651,6 @@ func (w *Watcher) readSegment(r *LiveReader, segmentNum int, tail bool) error {
 				w.writer.AppendFloatHistograms(floatHistogramsToSend)
 				floatHistogramsToSend = floatHistogramsToSend[:0]
 			}
-
-		case record.Metadata:
-			if !w.sendMetadata || !tail {
-				break
-			}
-			meta, err := dec.Metadata(rec, metadata[:0])
-			if err != nil {
-				w.recordDecodeFailsMetric.Inc()
-				return err
-			}
-			w.writer.StoreMetadata(meta)
 		case record.Tombstones:
 
 		default:

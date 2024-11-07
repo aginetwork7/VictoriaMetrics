@@ -29,6 +29,7 @@ import (
 // Prometheus best practices for units: https://prometheus.io/docs/practices/naming/#base-units
 // OpenMetrics specification for units: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#units-and-base-units
 var unitMap = map[string]string{
+
 	// Time
 	"d":   "days",
 	"h":   "hours",
@@ -110,6 +111,7 @@ func BuildCompliantName(metric pmetric.Metric, namespace string, addMetricSuffix
 
 // Build a normalized name for the specified metric
 func normalizeName(metric pmetric.Metric, namespace string) string {
+
 	// Split metric name in "tokens" (remove all non-alphanumeric)
 	nameTokens := strings.FieldsFunc(
 		metric.Name(),
