@@ -83,7 +83,7 @@ GC collects unused memory more frequently without the need in `GOGC` tweaking.
 
 ### Users
 
-* `Fastcache` has been extracted from [VictoriaMetrics](https://github.com/aginetwork7/VictoriaMetrics) sources.
+* `Fastcache` has been extracted from [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics) sources.
   See [this article](https://medium.com/devopslinks/victoriametrics-creating-the-best-remote-storage-for-prometheus-5d92d66787ac)
   for more info about `VictoriaMetrics`.
 
@@ -101,7 +101,7 @@ GC collects unused memory more frequently without the need in `GOGC` tweaking.
 
 #### Why `fastcache` doesn't support cache expiration?
 
-Because we don't need cache expiration in [VictoriaMetrics](https://github.com/aginetwork7/VictoriaMetrics).
+Because we don't need cache expiration in [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics).
 Cached entries inside `VictoriaMetrics` never expire. They are automatically evicted on cache size overflow.
 
 It is easy to implement cache expiration on top of `fastcache` by caching values

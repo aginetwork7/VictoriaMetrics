@@ -51,7 +51,7 @@ func (f *Fast) Reset() {
 	}
 	// Reset rng state in order to get repeatable results
 	// for the same sequence of values passed to Fast.Update.
-	// See https://github.com/aginetwork7/VictoriaMetrics/issues/1612
+	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1612
 	f.rng.Seed(1)
 }
 

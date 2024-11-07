@@ -651,13 +651,13 @@ func scanSingleDuration(s string, canBeNegative bool) int {
 				return i + 2
 			case 'i', 'b':
 				// This is not a duration, but Mi or MB suffix.
-				// See parsePositiveNumber() and https://github.com/aginetwork7/VictoriaMetrics/issues/3664
+				// See parsePositiveNumber() and https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3664
 				return -1
 			}
 		}
 		// Allow small m for durtion in minutes.
 		// Big M means 1e6.
-		// See parsePositiveNumber() and https://github.com/aginetwork7/VictoriaMetrics/issues/3664
+		// See parsePositiveNumber() and https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3664
 		if s[i] == 'm' {
 			return i + 1
 		}

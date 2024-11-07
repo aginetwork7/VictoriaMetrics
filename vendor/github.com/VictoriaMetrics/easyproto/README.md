@@ -222,4 +222,4 @@ func GetTimeseriesName(src []byte) (name string, err error) {
 
 `easyproto` is used in the following projects:
 
-- [VictoriaMetrics](https://github.com/aginetwork7/VictoriaMetrics)
+- [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics)

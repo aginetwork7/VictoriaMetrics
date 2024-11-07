@@ -18,7 +18,7 @@ const userHZ = 100
 
 // Different environments may have different page size.
 //
-// See https://github.com/aginetwork7/VictoriaMetrics/issues/6457
+// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6457
 var pageSizeBytes = uint64(os.Getpagesize())
 
 // See http://man7.org/linux/man-pages/man5/proc.5.html

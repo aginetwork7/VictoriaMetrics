@@ -62,7 +62,7 @@ type regexpCacheValue struct {
 
 type regexpCache struct {
 	// Move atomic counters to the top of struct for 8-byte alignment on 32-bit arch.
-	// See https://github.com/aginetwork7/VictoriaMetrics/issues/212
+	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/212
 	requests uint64
 	misses   uint64
 
