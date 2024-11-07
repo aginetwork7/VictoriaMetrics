@@ -5,15 +5,15 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/remotewrite"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/auth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
-	parserCommon "github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/newrelic"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/newrelic/stream"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/tenantmetrics"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/common"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/remotewrite"
+	"github.com/aginetwork7/VictoriaMetrics/lib/auth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
+	parserCommon "github.com/aginetwork7/VictoriaMetrics/lib/protoparser/common"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/newrelic"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/newrelic/stream"
+	"github.com/aginetwork7/VictoriaMetrics/lib/tenantmetrics"
 )
 
 var (

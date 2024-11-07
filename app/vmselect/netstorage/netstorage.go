@@ -14,13 +14,13 @@ import (
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/VictoriaMetrics/metricsql"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/searchutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/querytracer"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/searchutils"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/cgroup"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/querytracer"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
 )
 
 var (
@@ -140,7 +140,7 @@ func timeseriesWorker(qt *querytracer.Tracer, workChs []chan *timeseriesWork, wo
 			// Do not call runtime.Gosched() here in order to give a chance
 			// the real owner of the work to complete it, since it consumes additional CPU
 			// and slows down the code on systems with big number of CPU cores.
-			// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3966#issuecomment-1483208419
+			// See https://github.com/aginetwork7/VictoriaMetrics/issues/3966#issuecomment-1483208419
 
 			// It is expected that every channel in the workChs is already closed,
 			// so the next line should return immediately.
@@ -397,7 +397,7 @@ func unpackWorker(workChs []chan *unpackWork, workerID uint) {
 			// Do not call runtime.Gosched() here in order to give a chance
 			// the real owner of the work to complete it, since it consumes additional CPU
 			// and slows down the code on systems with big number of CPU cores.
-			// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3966#issuecomment-1483208419
+			// See https://github.com/aginetwork7/VictoriaMetrics/issues/3966#issuecomment-1483208419
 
 			// It is expected that every channel in the workChs is already closed,
 			// so the next line should return immediately.
@@ -820,7 +820,7 @@ func GraphiteTags(qt *querytracer.Tracer, filter string, limit int, deadline sea
 			continue
 		}
 		// Prevent from duplicate `name` tag.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/942
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/942
 		if hasString(labels, "name") {
 			labels = append(labels[:i], labels[i+1:]...)
 		} else {

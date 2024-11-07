@@ -11,8 +11,8 @@ import (
 
 	"github.com/golang/snappy"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httputils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httputils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
 )
 
 // DebugClient won't push series periodically, but will write data to remote endpoint

@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/buildinfo"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/stringsutil"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/buildinfo"
+	"github.com/aginetwork7/VictoriaMetrics/lib/stringsutil"
 )
 
 var (

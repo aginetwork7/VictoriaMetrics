@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/buildinfo"
+	"github.com/aginetwork7/VictoriaMetrics/lib/buildinfo"
 )
 
 var denyQueryTracing = flag.Bool("denyQueryTracing", false, "Whether to disable the ability to trace queries. See https://docs.victoriametrics.com/#query-tracing")
@@ -28,7 +28,7 @@ type Tracer struct {
 	// It is used for determining whether it is safe to print the trace.
 	// It is unsafe to print the trace when it isn't closed yet, since it may be modified
 	// by concurrently running goroutines.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5319
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/5319
 	isDone atomic.Bool
 
 	// startTime is the time when Tracer was created

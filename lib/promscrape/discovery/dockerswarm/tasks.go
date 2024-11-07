@@ -6,9 +6,9 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discoveryutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discoveryutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 // See https://docs.docker.com/engine/api/v1.40/#tag/Task

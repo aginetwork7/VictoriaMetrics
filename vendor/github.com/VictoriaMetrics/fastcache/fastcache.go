@@ -283,7 +283,7 @@ func (b *bucket) cleanLocked() {
 	if newItems < len(bm) {
 		// Re-create b.m with valid items, which weren't expired yet instead of deleting expired items from b.m.
 		// This should reduce memory fragmentation and the number Go objects behind b.m.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5379
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/5379
 		bmNew := make(map[uint64]uint64, newItems)
 		for k, v := range bm {
 			gen := v >> bucketSizeBits

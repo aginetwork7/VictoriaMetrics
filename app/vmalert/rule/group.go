@@ -12,19 +12,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
 
 	"github.com/cheggaaa/pb/v3"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/config"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/datasource"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/notifier"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/remotewrite"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/utils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/config"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/datasource"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/notifier"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/remotewrite"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/utils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/decimal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
 )
 
 var (
@@ -50,7 +50,7 @@ type Group struct {
 	Interval   time.Duration
 	EvalOffset *time.Duration
 	// EvalDelay will adjust timestamp for rule evaluation requests to compensate intentional query delay from datasource.
-	// see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5155
+	// see https://github.com/aginetwork7/VictoriaMetrics/issues/5155
 	EvalDelay      *time.Duration
 	Limit          int
 	Concurrency    int
@@ -478,7 +478,7 @@ func delayBeforeStart(ts time.Time, key uint64, interval time.Duration, offset *
 	randSleep -= sleepOffset
 	// check if `ts` after randSleep is before `offset`,
 	// if it is, add extra eval_offset to randSleep.
-	// see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3409.
+	// see https://github.com/aginetwork7/VictoriaMetrics/issues/3409.
 	if offset != nil {
 		tmpEvalTS := ts.Add(randSleep)
 		if tmpEvalTS.Before(tmpEvalTS.Truncate(interval).Add(*offset)) {
@@ -613,8 +613,8 @@ func (g *Group) adjustReqTimestamp(timestamp time.Time) time.Time {
 	// always apply the alignment as a last step
 	if g.evalAlignment == nil || *g.evalAlignment {
 		// align query time with interval to get similar result with grafana when plotting time series.
-		// see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5049
-		// and https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1232
+		// see https://github.com/aginetwork7/VictoriaMetrics/issues/5049
+		// and https://github.com/aginetwork7/VictoriaMetrics/issues/1232
 		return timestamp.Truncate(g.Interval)
 	}
 	return timestamp

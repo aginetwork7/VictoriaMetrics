@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/bits"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // marshalInt64NearestDelta encodes src using `nearest delta` encoding

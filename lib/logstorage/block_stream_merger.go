@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // mustMergeBlockStreams merges bsrs to bsw and updates ph accordingly.
@@ -148,7 +148,7 @@ func (bsm *blockStreamMerger) mustWriteBlock(bd *blockData, bsw *blockStreamWrit
 		}
 	case bsm.uniqueFields+uniqueFields > maxColumnsPerBlock:
 		// Cannot merge bd with bsm.rows, because too many columns will be created.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4762
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/4762
 		//
 		// Flush bsm.rows and copy the bd to the curr bd.
 		bsm.mustFlushRows()

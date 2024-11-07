@@ -10,14 +10,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/netstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/querystats"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/querytracer"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/VictoriaMetrics/metricsql"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/netstorage"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/querystats"
+	"github.com/aginetwork7/VictoriaMetrics/lib/decimal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/querytracer"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
 )
 
 var (
@@ -125,7 +125,7 @@ func maySortResults(e metricsql.Expr) bool {
 	case *metricsql.BinaryOpExpr:
 		if strings.EqualFold(v.Op, "or") {
 			// Do not sort results for `a or b` in the same way as Prometheus does.
-			// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4763
+			// See https://github.com/aginetwork7/VictoriaMetrics/issues/4763
 			return false
 		}
 	}

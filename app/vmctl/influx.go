@@ -6,9 +6,9 @@ import (
 	"log"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/barpool"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/influx"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/vm"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/barpool"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/influx"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/vm"
 )
 
 type influxProcessor struct {

@@ -13,21 +13,21 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/config"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/datasource"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/notifier"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/remoteread"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/remotewrite"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/rule"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/templates"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/buildinfo"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/envflag"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httpserver"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/procutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/pushmetrics"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/config"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/datasource"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/notifier"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/remoteread"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/remotewrite"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/rule"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/templates"
+	"github.com/aginetwork7/VictoriaMetrics/lib/buildinfo"
+	"github.com/aginetwork7/VictoriaMetrics/lib/envflag"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httpserver"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/procutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/pushmetrics"
 )
 
 var (
@@ -170,7 +170,7 @@ func main() {
 
 	// Register SIGHUP handler for config re-read just before manager.start call.
 	// This guarantees that the config will be re-read if the signal arrives during manager.start call.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1240
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/1240
 	sighupCh := procutil.NewSighupChan()
 
 	if err := manager.start(ctx, groupsCfg); err != nil {

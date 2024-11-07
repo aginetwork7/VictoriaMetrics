@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/searchutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bufferedwriter"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/searchutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bufferedwriter"
 )
 
 var (

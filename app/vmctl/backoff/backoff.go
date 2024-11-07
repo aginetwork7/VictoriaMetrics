@@ -7,7 +7,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // retryableFunc describes call back which will repeat on errors

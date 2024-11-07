@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 	"github.com/valyala/fastjson"
 )
 

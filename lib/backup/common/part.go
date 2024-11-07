@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // Part is an atomic unit for transfer during backup / restore.
@@ -45,7 +45,7 @@ func (p *Part) key() string {
 		// parts.json and appliedRetention.txt files contents changes over time,
 		// so it must have an unique key in order to always copy it during
 		// backup, restore and server-side copy.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5005
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/5005
 		id := uniqueKeyID.Add(1)
 		return fmt.Sprintf("unique-%016X", id)
 	}

@@ -1,7 +1,7 @@
 # Spell checking
 
 This directory contains configuration and instructions for spell checking in 
-[docs](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/docs) folder.
+[docs](https://github.com/aginetwork7/VictoriaMetrics/tree/master/docs) folder.
 
 To run execute the following command:
 ```sh

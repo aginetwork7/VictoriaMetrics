@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlselect/logsql"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httpserver"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httputils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlselect/logsql"
+	"github.com/aginetwork7/VictoriaMetrics/lib/cgroup"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httpserver"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httputils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 var (

@@ -6,15 +6,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/insertutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httpserver"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/opentelemetry/pb"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/writeconcurrencylimiter"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlinsert/insertutils"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httpserver"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/common"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/opentelemetry/pb"
+	"github.com/aginetwork7/VictoriaMetrics/lib/slicesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/writeconcurrencylimiter"
 )
 
 // RequestHandler processes Opentelemetry insert requests

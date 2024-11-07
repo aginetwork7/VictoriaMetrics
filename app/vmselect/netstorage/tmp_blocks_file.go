@@ -6,18 +6,18 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/memory"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fs"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/memory"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
 )
 
 var tmpBufSize = flagutil.NewBytes("search.inmemoryBufSizeBytes", 0, "Size for in-memory data blocks used during processing search requests. "+
 	"By default, the size is automatically calculated based on available memory. "+
-	"Adjust this flag value if you observe that vm_tmp_blocks_max_inmemory_file_size_bytes metric constantly shows much higher values than vm_tmp_blocks_inmemory_file_size_bytes. See https://github.com/VictoriaMetrics/VictoriaMetrics/pull/6851")
+	"Adjust this flag value if you observe that vm_tmp_blocks_max_inmemory_file_size_bytes metric constantly shows much higher values than vm_tmp_blocks_inmemory_file_size_bytes. See https://github.com/aginetwork7/VictoriaMetrics/pull/6851")
 
 // InitTmpBlocksDir initializes directory to store temporary search results.
 //
@@ -157,7 +157,7 @@ func (tbf *tmpBlocksFile) Finalize() error {
 	r.MustFadviseSequentialRead(true)
 
 	// Collect local stats in order to improve performance on systems with big number of CPU cores.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3966
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/3966
 	r.SetUseLocalStats()
 
 	tbf.r = r

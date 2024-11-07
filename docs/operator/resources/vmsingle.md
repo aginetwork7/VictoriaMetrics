@@ -37,7 +37,7 @@ use [`VMCluster`](https://docs.victoriametrics.com/operator/resources/vmcluster)
 
 ## Version management
 
-To set `VMSingle` version add `spec.image.tag` name from [releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases)
+To set `VMSingle` version add `spec.image.tag` name from [releases](https://github.com/aginetwork7/VictoriaMetrics/releases)
 
 ```yaml
 apiVersion: operator.victoriametrics.com/v1beta1
@@ -127,10 +127,10 @@ So you can use [extraArgs](./#extra-arguments) for passing this flag to `VMSingl
 
 ### Downsampling
 
-After that you can pass [Downsampling](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/docs/#downsampling)
+After that you can pass [Downsampling](https://github.com/aginetwork7/VictoriaMetrics/tree/master/docs/#downsampling)
 flag to `VMSingle` with [extraArgs](./#extra-arguments) too.
 
-Here are complete example for [Downsampling](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/docs/#downsampling):
+Here are complete example for [Downsampling](https://github.com/aginetwork7/VictoriaMetrics/tree/master/docs/#downsampling):
  
 ```yaml
 apiVersion: operator.victoriametrics.com/v1beta1
@@ -157,7 +157,7 @@ spec:
 
 ### Retention filters
 
-The same method is used to enable retention filters - here are complete example for [Retention filters](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/docs/#retention-filters).
+The same method is used to enable retention filters - here are complete example for [Retention filters](https://github.com/aginetwork7/VictoriaMetrics/tree/master/docs/#retention-filters).
 
 ```yaml
 apiVersion: operator.victoriametrics.com/v1beta1

@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/decimal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 func TestParseInputValue_Failure(t *testing.T) {

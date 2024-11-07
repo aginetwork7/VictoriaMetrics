@@ -9,14 +9,14 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/opentelemetry/pb"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/writeconcurrencylimiter"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/decimal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/common"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/opentelemetry/pb"
+	"github.com/aginetwork7/VictoriaMetrics/lib/writeconcurrencylimiter"
 )
 
 // ParseStream parses OpenTelemetry protobuf or json data from r and calls callback for the parsed rows.

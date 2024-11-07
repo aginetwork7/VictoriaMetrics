@@ -6,8 +6,8 @@ import (
 
 	"github.com/valyala/quicktemplate"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/encoding"
 )
 
 // Field is a single field for the log entry.

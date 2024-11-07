@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 func BenchmarkTagFilterMatchSuffix(b *testing.B) {
@@ -358,7 +358,7 @@ func BenchmarkTagFilterMatchSuffix(b *testing.B) {
 
 // Run the following command to get the execution cost of all matches
 //
-// go test -run=none -bench=BenchmarkOptimizedReMatchCost -count 20 github.com/VictoriaMetrics/VictoriaMetrics/lib/storage | tee cost.txt
+// go test -run=none -bench=BenchmarkOptimizedReMatchCost -count 20 github.com/aginetwork7/VictoriaMetrics/lib/storage | tee cost.txt
 // benchstat ./cost.txt
 //
 // Calculate the multiplier of default for each match overhead.

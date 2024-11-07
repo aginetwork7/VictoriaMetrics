@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/slicesutil"
 )
 
 // MarshalUint16 appends marshaled v to dst and returns the result.

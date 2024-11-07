@@ -14,9 +14,9 @@ import (
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/backup/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/backup/fscommon"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/backup/common"
+	"github.com/aginetwork7/VictoriaMetrics/lib/backup/fscommon"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // FS represents filesystem for backups in GCS.

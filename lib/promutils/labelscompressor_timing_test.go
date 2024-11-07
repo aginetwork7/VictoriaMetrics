@@ -4,7 +4,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
 )
 
 func BenchmarkLabelsCompressorCompress(b *testing.B) {

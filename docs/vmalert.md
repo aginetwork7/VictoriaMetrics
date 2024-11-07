@@ -31,7 +31,7 @@ please refer to the [VictoriaMetrics Cloud documentation](https://docs.victoriam
 
 ## Features
 
-* Integration with [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics) and [MetricsQL](https://docs.victoriametrics.com/metricsql/);
+* Integration with [VictoriaMetrics](https://github.com/aginetwork7/VictoriaMetrics) and [MetricsQL](https://docs.victoriametrics.com/metricsql/);
 * Integration with [VictoriaLogs](https://docs.victoriametrics.com/victorialogs/) and [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/). See [this doc](https://docs.victoriametrics.com/victorialogs/vmalert/);
 * Prometheus [alerting rules definition format](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/#defining-alerting-rules)
   support;
@@ -42,7 +42,7 @@ please refer to the [VictoriaMetrics Cloud documentation](https://docs.victoriam
 * Lightweight and without extra dependencies.
 * Supports [reusable templates](#reusable-templates) for annotations;
 * Load of recording and alerting rules from local filesystem, URL, GCS and S3;
-* Detect alerting rules which [don't match any series](https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4039).
+* Detect alerting rules which [don't match any series](https://github.com/aginetwork7/VictoriaMetrics/issues/4039).
 
 ## Limitations
 
@@ -58,7 +58,7 @@ please refer to the [VictoriaMetrics Cloud documentation](https://docs.victoriam
 To build `vmalert` from sources:
 
 ```sh
-git clone https://github.com/VictoriaMetrics/VictoriaMetrics
+git clone https://github.com/aginetwork7/VictoriaMetrics
 cd VictoriaMetrics
 make vmalert
 ```
@@ -71,7 +71,7 @@ To start using `vmalert` you will need the following things:
 * datasource address - reachable endpoint with [Prometheus HTTP API](https://prometheus.io/docs/prometheus/latest/querying/api/#http-api) support for running queries against;
 * notifier address [optional] - reachable [Alert Manager](https://github.com/prometheus/alertmanager) instance for processing,
   aggregating alerts, and sending notifications. Please note, notifier address also supports Consul and DNS Service Discovery via
-  [config file](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/app/vmalert/notifier/config.go).
+  [config file](https://github.com/aginetwork7/VictoriaMetrics/blob/master/app/vmalert/notifier/config.go).
 * remote write address [optional] - [remote write](https://prometheus.io/docs/prometheus/latest/storage/#remote-storage-integrations)
   compatible storage to persist rules and alerts state info. To persist results to multiple destinations use vmagent
   configured with multiple remote writes as a proxy;
@@ -109,7 +109,7 @@ it with prefix `exported_`.
 Configuration for [recording](https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/)
 and [alerting](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/) rules is very
 similar to Prometheus rules and configured using YAML. Configuration examples may be found
-in [testdata](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/app/vmalert/config/testdata) folder.
+in [testdata](https://github.com/aginetwork7/VictoriaMetrics/blob/master/app/vmalert/config/testdata) folder.
 Every `rule` belongs to a `group` and every configuration file may contain arbitrary number of groups:
 
 ```yaml
@@ -137,7 +137,7 @@ name: <string>
 # Optional
 # Group will be evaluated at the exact offset in the range of [0...interval].
 # E.g. for Group with `interval: 1h` and `eval_offset: 5m` the evaluation will
-# start at 5th minute of the hour. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3409
+# start at 5th minute of the hour. See https://github.com/aginetwork7/VictoriaMetrics/issues/3409
 # `eval_offset` can't be bigger than `interval`.
 [ eval_offset: <duration> ]
 
@@ -145,7 +145,7 @@ name: <string>
 # Adjust the `time` parameter of group evaluation requests to compensate intentional query delay from the datasource.
 # By default, the value is inherited from the `-rule.evalDelay` cmd-line flag - see its description for details.
 # If group has `latency_offset` set in `params`, then it is recommended to set `eval_delay` equal to `latency_offset`.
-# See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5155 and https://docs.victoriametrics.com/keyconcepts/#query-latency.
+# See https://github.com/aginetwork7/VictoriaMetrics/issues/5155 and https://docs.victoriametrics.com/keyconcepts/#query-latency.
 [ eval_delay: <duration> ]
 
 # Limit limits the number of alerts or recording results the rule within this group can produce.
@@ -169,7 +169,7 @@ name: <string>
 # and to visually align with graphs plotted via Grafana or vmui.
 # When comparing with raw queries, remember to use `step` equal to evaluation interval.
 #
-# See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5049 
+# See https://github.com/aginetwork7/VictoriaMetrics/issues/5049 
 # Available starting from v1.95
 [ eval_alignment: <bool> | default true]
 
@@ -457,7 +457,7 @@ In this example, `-external.alert.source` will lead to Grafana's Explore page wi
 and time range will be selected starting from `"from":"{{ .ActiveAt.UnixMilli }}"` when alert became active.
 
 In addition to `source` link, some extra links could be added to alert's [annotations](https://docs.victoriametrics.com/vmalert/#alerting-rules)
-field. See [how we use them](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/839596c00df123c639d1244b28ee8137dfc9609c/deployment/docker/rules/alerts-cluster.yml#L43)
+field. See [how we use them](https://github.com/aginetwork7/VictoriaMetrics/blob/839596c00df123c639d1244b28ee8137dfc9609c/deployment/docker/rules/alerts-cluster.yml#L43)
 to link alerting rule and the corresponding panel on Grafana dashboard.
 
 ### Multitenancy
@@ -503,7 +503,7 @@ If `-clusterMode` is enabled and the `tenant` in a particular group is missing, 
 is obtained from `-defaultTenant.prometheus` or `-defaultTenant.graphite` depending on the `type` of the group.
 
 The enterprise version of vmalert is available in `vmutils-*-enterprise.tar.gz` files
-at [release page](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest) and in `*-enterprise`
+at [release page](https://github.com/aginetwork7/VictoriaMetrics/releases/latest) and in `*-enterprise`
 tags at [Docker Hub](https://hub.docker.com/r/victoriametrics/vmalert/tags).
 
 ### Reading rules from object storage
@@ -843,7 +843,7 @@ See more details [here](https://docs.victoriametrics.com/vmalert-tool.html#Unit-
 ## Monitoring
 
 `vmalert` exports various metrics in Prometheus exposition format at `http://vmalert-host:8880/metrics` page.
-The default list of alerting rules for these metric can be found [here](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker).
+The default list of alerting rules for these metric can be found [here](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker).
 We recommend setting up regular scraping of this page either through [vmagent](https://docs.victoriametrics.com/vmagent/) or by Prometheus-compatible scraper,
 so that the exported metrics may be analyzed later.
 
@@ -947,7 +947,7 @@ used to detect rules matching no series:
 max(vmalert_alerting_rules_last_evaluation_series_fetched) by(group, alertname) == 0
 ```
 
-See more details [here](https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4039).
+See more details [here](https://github.com/aginetwork7/VictoriaMetrics/issues/4039).
 This feature is available only if vmalert is using VictoriaMetrics v1.90 or higher as a datasource.
 
 ### Series with the same labelset
@@ -1076,7 +1076,7 @@ The shortlist of configuration flags is the following:
   -datasource.queryStep duration
      How far a value can fallback to when evaluating queries. For example, if -datasource.queryStep=15s then param "step" with value "15s" will be added to every query. If set to 0, rule's evaluation interval will be used instead. (default 5m0s)
   -datasource.queryTimeAlignment
-     Deprecated: please use "eval_alignment" in rule group instead. Whether to align "time" parameter with evaluation interval. Alignment supposed to produce deterministic results despite number of vmalert replicas or time they were started. See more details at https://github.com/VictoriaMetrics/VictoriaMetrics/pull/1257 (default true)
+     Deprecated: please use "eval_alignment" in rule group instead. Whether to align "time" parameter with evaluation interval. Alignment supposed to produce deterministic results despite number of vmalert replicas or time they were started. See more details at https://github.com/aginetwork7/VictoriaMetrics/pull/1257 (default true)
   -datasource.roundDigits int
      Adds "round_digits" GET param to datasource requests. In VM "round_digits" limits the number of digits after the decimal point in response values.
   -datasource.showURL
@@ -1581,7 +1581,7 @@ The list of configured or discovered Notifiers can be explored via [UI](#web).
 If Alertmanager runs in cluster mode then all its URLs needs to be available during discovery
 to ensure [high availability](https://github.com/prometheus/alertmanager#high-availability).
 
-The configuration file [specification](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/app/vmalert/notifier/config.go)
+The configuration file [specification](https://github.com/aginetwork7/VictoriaMetrics/blob/master/app/vmalert/notifier/config.go)
 is the following:
 
 ```yaml
@@ -1688,14 +1688,14 @@ software. Please keep simplicity as the main priority.
 ## How to build from sources
 
 It is recommended using
-[binary releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest)
+[binary releases](https://github.com/aginetwork7/VictoriaMetrics/releases/latest)
 
 * `vmalert` is located in `vmutils-*` archives there.
 
 ### Docker image
 
 You can build `vmalert` docker image from source and push it to your own docker repository.
-Run the following commands from the root folder of [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics):
+Run the following commands from the root folder of [the repository](https://github.com/aginetwork7/VictoriaMetrics):
 ```sh
 make package-vmalert
 docker tag victoria-metrics/vmalert:version my-repo:my-version-name
@@ -1715,13 +1715,13 @@ spec:
 ### Development build
 
 1. [Install Go](https://golang.org/doc/install). The minimum supported version is Go 1.22.
-1. Run `make vmalert` from the root folder of [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics).
+1. Run `make vmalert` from the root folder of [the repository](https://github.com/aginetwork7/VictoriaMetrics).
    It builds `vmalert` binary and puts it into the `bin` folder.
 
 ### Production build
 
 1. [Install docker](https://docs.docker.com/install/).
-1. Run `make vmalert-prod` from the root folder of [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics).
+1. Run `make vmalert-prod` from the root folder of [the repository](https://github.com/aginetwork7/VictoriaMetrics).
    It builds `vmalert-prod` binary and puts it into the `bin` folder.
 
 ### ARM build
@@ -1731,11 +1731,11 @@ ARM build may run on Raspberry Pi or on [energy-efficient ARM servers](https://b
 ### Development ARM build
 
 1. [Install Go](https://golang.org/doc/install). The minimum supported version is Go 1.22.
-1. Run `make vmalert-linux-arm` or `make vmalert-linux-arm64` from the root folder of [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics).
+1. Run `make vmalert-linux-arm` or `make vmalert-linux-arm64` from the root folder of [the repository](https://github.com/aginetwork7/VictoriaMetrics).
    It builds `vmalert-linux-arm` or `vmalert-linux-arm64` binary respectively and puts it into the `bin` folder.
 
 ### Production ARM build
 
 1. [Install docker](https://docs.docker.com/install/).
-1. Run `make vmalert-linux-arm-prod` or `make vmalert-linux-arm64-prod` from the root folder of [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics).
+1. Run `make vmalert-linux-arm-prod` or `make vmalert-linux-arm64-prod` from the root folder of [the repository](https://github.com/aginetwork7/VictoriaMetrics).
    It builds `vmalert-linux-arm-prod` or `vmalert-linux-arm64-prod` binary respectively and puts it into the `bin` folder.

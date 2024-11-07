@@ -9,13 +9,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/config"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/datasource"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/notifier"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/templates"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/utils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/config"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/datasource"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/notifier"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/templates"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/utils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
 )
 
 // AlertingRule is basic alert entity
@@ -239,7 +239,7 @@ type labelSet struct {
 	// processed labels includes origin labels
 	// plus extra labels (group labels, service labels like alertNameLabel).
 	// in case of key conflicts, origin labels are renamed with prefix `exported_` and extra labels are preferred.
-	// see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5161
+	// see https://github.com/aginetwork7/VictoriaMetrics/issues/5161
 	// used as labels attached to notifier.Alert and ALERTS series written to remote storage.
 	processed map[string]string
 }
@@ -398,7 +398,7 @@ func (ar *AlertingRule) exec(ctx context.Context, ts time.Time, limit int) ([]pr
 
 	// template labels and annotations before updating ar.alerts,
 	// since they could use `query` function which takes a while to execute,
-	// see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6079.
+	// see https://github.com/aginetwork7/VictoriaMetrics/issues/6079.
 	expandedLabels := make([]*labelSet, len(res.Data))
 	expandedAnnotations := make([]map[string]string, len(res.Data))
 	for i, m := range res.Data {

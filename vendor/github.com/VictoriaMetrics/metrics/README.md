@@ -81,7 +81,7 @@ See [docs](https://pkg.go.dev/github.com/VictoriaMetrics/metrics) for more info.
 
 ### Users
 
-* `Metrics` has been extracted from [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics) sources.
+* `Metrics` has been extracted from [VictoriaMetrics](https://github.com/aginetwork7/VictoriaMetrics) sources.
   See [this article](https://medium.com/devopslinks/victoriametrics-creating-the-best-remote-storage-for-prometheus-5d92d66787ac)
   for more info about `VictoriaMetrics`.
 
@@ -109,6 +109,6 @@ instead of `CounterVec.With`. See [this example](https://pkg.go.dev/github.com/V
 #### Why [Histogram](http://godoc.org/github.com/VictoriaMetrics/metrics#Histogram) buckets contain `vmrange` labels instead of `le` labels like in Prometheus histograms?
 
 Buckets with `vmrange` labels occupy less disk space compared to Promethes-style buckets with `le` labels,
-because `vmrange` buckets don't include counters for the previous ranges. [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics) provides `prometheus_buckets`
+because `vmrange` buckets don't include counters for the previous ranges. [VictoriaMetrics](https://github.com/aginetwork7/VictoriaMetrics) provides `prometheus_buckets`
 function, which converts `vmrange` buckets to Prometheus-style buckets with `le` labels. This is useful for building heatmaps in Grafana.
 Additionally, its' `histogram_quantile` function transparently handles histogram buckets with `vmrange` labels.

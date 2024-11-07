@@ -24,12 +24,12 @@ import (
 	"github.com/klauspost/compress/gzhttp"
 	"github.com/valyala/fastrand"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/appmetrics"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/netutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/stringsutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/appmetrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/netutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/stringsutil"
 )
 
 var (
@@ -229,7 +229,7 @@ func stop(addr string) error {
 	if *shutdownDelay > 0 {
 		// Sleep for a while until load balancer in front of the server
 		// notifies that "/health" endpoint returns non-OK responses.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/463 .
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/463 .
 		logger.Infof("Waiting for %.3fs before shutdown of http server %q, so load balancers could re-route requests to other servers", shutdownDelay.Seconds(), addr)
 		time.Sleep(*shutdownDelay)
 		logger.Infof("Starting shutdown for http server %q", addr)
@@ -346,7 +346,7 @@ func handlerWrapper(s *server, w http.ResponseWriter, r *http.Request, rh Reques
 		}
 		// Return non-OK response during grace period before shutting down the server.
 		// Load balancers must notify these responses and re-route new requests to other servers.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/463 .
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/463 .
 		d := time.Until(time.Unix(0, deadline))
 		if d < 0 {
 			d = 0
@@ -382,17 +382,17 @@ func handlerWrapper(s *server, w http.ResponseWriter, r *http.Request, rh Reques
 		return
 	case "/-/healthy":
 		// This is needed for Prometheus compatibility
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1833
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/1833
 		fmt.Fprintf(w, "VictoriaMetrics is Healthy.\n")
 		return
 	case "/-/ready":
 		// This is needed for Prometheus compatibility
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1833
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/1833
 		fmt.Fprintf(w, "VictoriaMetrics is Ready.\n")
 		return
 	case "/robots.txt":
 		// This prevents search engines from indexing contents
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4128
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/4128
 		fmt.Fprintf(w, "User-agent: *\nDisallow: /\n")
 		return
 	default:
@@ -424,7 +424,7 @@ func handlerWrapper(s *server, w http.ResponseWriter, r *http.Request, rh Reques
 
 func isProtectedByAuthFlag(path string) bool {
 	// These paths must explicitly call CheckAuthFlag().
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6329
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/6329
 	return strings.HasSuffix(path, "/config") || strings.HasSuffix(path, "/reload") ||
 		strings.HasSuffix(path, "/resetRollupResultCache") || strings.HasSuffix(path, "/delSeries") || strings.HasSuffix(path, "/delete_series") ||
 		strings.HasSuffix(path, "/force_merge") || strings.HasSuffix(path, "/force_flush") || strings.HasSuffix(path, "/snapshot") ||
@@ -711,7 +711,7 @@ func GetRequestURI(r *http.Request) string {
 func Redirect(w http.ResponseWriter, url string) {
 	// Do not use http.Redirect, since it breaks relative redirects
 	// if the http.Request.URL contains unexpected url.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/2918
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/2918
 	w.Header().Set("Location", url)
 	// Use http.StatusFound instead of http.StatusMovedPermanently,
 	// since browsers can cache incorrect redirects returned with StatusMovedPermanently.

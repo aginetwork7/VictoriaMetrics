@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/envtemplate"
+	"github.com/aginetwork7/VictoriaMetrics/lib/envtemplate"
 )
 
 var (
@@ -33,7 +33,7 @@ func ParseFlagSet(fs *flag.FlagSet, args []string) {
 		log.Fatalf("cannot parse flags %q: %s", args, err)
 	}
 	if fs.NArg() > 0 {
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4845
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/4845
 		log.Fatalf("unprocessed command-line args left: %s; the most likely reason is missing `=` between boolean flag name and value; "+
 			"see https://pkg.go.dev/flag#hdr-Command_line_flag_syntax", fs.Args())
 	}
@@ -82,7 +82,7 @@ func expandArgs(args []string) []string {
 
 func getEnvFlagName(s string) string {
 	// Substitute dots with underscores, since env var names cannot contain dots.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/311#issuecomment-586354129 for details.
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/311#issuecomment-586354129 for details.
 	s = strings.ReplaceAll(s, ".", "_")
 	return *prefix + s
 }

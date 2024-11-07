@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/utils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httputils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promauth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promrelabel"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/utils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httputils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promauth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promrelabel"
 )
 
 // AlertManager represents integration provider with Prometheus alert manager

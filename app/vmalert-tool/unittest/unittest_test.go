@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/templates"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/templates"
 )
 
 func TestMain(m *testing.M) {

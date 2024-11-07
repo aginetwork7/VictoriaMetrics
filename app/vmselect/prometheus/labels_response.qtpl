@@ -1,7 +1,7 @@
 {% stripspace %}
 
 {% import (
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/querytracer"
+	"github.com/aginetwork7/VictoriaMetrics/lib/querytracer"
 ) %}
 
 LabelsResponse generates response for /api/v1/labels .

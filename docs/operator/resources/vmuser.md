@@ -96,7 +96,7 @@ from [VictoriaMetrics Enterprise](https://docs.victoriametrics.com/enterprise#vi
 
 ### IP Filters
 
-For using [IP filters](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/docs/vmauth#ip-filters)
+For using [IP filters](https://github.com/aginetwork7/VictoriaMetrics/tree/master/docs/vmauth#ip-filters)
 you need to **[enable VMAuth Enterprise](https://docs.victoriametrics.com/vmauth#enterprise-features)**.
 
 After that you can add `ip_filters` field to `VMUser`:

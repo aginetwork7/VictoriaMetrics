@@ -12,39 +12,39 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/csvimport"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/datadogsketches"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/datadogv1"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/datadogv2"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/graphite"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/influx"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/native"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/newrelic"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/opentelemetry"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/opentsdb"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/opentsdbhttp"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/prometheusimport"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/promremotewrite"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/remotewrite"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmagent/vmimport"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/auth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/buildinfo"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/envflag"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httpserver"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/influxutils"
-	graphiteserver "github.com/VictoriaMetrics/VictoriaMetrics/lib/ingestserver/graphite"
-	influxserver "github.com/VictoriaMetrics/VictoriaMetrics/lib/ingestserver/influx"
-	opentsdbserver "github.com/VictoriaMetrics/VictoriaMetrics/lib/ingestserver/opentsdb"
-	opentsdbhttpserver "github.com/VictoriaMetrics/VictoriaMetrics/lib/ingestserver/opentsdbhttp"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/procutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/opentelemetry/firehose"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/pushmetrics"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/stringsutil"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/csvimport"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/datadogsketches"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/datadogv1"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/datadogv2"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/graphite"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/influx"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/native"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/newrelic"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/opentelemetry"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/opentsdb"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/opentsdbhttp"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/prometheusimport"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/promremotewrite"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/remotewrite"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmagent/vmimport"
+	"github.com/aginetwork7/VictoriaMetrics/lib/auth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/buildinfo"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/envflag"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httpserver"
+	"github.com/aginetwork7/VictoriaMetrics/lib/influxutils"
+	graphiteserver "github.com/aginetwork7/VictoriaMetrics/lib/ingestserver/graphite"
+	influxserver "github.com/aginetwork7/VictoriaMetrics/lib/ingestserver/influx"
+	opentsdbserver "github.com/aginetwork7/VictoriaMetrics/lib/ingestserver/opentsdb"
+	opentsdbhttpserver "github.com/aginetwork7/VictoriaMetrics/lib/ingestserver/opentsdbhttp"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/procutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/common"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/opentelemetry/firehose"
+	"github.com/aginetwork7/VictoriaMetrics/lib/pushmetrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/stringsutil"
 )
 
 var (
@@ -254,7 +254,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) bool {
 		if strings.HasPrefix(path, "/prometheus/api/v1/import/prometheus/metrics/job/") ||
 			strings.HasPrefix(path, "/api/v1/import/prometheus/metrics/job/") {
 			// Return 200 status code for pushgateway requests.
-			// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3636
+			// See https://github.com/aginetwork7/VictoriaMetrics/issues/3636
 			statusCode = http.StatusOK
 		}
 		w.WriteHeader(statusCode)
@@ -262,7 +262,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) bool {
 	}
 	if strings.HasPrefix(path, "/datadog/") {
 		// Trim suffix from paths starting from /datadog/ in order to support legacy DataDog agent.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/pull/2670
+		// See https://github.com/aginetwork7/VictoriaMetrics/pull/2670
 		path = strings.TrimSuffix(path, "/")
 	}
 	switch path {
@@ -515,7 +515,7 @@ func processMultitenantRequest(w http.ResponseWriter, r *http.Request, path stri
 	}
 	if strings.HasPrefix(p.Suffix, "datadog/") {
 		// Trim suffix from paths starting from /datadog/ in order to support legacy DataDog agent.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/pull/2670
+		// See https://github.com/aginetwork7/VictoriaMetrics/pull/2670
 		p.Suffix = strings.TrimSuffix(p.Suffix, "/")
 	}
 	switch p.Suffix {

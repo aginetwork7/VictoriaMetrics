@@ -11,7 +11,7 @@ aliases:
 # vmbackupmanager
 
 ***vmbackupmanager is a part of [enterprise package](https://docs.victoriametrics.com/enterprise/).
-It is available for download and evaluation at [releases page](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest).
+It is available for download and evaluation at [releases page](https://github.com/aginetwork7/VictoriaMetrics/releases/latest).
 See how to request a free trial license [here](https://victoriametrics.com/products/enterprise/trial/).***
 
 The VictoriaMetrics backup manager automates regular backup procedures. It supports the following backup intervals: **hourly**, **daily**, **weekly** and **monthly**.

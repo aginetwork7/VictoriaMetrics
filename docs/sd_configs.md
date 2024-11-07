@@ -40,7 +40,7 @@ Note that the `refresh_interval` option isn't supported for these scrape configs
 command-line flag instead. For example, `-promscrape.consulSDCheckInterval=60s` sets `refresh_interval` for all the `consul_sd_configs`
 entries to 60s. Run `vmagent -help` or `victoria-metrics -help` in order to see default values for the `-promscrape.*CheckInterval` flags.
 
-Please file feature requests to [our issue tracker](https://github.com/VictoriaMetrics/VictoriaMetrics/issues) if you need other service discovery mechanisms
+Please file feature requests to [our issue tracker](https://github.com/aginetwork7/VictoriaMetrics/issues) if you need other service discovery mechanisms
 to be supported by VictoriaMetrics and `vmagent`.
 
 ## azure_sd_configs
@@ -1874,7 +1874,7 @@ scrape_configs:
   # by the target will be ignored.
   #
   # By default, honor_timestamps is set to false.
-  # See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4697#issuecomment-1656540535 for details.
+  # See https://github.com/aginetwork7/VictoriaMetrics/issues/4697#issuecomment-1656540535 for details.
   #
   # honor_timestamps: <boolean>
 

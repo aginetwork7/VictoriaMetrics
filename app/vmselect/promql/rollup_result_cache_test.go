@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
 	"github.com/VictoriaMetrics/metricsql"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fs"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
 )
 
 func TestRollupResultCacheInitStop(t *testing.T) {

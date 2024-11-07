@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httputils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
 	"github.com/VictoriaMetrics/metricsql"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httputils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
 )
 
 var (

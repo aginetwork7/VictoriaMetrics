@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/insertutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/opentelemetry/pb"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlinsert/insertutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/opentelemetry/pb"
 )
 
 func BenchmarkParseProtobufRequest(b *testing.B) {

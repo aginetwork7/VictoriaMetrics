@@ -4,8 +4,8 @@ import (
 	"math"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fastnum"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fastnum"
+	"github.com/aginetwork7/VictoriaMetrics/lib/slicesutil"
 )
 
 // CalibrateScale calibrates a and b with the corresponding exponents ae, be
@@ -503,12 +503,12 @@ func positiveFloatToDecimalSlow(f float64) (int64, int16) {
 		// for the next loop.
 		if f > 1e6 {
 			// Increase conversion precision for big numbers.
-			// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/213
+			// See https://github.com/aginetwork7/VictoriaMetrics/issues/213
 			prec = 1e15
 		}
 		_, exp := math.Frexp(f)
 		// Bound the exponent according to https://en.wikipedia.org/wiki/Double-precision_floating-point_format
-		// This fixes the issue https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1114
+		// This fixes the issue https://github.com/aginetwork7/VictoriaMetrics/issues/1114
 		if exp < -1022 {
 			exp = -1022
 		} else if exp > 1023 {

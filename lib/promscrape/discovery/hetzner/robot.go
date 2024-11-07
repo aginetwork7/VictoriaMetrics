@@ -6,8 +6,8 @@ import (
 	"net"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discoveryutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discoveryutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 func getRobotServerLabels(cfg *apiConfig) ([]*promutils.Labels, error) {

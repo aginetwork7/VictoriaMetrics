@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/netstorage"
 	"github.com/VictoriaMetrics/metricsql"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/netstorage"
 )
 
 // callbacks for optimized incremental calculations for aggregate functions

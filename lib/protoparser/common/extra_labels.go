@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
 )
 
 // GetExtraLabels extracts name:value labels from `extra_label=name=value` query args from req.

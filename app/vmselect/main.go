@@ -10,22 +10,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/graphite"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/netstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/prometheus"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/promql"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/searchutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httpserver"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httputils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/querytracer"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/timerpool"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/graphite"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/netstorage"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/prometheus"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/promql"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/searchutils"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/cgroup"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fs"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httpserver"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httputils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape"
+	"github.com/aginetwork7/VictoriaMetrics/lib/querytracer"
+	"github.com/aginetwork7/VictoriaMetrics/lib/timerpool"
 )
 
 var (
@@ -549,7 +549,7 @@ func handleStaticAndSimpleRequests(w http.ResponseWriter, r *http.Request, path 
 		w.Header().Set("Content-Type", "application/json")
 		// prometheus version is used here, which affects what API Grafana uses when retrieving label values.
 		// as new Grafana features are added that are customized for the Prometheus version, maybe the version will need to be increased.
-		// see this issue for more info: https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5370
+		// see this issue for more info: https://github.com/aginetwork7/VictoriaMetrics/issues/5370
 		fmt.Fprintf(w, "%s", `{"status":"success","data":{"version":"2.24.0"}}`)
 		return true
 	case "/api/v1/query_exemplars":
@@ -681,7 +681,7 @@ func proxyVMAlertRequests(w http.ResponseWriter, r *http.Request) {
 		err := recover()
 		if err == nil || err == http.ErrAbortHandler {
 			// Suppress http.ErrAbortHandler panic.
-			// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1353
+			// See https://github.com/aginetwork7/VictoriaMetrics/issues/1353
 			return
 		}
 		// Forward other panics to the caller.

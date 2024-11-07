@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 	"github.com/valyala/fastjson/fastfloat"
 )
 
@@ -275,7 +275,7 @@ func unmarshalTags(dst []Tag, s string, noEscapes bool) (string, []Tag, error) {
 			s = s[n+1:]
 		}
 		if len(key) > 0 {
-			// Allow empty values (len(value)==0) - see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/453
+			// Allow empty values (len(value)==0) - see https://github.com/aginetwork7/VictoriaMetrics/issues/453
 			if cap(dst) > len(dst) {
 				dst = dst[:len(dst)+1]
 			} else {

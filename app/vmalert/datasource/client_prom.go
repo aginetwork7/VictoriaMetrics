@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
 
 	"github.com/valyala/fastjson"
 )
@@ -229,12 +229,12 @@ func (s *Client) setPrometheusInstantReqParams(r *http.Request, query string, ti
 	q.Set("time", timestamp.Format(time.RFC3339))
 	if !*disableStepParam && s.evaluationInterval > 0 { // set step as evaluationInterval by default
 		// always convert to seconds to keep compatibility with older
-		// Prometheus versions. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1943
+		// Prometheus versions. See https://github.com/aginetwork7/VictoriaMetrics/issues/1943
 		q.Set("step", fmt.Sprintf("%ds", int(s.evaluationInterval.Seconds())))
 	}
 	if !*disableStepParam && s.queryStep > 0 { // override step with user-specified value
 		// always convert to seconds to keep compatibility with older
-		// Prometheus versions. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1943
+		// Prometheus versions. See https://github.com/aginetwork7/VictoriaMetrics/issues/1943
 		q.Set("step", fmt.Sprintf("%ds", int(s.queryStep.Seconds())))
 	}
 	r.URL.RawQuery = q.Encode()
@@ -253,7 +253,7 @@ func (s *Client) setPrometheusRangeReqParams(r *http.Request, query string, star
 	q.Add("end", end.Format(time.RFC3339))
 	if s.evaluationInterval > 0 { // set step as evaluationInterval by default
 		// always convert to seconds to keep compatibility with older
-		// Prometheus versions. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1943
+		// Prometheus versions. See https://github.com/aginetwork7/VictoriaMetrics/issues/1943
 		q.Set("step", fmt.Sprintf("%ds", int(s.evaluationInterval.Seconds())))
 	}
 	r.URL.RawQuery = q.Encode()

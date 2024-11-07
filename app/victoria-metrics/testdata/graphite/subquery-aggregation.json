@@ -1,6 +1,6 @@
 {
   "name": "subquery-aggregation",
-  "issue": "https://github.com/VictoriaMetrics/VictoriaMetrics/issues/184",
+  "issue": "https://github.com/aginetwork7/VictoriaMetrics/issues/184",
   "data": [
     "forms_daily_count;item=x 1 {TIME_S-59s}",
     "forms_daily_count;item=x 2 {TIME_S-1m59s}",

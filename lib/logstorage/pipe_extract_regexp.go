@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"unsafe"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/slicesutil"
 )
 
 // pipeExtractRegexp processes '| extract_regexp ...' pipe.

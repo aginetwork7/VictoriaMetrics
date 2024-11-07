@@ -1,4 +1,4 @@
-PKG_PREFIX := github.com/VictoriaMetrics/VictoriaMetrics
+PKG_PREFIX := github.com/aginetwork7/VictoriaMetrics
 
 MAKE_CONCURRENCY ?= $(shell getconf _NPROCESSORS_ONLN)
 MAKE_PARALLEL := $(MAKE) -j $(MAKE_CONCURRENCY)
@@ -496,7 +496,7 @@ release-vmutils-windows-goarch: \
 		vmctl-windows-$(GOARCH)-prod.exe
 
 pprof-cpu:
-	go tool pprof -trim_path=github.com/VictoriaMetrics/VictoriaMetrics@ $(PPROF_FILE)
+	go tool pprof -trim_path=github.com/aginetwork7/VictoriaMetrics@ $(PPROF_FILE)
 
 fmt:
 	gofmt -l -w -s ./lib

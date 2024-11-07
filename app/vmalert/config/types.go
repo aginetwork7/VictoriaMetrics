@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/graphiteql"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage"
 	"github.com/VictoriaMetrics/metricsql"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/graphiteql"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logstorage"
 )
 
 // Type represents data source type

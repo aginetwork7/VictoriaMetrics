@@ -14,25 +14,25 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/config"
-	vmalertconfig "github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/config"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/datasource"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/notifier"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/remotewrite"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/rule"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/templates"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vminsert"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vminsert/promremotewrite"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/prometheus"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/promql"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httpserver"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/config"
+	vmalertconfig "github.com/aginetwork7/VictoriaMetrics/app/vmalert/config"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/datasource"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/notifier"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/remotewrite"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/rule"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/templates"
+	"github.com/aginetwork7/VictoriaMetrics/app/vminsert"
+	"github.com/aginetwork7/VictoriaMetrics/app/vminsert/promremotewrite"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/prometheus"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/promql"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fs"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httpserver"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 var (
@@ -185,7 +185,7 @@ func verifyTestGroup(group testGroup) error {
 	}
 	if group.ExternalLabels != nil {
 		fmt.Printf("\n%s    warning: filed `external_labels` will be deprecated soon, please use `-external.label` cmd-line flag instead. "+
-			"Check https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6735 for details.\n", testGroupName)
+			"Check https://github.com/aginetwork7/VictoriaMetrics/issues/6735 for details.\n", testGroupName)
 	}
 	return nil
 }

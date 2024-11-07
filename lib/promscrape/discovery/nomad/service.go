@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discoveryutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discoveryutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 // getServiceLabels returns labels for Nomad services with given cfg.

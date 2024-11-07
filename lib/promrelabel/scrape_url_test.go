@@ -3,7 +3,7 @@ package promrelabel
 import (
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 func TestGetScrapeURL(t *testing.T) {

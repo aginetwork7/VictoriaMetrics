@@ -1535,7 +1535,7 @@ _Appears in:_
 
 ProxyAuth represent proxy auth config
 Only VictoriaMetrics scrapers supports it.
-See https://github.com/VictoriaMetrics/VictoriaMetrics/commit/a6a71ef861444eb11fe8ec6d2387f0fc0c4aea87
+See https://github.com/aginetwork7/VictoriaMetrics/commit/a6a71ef861444eb11fe8ec6d2387f0fc0c4aea87
 
 
 
@@ -2641,7 +2641,7 @@ _Appears in:_
 | `probeSelector` | ProbeSelector defines VMProbe to be selected for target probing.<br />Works in combination with NamespaceSelector.<br />NamespaceSelector nil - only objects at VMAgent namespace.<br />Selector nil - only objects at NamespaceSelector namespaces.<br />If both nil - behaviour controlled by selectAllByDefault | _[LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#labelselector-v1-meta)_ | false |
 | `readinessGates` | ReadinessGates defines pod readiness gates | _[PodReadinessGate](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#podreadinessgate-v1-core) array_ | true |
 | `relabelConfig` | RelabelConfig ConfigMap with global relabel config -remoteWrite.relabelConfig<br />This relabeling is applied to all the collected metrics before sending them to remote storage. | _[ConfigMapKeySelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#configmapkeyselector-v1-core)_ | false |
-| `remoteWrite` | RemoteWrite list of victoria metrics /some other remote write system<br />for vm it must looks like: http://victoria-metrics-single:8429/api/v1/write<br />or for cluster different url<br />https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/app/vmagent#splitting-data-streams-among-multiple-systems | _[VMAgentRemoteWriteSpec](#vmagentremotewritespec) array_ | true |
+| `remoteWrite` | RemoteWrite list of victoria metrics /some other remote write system<br />for vm it must looks like: http://victoria-metrics-single:8429/api/v1/write<br />or for cluster different url<br />https://github.com/aginetwork7/VictoriaMetrics/tree/master/app/vmagent#splitting-data-streams-among-multiple-systems | _[VMAgentRemoteWriteSpec](#vmagentremotewritespec) array_ | true |
 | `remoteWriteSettings` | RemoteWriteSettings defines global settings for all remoteWrite urls. | _[VMAgentRemoteWriteSettings](#vmagentremotewritesettings)_ | false |
 | `replicaCount` | ReplicaCount is the expected size of the Application. | _integer_ | false |
 | `resources` | Resources container resource request and limits, https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br />if not defined default resources from operator config will be used | _[ResourceRequirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#resourcerequirements-v1-core)_ | false |

@@ -7,11 +7,11 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/encoding"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/slicesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
 )
 
 type timeseries struct {
@@ -109,7 +109,7 @@ func marshalTimeseriesFast(dst []byte, tss []*timeseries, maxSize int, step int6
 
 	// Marshal timestamps and values at first, so they are 8-byte aligned.
 	// This prevents from SIGBUS error on arm architectures.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/pull/3927
+	// See https://github.com/aginetwork7/VictoriaMetrics/pull/3927
 	dst = encoding.MarshalUint64(dst, uint64(len(tss)))
 	dst = encoding.MarshalUint64(dst, uint64(len(timestamps)))
 	dst = marshalTimestampsFast(dst, timestamps)
@@ -316,7 +316,7 @@ func int64ToByteSlice(a []int64) []byte {
 func byteSliceToInt64(b []byte) []int64 {
 	// Make sure that the returned slice is properly aligned to 8 bytes.
 	// This prevents from SIGBUS error on arm architectures, which deny unaligned access.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/pull/3927
+	// See https://github.com/aginetwork7/VictoriaMetrics/pull/3927
 	if uintptr(unsafe.Pointer(unsafe.SliceData(b)))%8 != 0 {
 		logger.Panicf("BUG: the input byte slice b must be aligned to 8 bytes")
 	}
@@ -326,7 +326,7 @@ func byteSliceToInt64(b []byte) []int64 {
 func byteSliceToFloat64(b []byte) []float64 {
 	// Make sure that the returned slice is properly aligned to 8 bytes.
 	// This prevents from SIGBUS error on arm architectures, which deny unaligned access.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/pull/3927
+	// See https://github.com/aginetwork7/VictoriaMetrics/pull/3927
 	if uintptr(unsafe.Pointer(unsafe.SliceData(b)))%8 != 0 {
 		logger.Panicf("BUG: the input byte slice b must be aligned to 8 bytes")
 	}

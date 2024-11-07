@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/insertutils"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlinsert/insertutils"
 )
 
 func TestProcessStreamInternal_Success(t *testing.T) {

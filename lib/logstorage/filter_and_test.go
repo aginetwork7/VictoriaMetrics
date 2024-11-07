@@ -63,7 +63,7 @@ func TestFilterAnd(t *testing.T) {
 	f(`foo:foo* AND bar:*`, nil)
 	f(`bar:* AND foo:foo*`, nil)
 
-	// https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6554
+	// https://github.com/aginetwork7/VictoriaMetrics/issues/6554
 	f(`foo:"a foo"* AND (foo:="a foobar" OR boo:bbbbbbb)`, []int{1})
 
 	f(`foo:"a foo"* AND (foo:"abcd foobar" OR foo:foobar)`, []int{1, 6})

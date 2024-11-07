@@ -14,13 +14,13 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httpserver"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httputils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httpserver"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httputils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 // ProcessHitsRequest handles /select/logsql/hits request.
@@ -432,7 +432,7 @@ func ProcessLiveTailRequest(ctx context.Context, w http.ResponseWriter, r *http.
 		q = qOrig.Clone(end)
 		q.AddTimeFilter(start, end)
 		// q.Optimize() call is needed for converting '*' into filterNoop.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6785#issuecomment-2358547733
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/6785#issuecomment-2358547733
 		q.Optimize()
 
 		if err := vlstorage.RunQuery(ctxWithCancel, tenantIDs, q, tp.writeBlock); err != nil {
@@ -880,7 +880,7 @@ func getLastNQueryResults(ctx context.Context, tenantIDs []logstorage.TenantID, 
 		q = qOrig.Clone(timestamp)
 		q.AddTimeFilter(start, end)
 		// q.Optimize() call is needed for converting '*' into filterNoop.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6785#issuecomment-2358547733
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/6785#issuecomment-2358547733
 		q.Optimize()
 		rows, err := getQueryResultsWithLimit(ctx, tenantIDs, q, limitUpper)
 		if err != nil {

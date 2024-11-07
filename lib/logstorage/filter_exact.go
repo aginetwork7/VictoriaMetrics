@@ -5,8 +5,8 @@ import (
 	"math"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/encoding"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // filterExact matches the exact value.

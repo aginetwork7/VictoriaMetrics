@@ -106,7 +106,7 @@
       "targetBlank": true,
       "title": "Found a bug?",
       "type": "link",
-      "url": "https://github.com/VictoriaMetrics/VictoriaMetrics/issues"
+      "url": "https://github.com/aginetwork7/VictoriaMetrics/issues"
     },
     {
       "icon": "external link",
@@ -115,7 +115,7 @@
       "title": "New releases",
       "tooltip": "",
       "type": "link",
-      "url": "https://github.com/VictoriaMetrics/VictoriaMetrics/releases"
+      "url": "https://github.com/aginetwork7/VictoriaMetrics/releases"
     }
   ],
   "liveNow": false,
@@ -3448,7 +3448,7 @@
             "type": "prometheus",
             "uid": "$ds"
           },
-          "description": "The percentage of slow inserts comparing to total insertion rate during the last 5 minutes. \n\nThe less value is better. If percentage remains high (>10%) during extended periods of time, then it is likely more RAM is needed for optimal handling of the current number of [active time series](https://docs.victoriametrics.com/faq/#what-is-an-active-time-series). \n\nIn general, VictoriaMetrics requires ~1KB or RAM per active time series, so it should be easy calculating the required amounts of RAM for the current workload according to capacity planning docs. But the resulting number may be far from the real number because the required amounts of memory depends on many other factors such as the number of labels per time series and the length of label values. See also [this issue](https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3976#issuecomment-1476883183) for details.",
+          "description": "The percentage of slow inserts comparing to total insertion rate during the last 5 minutes. \n\nThe less value is better. If percentage remains high (>10%) during extended periods of time, then it is likely more RAM is needed for optimal handling of the current number of [active time series](https://docs.victoriametrics.com/faq/#what-is-an-active-time-series). \n\nIn general, VictoriaMetrics requires ~1KB or RAM per active time series, so it should be easy calculating the required amounts of RAM for the current workload according to capacity planning docs. But the resulting number may be far from the real number because the required amounts of memory depends on many other factors such as the number of labels per time series and the length of label values. See also [this issue](https://github.com/aginetwork7/VictoriaMetrics/issues/3976#issuecomment-1476883183) for details.",
           "fieldConfig": {
             "defaults": {
               "color": {

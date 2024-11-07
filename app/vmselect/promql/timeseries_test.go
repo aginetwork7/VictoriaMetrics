@@ -6,7 +6,7 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
 )
 
 func TestMain(m *testing.M) {
@@ -28,7 +28,7 @@ func TestMarshalTimeseriesFast(t *testing.T) {
 
 		// Check 8-byte alignment.
 		// This prevents from SIGBUS error on arm architectures.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/pull/3927
+		// See https://github.com/aginetwork7/VictoriaMetrics/pull/3927
 		for _, ts := range tss2 {
 			if len(ts.Values) == 0 {
 				continue

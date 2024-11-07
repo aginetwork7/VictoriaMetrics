@@ -10,24 +10,24 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/auth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bloomfilter"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/leveledbytebufferpool"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promauth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promrelabel"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
-	parser "github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/prometheus"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/prometheus/stream"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/proxy"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/timerpool"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/auth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bloomfilter"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/cgroup"
+	"github.com/aginetwork7/VictoriaMetrics/lib/decimal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/encoding"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/leveledbytebufferpool"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promauth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promrelabel"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
+	parser "github.com/aginetwork7/VictoriaMetrics/lib/protoparser/prometheus"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/prometheus/stream"
+	"github.com/aginetwork7/VictoriaMetrics/lib/proxy"
+	"github.com/aginetwork7/VictoriaMetrics/lib/timerpool"
 	"github.com/cespare/xxhash/v2"
 )
 
@@ -98,7 +98,7 @@ type ScrapeWork struct {
 	// ExternalLabels contains labels from global->external_labels section of -promscrape.config
 	//
 	// These labels are added to scraped metrics after the relabeling.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3137
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/3137
 	//
 	// ExternalLabels are sorted by name.
 	ExternalLabels *promutils.Labels
@@ -286,7 +286,7 @@ func (sw *scrapeWork) run(stopCh <-chan struct{}, globalStopCh <-chan struct{}) 
 		// Include clusterName to the key in order to guarantee that the same
 		// scrape target is scraped at different offsets per each cluster.
 		// This guarantees that the deduplication consistently leaves samples received from the same vmagent.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/2679
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/2679
 		//
 		// Include clusterMemberID to the key in order to guarantee that each member in vmagent cluster
 		// scrapes replicated targets at different time offsets. This guarantees that the deduplication consistently leaves samples
@@ -331,7 +331,7 @@ func (sw *scrapeWork) run(stopCh <-chan struct{}, globalStopCh <-chan struct{}) 
 			select {
 			case <-globalStopCh:
 				// Do not send staleness markers on graceful shutdown as Prometheus does.
-				// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/2013#issuecomment-1006994079
+				// See https://github.com/aginetwork7/VictoriaMetrics/issues/2013#issuecomment-1006994079
 			default:
 				// Send staleness markers to all the metrics scraped last time from the target
 				// when the given target disappears as Prometheus does.
@@ -559,7 +559,7 @@ func (sw *scrapeWork) processDataInStreamMode(scrapeTimestamp, realTimestamp int
 
 		// Push the collected rows to sw before returning from the callback, since they cannot be held
 		// after returning from the callback - this will result in data race.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/825#issuecomment-723198247
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/825#issuecomment-723198247
 		sw.pushData(sw.Config.AuthToken, &wc.writeRequest)
 		wc.resetNoRows()
 		return nil
@@ -618,7 +618,7 @@ func (sw *scrapeWork) pushData(at *auth.Token, wr *prompbmarshal.WriteRequest) {
 func (sw *scrapeWork) areIdenticalSeries(prevData, currData string) bool {
 	if sw.Config.NoStaleMarkers && sw.Config.SeriesLimit <= 0 {
 		// Do not spend CPU time on tracking the changes in series if stale markers are disabled.
-		// The check for series_limit is needed for https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3660
+		// The check for series_limit is needed for https://github.com/aginetwork7/VictoriaMetrics/issues/3660
 		return true
 	}
 	return parser.AreIdenticalSeriesFast(prevData, currData)
@@ -733,7 +733,7 @@ func (sw *scrapeWork) sendStaleSeries(lastScrape, currScrape string, timestamp i
 	// This function is CPU-bound, while it may allocate big amounts of memory.
 	// That's why it is a good idea to limit the number of concurrent calls to this function
 	// in order to limit memory usage under high load without sacrificing the performance.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3668
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/3668
 	sendStaleSeriesConcurrencyLimitCh <- struct{}{}
 	defer func() {
 		<-sendStaleSeriesConcurrencyLimitCh
@@ -753,8 +753,8 @@ func (sw *scrapeWork) sendStaleSeries(lastScrape, currScrape string, timestamp i
 	if bodyString != "" {
 		// Send stale markers in streaming mode in order to reduce memory usage
 		// when stale markers for targets exposing big number of metrics must be generated.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3668
-		// and https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3675
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/3668
+		// and https://github.com/aginetwork7/VictoriaMetrics/issues/3675
 		var mu sync.Mutex
 		br := bytes.NewBufferString(bodyString)
 		err := stream.Parse(br, timestamp, false, false, func(rows []parser.Row) error {
@@ -764,13 +764,13 @@ func (sw *scrapeWork) sendStaleSeries(lastScrape, currScrape string, timestamp i
 				sw.addRowToTimeseries(wc, &rows[i], timestamp, true)
 			}
 			// Apply series limit to stale markers in order to prevent sending stale markers for newly created series.
-			// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3660
+			// See https://github.com/aginetwork7/VictoriaMetrics/issues/3660
 			if sw.seriesLimitExceeded {
 				sw.applySeriesLimit(wc)
 			}
 			// Push the collected rows to sw before returning from the callback, since they cannot be held
 			// after returning from the callback - this will result in data race.
-			// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/825#issuecomment-723198247
+			// See https://github.com/aginetwork7/VictoriaMetrics/issues/825#issuecomment-723198247
 			setStaleMarkersForRows(wc.writeRequest.Timeseries)
 			sw.pushData(sw.Config.AuthToken, &wc.writeRequest)
 			wc.resetNoRows()
@@ -889,8 +889,8 @@ func (sw *scrapeWork) addRowToTimeseries(wc *writeRequestCtx, r *parser.Row, tim
 	// - The metric has no labels (tags). If it has labels, then the metric value
 	//   will be written into a separate time series comparing to automatically generated time series.
 	//
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3557
-	// and https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3406
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/3557
+	// and https://github.com/aginetwork7/VictoriaMetrics/issues/3406
 	if needRelabel && !sw.Config.HonorLabels && len(r.Tags) == 0 && isAutoMetric(metric) {
 		bb := bbPool.Get()
 		bb.B = append(bb.B, "exported_"...)
@@ -910,7 +910,7 @@ func (sw *scrapeWork) addRowToTimeseries(wc *writeRequestCtx, r *parser.Row, tim
 		return
 	}
 	// Add labels from `global->external_labels` section after the relabeling like Prometheus does.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3137
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/3137
 	externalLabels := sw.Config.ExternalLabels.GetLabels()
 	wc.labels = appendExtraLabels(wc.labels, externalLabels, labelsLen, sw.Config.HonorLabels)
 	sampleTimestamp := r.Timestamp

@@ -7,8 +7,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 var disableMmap = flag.Bool("fs.disableMmap", is32BitPtr, "Whether to use pread() instead of mmap() for reading data files. "+
@@ -233,7 +233,7 @@ func mmapFile(f *os.File, size int64) ([]byte, error) {
 		return nil, fmt.Errorf("file is too big to be mmap'ed: %d bytes", size)
 	}
 	// Round size to multiple of 4KB pages as `man 2 mmap` recommends.
-	// This may help preventing SIGBUS panic at https://github.com/VictoriaMetrics/VictoriaMetrics/issues/581
+	// This may help preventing SIGBUS panic at https://github.com/aginetwork7/VictoriaMetrics/issues/581
 	// The SIGBUS could occur if standard copy(dst, src) function may read beyond src bounds.
 	sizeOrig := size
 	if size%4096 != 0 {

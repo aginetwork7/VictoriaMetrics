@@ -462,7 +462,7 @@ extraLabels: {}
 </code>
 </pre>
 </td>
-      <td><p>Additional environment variables (ex.: secret tokens, flags). Details are <a href="https://github.com/VictoriaMetrics/VictoriaMetrics#environment-variables" target="_blank">here</a></p>
+      <td><p>Additional environment variables (ex.: secret tokens, flags). Details are <a href="https://github.com/aginetwork7/VictoriaMetrics#environment-variables" target="_blank">here</a></p>
 </td>
     </tr>
     <tr>

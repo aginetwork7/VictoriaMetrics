@@ -13,11 +13,11 @@ If you like VictoriaMetrics and want to contribute, then it would be great:
 
 - Joining VictoriaMetrics community Slack ([Slack inviter](https://slack.victoriametrics.com/) and [Slack channel](https://victoriametrics.slack.com/))
   and helping other community members there.
-- Filing issues, feature requests and questions [at VictoriaMetrics GitHub](https://github.com/VictoriaMetrics/VictoriaMetrics/issues).
+- Filing issues, feature requests and questions [at VictoriaMetrics GitHub](https://github.com/aginetwork7/VictoriaMetrics/issues).
 - Improving [VictoriaMetrics docs](https://docs.victoriametrics.com/). See how to update docs [here](https://docs.victoriametrics.com/#documentation).
 - Spreading the word about VictoriaMetrics via various channels:
   - conference talks
-  - blogposts, articles and [case studies](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/docs/CaseStudies.md)
+  - blogposts, articles and [case studies](https://github.com/aginetwork7/VictoriaMetrics/blob/master/docs/CaseStudies.md)
   - comments at Hacker News, Twitter, LinkedIn, Reddit, Facebook, etc.
   - experience sharing with colleagues.
 - Convincing your management to sign [Enterprise contract](https://docs.victoriametrics.com/enterprise/) with VictoriaMetrics.
@@ -28,11 +28,11 @@ When making a new issue, make sure to create no duplicates. Use GitHub search to
 The new issue should be written in English and contain concise description of the problem and environment where it exists.
 We'd very much prefer to have a specific use-case included in the description, since it could have workaround or alternative solutions.
 
-When looking for an issue to contribute, always prefer working on [bugs](https://github.com/VictoriaMetrics/VictoriaMetrics/issues?q=is%3Aopen+is%3Aissue+label%3Abug)
-instead of [enhancements](https://github.com/VictoriaMetrics/VictoriaMetrics/issues?q=is%3Aopen+is%3Aissue+label%3Aenhancement). 
-Helping other people with their [questions](https://github.com/VictoriaMetrics/VictoriaMetrics/issues?q=is%3Aopen+is%3Aissue+label%3Aquestion) is also a contribution.
+When looking for an issue to contribute, always prefer working on [bugs](https://github.com/aginetwork7/VictoriaMetrics/issues?q=is%3Aopen+is%3Aissue+label%3Abug)
+instead of [enhancements](https://github.com/aginetwork7/VictoriaMetrics/issues?q=is%3Aopen+is%3Aissue+label%3Aenhancement). 
+Helping other people with their [questions](https://github.com/aginetwork7/VictoriaMetrics/issues?q=is%3Aopen+is%3Aissue+label%3Aquestion) is also a contribution.
 
-If you'd like to contribute to [documentation](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/docs) please
+If you'd like to contribute to [documentation](https://github.com/aginetwork7/VictoriaMetrics/tree/master/docs) please
 read the [guideline](https://docs.victoriametrics.com/#documentation).
 
 ### Labels
@@ -68,7 +68,7 @@ A pull request should contain the following attributes:
   that would be clear to other readers even if they don't have the full context.
 1. Reviewers who you think have the best expertise on the matter.
 
-See good example of pull request [here](https://github.com/VictoriaMetrics/VictoriaMetrics/pull/6487).
+See good example of pull request [here](https://github.com/aginetwork7/VictoriaMetrics/pull/6487).
 
 To merge the PR it should be approved by at least one reviewer, all CI checks should be green.
 

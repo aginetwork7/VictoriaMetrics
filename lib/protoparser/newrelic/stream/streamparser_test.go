@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/newrelic"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/newrelic"
 )
 
 func TestParseFailure(t *testing.T) {

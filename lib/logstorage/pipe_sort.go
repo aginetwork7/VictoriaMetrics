@@ -12,8 +12,8 @@ import (
 
 	"github.com/valyala/quicktemplate"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/memory"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/memory"
 )
 
 // pipeSort processes '| sort ...' queries.

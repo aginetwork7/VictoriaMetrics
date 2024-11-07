@@ -61,7 +61,7 @@ func getCPUQuota() float64 {
 	}
 	if cpuQuota <= 0 {
 		// The quota isn't set. This may be the case in multilevel containers.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/685#issuecomment-674423728
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/685#issuecomment-674423728
 		return getOnlineCPUCount()
 	}
 	return cpuQuota
@@ -83,7 +83,7 @@ func getCPUStat(statName string) (int64, error) {
 }
 
 func getOnlineCPUCount() float64 {
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/685#issuecomment-674423728
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/685#issuecomment-674423728
 	data, err := os.ReadFile("/sys/devices/system/cpu/online")
 	if err != nil {
 		return -1

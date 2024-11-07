@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 // GetTime returns time in milliseconds from the given argKey query arg.
 //
 // If argKey is missing in r, then defaultMs rounded to seconds is returned.
 // The rounding is needed in order to align query results in Grafana
-// executed at different times. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/720
+// executed at different times. See https://github.com/aginetwork7/VictoriaMetrics/issues/720
 func GetTime(r *http.Request, argKey string, defaultMs int64) (int64, error) {
 	argValue := r.FormValue(argKey)
 	if len(argValue) == 0 {

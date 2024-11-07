@@ -10,7 +10,7 @@ import (
 
 	"github.com/cheggaaa/pb/v3"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/terminal"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/terminal"
 )
 
 var isDisabled bool

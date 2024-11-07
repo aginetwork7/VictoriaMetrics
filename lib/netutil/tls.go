@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
 )
 
 // GetServerTLSConfig returns TLS config for the server.

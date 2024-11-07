@@ -84,7 +84,7 @@
       "title": "Found a bug?",
       "tooltip": "Found a bug?",
       "type": "link",
-      "url": "https://github.com/VictoriaMetrics/VictoriaMetrics/issues"
+      "url": "https://github.com/aginetwork7/VictoriaMetrics/issues"
     },
     {
       "asDropdown": false,
@@ -96,7 +96,7 @@
       "title": "New releases",
       "tooltip": "New releases",
       "type": "link",
-      "url": "https://github.com/VictoriaMetrics/VictoriaMetrics/releases"
+      "url": "https://github.com/aginetwork7/VictoriaMetrics/releases"
     }
   ],
   "liveNow": false,

@@ -3,7 +3,7 @@ package insertutils
 import (
 	"flag"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
 )
 
 var (

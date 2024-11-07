@@ -3,13 +3,13 @@ package promremotewrite
 import (
 	"net/http"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vminsert/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vminsert/relabel"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompb"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
-	parserCommon "github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/promremotewrite/stream"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/app/vminsert/common"
+	"github.com/aginetwork7/VictoriaMetrics/app/vminsert/relabel"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompb"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
+	parserCommon "github.com/aginetwork7/VictoriaMetrics/lib/protoparser/common"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/promremotewrite/stream"
 )
 
 var (

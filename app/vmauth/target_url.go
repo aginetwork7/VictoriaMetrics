@@ -123,14 +123,14 @@ func normalizeURL(uOrig *url.URL) *url.URL {
 	if !strings.HasSuffix(u.Path, "/") && strings.HasSuffix(uOrig.Path, "/") {
 		// The path.Clean() removes trailing slash.
 		// Return it back if needed.
-		// This should fix https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1752
+		// This should fix https://github.com/aginetwork7/VictoriaMetrics/issues/1752
 		u.Path += "/"
 	}
 	if !strings.HasPrefix(u.Path, "/") {
 		u.Path = "/" + u.Path
 	}
 	if u.Path == "/" {
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/pull/1554
+		// See https://github.com/aginetwork7/VictoriaMetrics/pull/1554
 		u.Path = ""
 	}
 	return &u

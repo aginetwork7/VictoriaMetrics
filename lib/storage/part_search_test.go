@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/decimal"
 )
 
 func TestPartSearchOneRow(t *testing.T) {

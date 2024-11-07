@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promauth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/consul"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discoveryutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promauth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/consul"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discoveryutils"
 )
 
 // apiConfig contains config for API server.

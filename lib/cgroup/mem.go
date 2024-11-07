@@ -43,7 +43,7 @@ func GetMemoryLimit() int64 {
 	//
 	// Read memory limit according to https://unix.stackexchange.com/questions/242718/how-to-find-out-how-much-memory-lxc-container-is-allowed-to-consume
 	// This should properly determine the limit inside lxc container.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/84
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/84
 	n, err := getMemStat("memory.limit_in_bytes")
 	if err == nil {
 		return n
@@ -67,7 +67,7 @@ func getMemStat(statName string) (int64, error) {
 // GetHierarchicalMemoryLimit returns hierarchical memory limit
 // https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt
 func GetHierarchicalMemoryLimit() int64 {
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/699
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/699
 	n, err := getHierarchicalMemoryLimit("/sys/fs/cgroup/memory", "/proc/self/cgroup")
 	if err != nil {
 		return 0

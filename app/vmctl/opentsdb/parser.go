@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promrelabel"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promrelabel"
 )
 
 var (

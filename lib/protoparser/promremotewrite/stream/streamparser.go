@@ -6,13 +6,13 @@ import (
 	"io"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding/zstd"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompb"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/writeconcurrencylimiter"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/encoding/zstd"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompb"
+	"github.com/aginetwork7/VictoriaMetrics/lib/writeconcurrencylimiter"
 	"github.com/golang/snappy"
 )
 
@@ -34,7 +34,7 @@ func Parse(r io.Reader, isVMRemoteWrite bool, callback func(tss []prompb.TimeSer
 
 	// Synchronously process the request in order to properly return errors to Parse caller,
 	// so it could properly return HTTP 503 status code in response.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/896
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/896
 	bb := bodyBufferPool.Get()
 	defer bodyBufferPool.Put(bb)
 	var err error
@@ -43,7 +43,7 @@ func Parse(r io.Reader, isVMRemoteWrite bool, callback func(tss []prompb.TimeSer
 		if err != nil {
 			// Fall back to Snappy decompression, since vmagent may send snappy-encoded messages
 			// with 'Content-Encoding: zstd' header if they were put into persistent queue before vmagent restart.
-			// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5301
+			// See https://github.com/aginetwork7/VictoriaMetrics/issues/5301
 			zstdErr := err
 			bb.B, err = snappy.Decode(bb.B[:cap(bb.B)], ctx.reqBuf.B)
 			if err != nil {
@@ -55,7 +55,7 @@ func Parse(r io.Reader, isVMRemoteWrite bool, callback func(tss []prompb.TimeSer
 		if err != nil {
 			// Fall back to zstd decompression, since vmagent may send zstd-encoded messages
 			// without 'Content-Encoding: zstd' header if they were put into persistent queue before vmagent restart.
-			// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5301#issuecomment-1815871992
+			// See https://github.com/aginetwork7/VictoriaMetrics/issues/5301#issuecomment-1815871992
 			snappyErr := err
 			bb.B, err = zstd.Decompress(bb.B[:0], ctx.reqBuf.B)
 			if err != nil {

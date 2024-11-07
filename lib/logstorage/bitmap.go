@@ -4,8 +4,8 @@ import (
 	"math/bits"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/slicesutil"
 )
 
 func getBitmap(bitsLen int) *bitmap {

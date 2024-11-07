@@ -3,14 +3,14 @@ package prometheusimport
 import (
 	"net/http"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vminsert/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vminsert/relabel"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httpserver"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
-	parserCommon "github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/common"
-	parser "github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/prometheus"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/prometheus/stream"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/app/vminsert/common"
+	"github.com/aginetwork7/VictoriaMetrics/app/vminsert/relabel"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httpserver"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
+	parserCommon "github.com/aginetwork7/VictoriaMetrics/lib/protoparser/common"
+	parser "github.com/aginetwork7/VictoriaMetrics/lib/protoparser/prometheus"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/prometheus/stream"
 )
 
 var (

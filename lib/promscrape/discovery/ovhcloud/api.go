@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discoveryutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discoveryutils"
 )
 
 // mapping for endpoint names to their URI for external configuration

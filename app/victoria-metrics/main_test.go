@@ -19,14 +19,14 @@ import (
 	"testing"
 	"time"
 
-	testutil "github.com/VictoriaMetrics/VictoriaMetrics/app/victoria-metrics/test"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vminsert"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/promql"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httpserver"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	testutil "github.com/aginetwork7/VictoriaMetrics/app/victoria-metrics/test"
+	"github.com/aginetwork7/VictoriaMetrics/app/vminsert"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/promql"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fs"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httpserver"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 const (

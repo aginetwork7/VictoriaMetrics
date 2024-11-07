@@ -9,12 +9,12 @@ aliases:
   - /vmauth.html
 ---
 `vmauth` is an HTTP proxy, which can [authorize](https://docs.victoriametrics.com/vmauth/#authorization), [route](https://docs.victoriametrics.com/vmauth/#routing)
-and [load balance](https://docs.victoriametrics.com/vmauth/#load-balancing) requests across [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics) components
+and [load balance](https://docs.victoriametrics.com/vmauth/#load-balancing) requests across [VictoriaMetrics](https://github.com/aginetwork7/VictoriaMetrics) components
 or any other HTTP backends.
 
 ## Quick start
 
-Just download `vmutils-*` archive from [releases page](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest), unpack it
+Just download `vmutils-*` archive from [releases page](https://github.com/aginetwork7/VictoriaMetrics/releases/latest), unpack it
 and pass the following flag to `vmauth` binary in order to start authorizing and proxying requests:
 
 ```sh
@@ -29,7 +29,7 @@ The port can be modified via `-httpListenAddr` command-line flag.
 See [how to reload config without restart](#config-reload).
 
 Docker images for `vmauth` are available [here](https://hub.docker.com/r/victoriametrics/vmauth/tags).
-See how `vmauth` used in [docker-compose env](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/README.md#victoriametrics-cluster).
+See how `vmauth` used in [docker-compose env](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/README.md#victoriametrics-cluster).
 
 Pass `-help` to `vmauth` in order to see all the supported command-line flags with their descriptions.
 
@@ -825,7 +825,7 @@ users:
     allow_list: [127.0.0.1]
 ```
 
-See config example of using IP filters [here](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/app/vmauth/example_config_ent.yml).
+See config example of using IP filters [here](https://github.com/aginetwork7/VictoriaMetrics/blob/master/app/vmauth/example_config_ent.yml).
 
 ## Reading auth tokens from other HTTP headers
 
@@ -979,7 +979,7 @@ users:
 # The deny_partial_response query arg is added to all the proxied requests.
 # The requests are re-tried if url_prefix backends send 500 or 503 response status codes.
 # Note that the unauthorized_user section takes precedence when processing a route without credentials,
-# even if such a route also exists in the users section (see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5236).
+# even if such a route also exists in the users section (see https://github.com/aginetwork7/VictoriaMetrics/issues/5236).
 unauthorized_user:
   url_prefix:
   - http://vmselect-az1/?deny_partial_response=1
@@ -1059,7 +1059,7 @@ See also [security recommendations](#security).
 
 `vmauth` exports various metrics in Prometheus exposition format at `http://vmauth-host:8427/metrics` page. It is recommended setting up regular scraping of this page
 either via [vmagent](https://docs.victoriametrics.com/vmagent/) or via Prometheus-compatible scraper, so the exported metrics could be analyzed later.
-Use the official [Grafana dashboard](https://grafana.com/grafana/dashboards/21394) and [alerting rules](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-vmauth.yml)
+Use the official [Grafana dashboard](https://grafana.com/grafana/dashboards/21394) and [alerting rules](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-vmauth.yml)
 for `vmauth` monitoring.
 
 If you use Google Cloud Managed Prometheus for scraping metrics from VictoriaMetrics components, then pass `-metrics.exposeMetadata`
@@ -1114,18 +1114,18 @@ users:
 
 ## How to build from sources
 
-It is recommended using [binary releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest) - `vmauth` is located in `vmutils-*` archives there.
+It is recommended using [binary releases](https://github.com/aginetwork7/VictoriaMetrics/releases/latest) - `vmauth` is located in `vmutils-*` archives there.
 
 ### Development build
 
 1. [Install Go](https://golang.org/doc/install). The minimum supported version is Go 1.22.
-1. Run `make vmauth` from the root folder of [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics).
+1. Run `make vmauth` from the root folder of [the repository](https://github.com/aginetwork7/VictoriaMetrics).
    It builds `vmauth` binary and puts it into the `bin` folder.
 
 ### Production build
 
 1. [Install docker](https://docs.docker.com/install/).
-1. Run `make vmauth-prod` from the root folder of [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics).
+1. Run `make vmauth-prod` from the root folder of [the repository](https://github.com/aginetwork7/VictoriaMetrics).
    It builds `vmauth-prod` binary and puts it into the `bin` folder.
 
 ### Building docker images

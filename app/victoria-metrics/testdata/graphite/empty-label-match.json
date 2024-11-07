@@ -1,6 +1,6 @@
 {
   "name": "empty-label-match",
-  "issue": "https://github.com/VictoriaMetrics/VictoriaMetrics/issues/395",
+  "issue": "https://github.com/aginetwork7/VictoriaMetrics/issues/395",
   "data": [
     "empty_label_match 1 {TIME_S-1m}",
     "empty_label_match;foo=bar 2 {TIME_S-1m}",

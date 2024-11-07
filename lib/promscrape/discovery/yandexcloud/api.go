@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promauth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discoveryutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promauth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discoveryutils"
 )
 
 var configMap = discoveryutils.NewConfigMap()
@@ -134,7 +134,7 @@ func getInstanceCreds(cfg *apiConfig) (*apiCredentials, error) {
 	// Fall back to the disabled IMDSv1 - see https://yandex.cloud/en/docs/security/standard/authentication#aws-token
 	//
 	// TODO: remove this when it is completely removed from Yandex Cloud.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5513
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/5513
 	// and https://yandex.cloud/en/docs/security/standard/authentication#aws-token
 	creds, err = getEC2IMDBSv1Creds(cfg)
 	if err == nil {

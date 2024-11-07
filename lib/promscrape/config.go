@@ -12,38 +12,38 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/auth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/envtemplate"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fscore"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promauth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promrelabel"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/azure"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/consul"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/consulagent"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/digitalocean"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/dns"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/docker"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/dockerswarm"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/ec2"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/eureka"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/gce"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/hetzner"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/http"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/kubernetes"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/kuma"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/nomad"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/openstack"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/ovhcloud"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/puppetdb"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/vultr"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/yandexcloud"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/proxy"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/auth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/cgroup"
+	"github.com/aginetwork7/VictoriaMetrics/lib/envtemplate"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fs/fscore"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promauth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promrelabel"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/azure"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/consul"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/consulagent"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/digitalocean"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/dns"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/docker"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/dockerswarm"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/ec2"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/eureka"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/gce"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/hetzner"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/http"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/kubernetes"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/kuma"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/nomad"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/openstack"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/ovhcloud"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/puppetdb"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/vultr"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/yandexcloud"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/proxy"
 	"github.com/cespare/xxhash/v2"
 	"gopkg.in/yaml.v2"
 )
@@ -89,7 +89,7 @@ func mustInitClusterMemberID() {
 	s := *clusterMemberNum
 	// special case for kubernetes deployment, where pod-name formatted at some-pod-name-1
 	// obtain memberNum from last segment
-	// https://github.com/VictoriaMetrics/VictoriaMetrics/issues/2359
+	// https://github.com/aginetwork7/VictoriaMetrics/issues/2359
 	if idx := strings.LastIndexByte(s, '-'); idx >= 0 {
 		s = s[idx+1:]
 	}
@@ -164,7 +164,7 @@ func (cfg *Config) mustRestart(prevCfg *Config) bool {
 	}
 
 	// Restart all the scrape jobs on Global config change.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/2884
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/2884
 	needGlobalRestart := !areEqualGlobalConfigs(&cfg.Global, &prevCfg.Global)
 
 	// Loop over the new jobs, start new ones and restart updated ones.
@@ -282,7 +282,7 @@ type ScrapeConfig struct {
 
 	// HonorTimestamps is set to false by default contrary to Prometheus, which sets it to true by default,
 	// because of the issue with gaps on graphs when scraping cadvisor or similar targets, which export invalid timestamps.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4697#issuecomment-1654614799 for details.
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/4697#issuecomment-1654614799 for details.
 	HonorTimestamps bool `yaml:"honor_timestamps,omitempty"`
 
 	Scheme               string                      `yaml:"scheme,omitempty"`
@@ -881,7 +881,7 @@ func getScrapeWorkConfig(sc *ScrapeConfig, baseDir string, globalCfg *GlobalConf
 	if scrapeTimeout > scrapeInterval {
 		// Limit the `scrape_timeout` with `scrape_interval` like Prometheus does.
 		// This guarantees that the scraper can miss only a single scrape if the target sometimes responds slowly.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1281#issuecomment-840538907
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/1281#issuecomment-840538907
 		scrapeTimeout = scrapeInterval
 	}
 	mss := maxScrapeSize.N
@@ -1171,7 +1171,7 @@ func (swc *scrapeWorkConfig) getScrapeWork(target string, extraLabels, metaLabel
 	// Verify whether the scrape work must be skipped because of `-promscrape.cluster.*` configs.
 	// Perform the verification on labels after the relabeling in order to guarantee that targets with the same set of labels
 	// go to the same vmagent shard.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1687#issuecomment-940629495
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/1687#issuecomment-940629495
 	if *clusterMembersCount > 1 {
 		bb := scrapeWorkKeyBufPool.Get()
 		bb.B = appendScrapeWorkKey(bb.B[:0], labels)
@@ -1262,7 +1262,7 @@ func (swc *scrapeWorkConfig) getScrapeWork(target string, extraLabels, metaLabel
 	}
 	// Remove references to deleted labels, so GC could clean strings for label name and label value past len(labels.Labels).
 	// This should reduce memory usage when relabeling creates big number of temporary labels with long names and/or values.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/825 for details.
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/825 for details.
 	labelsCopy := labels.Clone()
 	// Sort labels in alphabetical order of their names.
 	labelsCopy.Sort()

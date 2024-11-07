@@ -115,5 +115,5 @@ func isValidEnvVarName(s string) bool {
 
 // envVarNameRegex is used for validating environment variable names.
 //
-// Allow dashes and dots in env var names - see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3999
+// Allow dashes and dots in env var names - see https://github.com/aginetwork7/VictoriaMetrics/issues/3999
 var envVarNameRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_\-.]*$`)

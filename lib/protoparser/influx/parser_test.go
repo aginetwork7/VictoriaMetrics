@@ -448,7 +448,7 @@ func TestRowsUnmarshalSuccess(t *testing.T) {
 	})
 
 	// No newline after the second line.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/82
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/82
 	f("foo,tag=xyz field=1.23 48934\n"+
 		"bar x=-1i", &Rows{
 		Rows: []Row{

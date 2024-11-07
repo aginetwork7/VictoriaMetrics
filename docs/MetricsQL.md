@@ -9,7 +9,7 @@ aliases:
 - /ExtendedPromQL.html
 - /MetricsQL.html
 ---
-[VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics) implements MetricsQL -
+[VictoriaMetrics](https://github.com/aginetwork7/VictoriaMetrics) implements MetricsQL -
 query language inspired by [PromQL](https://prometheus.io/docs/prometheus/latest/querying/basics/).
 MetricsQL is backwards-compatible with PromQL, so Grafana dashboards backed by Prometheus datasource should work
 the same after switching from Prometheus to VictoriaMetrics.
@@ -30,7 +30,7 @@ The following functionality is implemented differently in MetricsQL compared to 
   integer results from `increase()` over slow-changing integer counter. Prometheus in this case returns unexpected fractional results,
   which may significantly differ from the expected results. This addresses [this issue from Prometheus](https://github.com/prometheus/prometheus/issues/3746).
   See technical details about VictoriaMetrics and Prometheus calculations for [rate](#rate)
-  and [increase](#increase) [in this issue](https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1215#issuecomment-850305711).
+  and [increase](#increase) [in this issue](https://github.com/aginetwork7/VictoriaMetrics/issues/1215#issuecomment-850305711).
 * MetricsQL returns the expected non-empty responses for [rate](#rate) function when Grafana or [vmui](https://docs.victoriametrics.com/#vmui)
   passes `step` values smaller than the interval between [raw samples](https://docs.victoriametrics.com/keyconcepts/#raw-samples)
   to [/api/v1/query_range](https://docs.victoriametrics.com/keyconcepts/#range-query).
@@ -43,18 +43,18 @@ The following functionality is implemented differently in MetricsQL compared to 
   so the end result looks the same for both VictoriaMetrics and Prometheus.
 * MetricsQL keeps metric names after applying functions, which don't change the meaning of the original time series.
   For example, [min_over_time(foo)](#min_over_time) or [round(foo)](#round) leaves `foo` metric name in the result.
-  See [this issue](https://github.com/VictoriaMetrics/VictoriaMetrics/issues/674) for details.
+  See [this issue](https://github.com/aginetwork7/VictoriaMetrics/issues/674) for details.
 
 Read more about the differences between PromQL and MetricsQL in [this article](https://medium.com/@romanhavronenko/victoriametrics-promql-compliance-d4318203f51e).
 
 Other PromQL functionality should work the same in MetricsQL.
-[File an issue](https://github.com/VictoriaMetrics/VictoriaMetrics/issues) if you notice discrepancies between PromQL and MetricsQL results other than mentioned above.
+[File an issue](https://github.com/aginetwork7/VictoriaMetrics/issues) if you notice discrepancies between PromQL and MetricsQL results other than mentioned above.
 
 ## MetricsQL features
 
 MetricsQL implements [PromQL](https://medium.com/@valyala/promql-tutorial-for-beginners-9ab455142085)
 and provides additional functionality mentioned below, which is aimed towards solving practical cases.
-Feel free [filing a feature request](https://github.com/VictoriaMetrics/VictoriaMetrics/issues) if you think MetricsQL misses certain useful functionality.
+Feel free [filing a feature request](https://github.com/aginetwork7/VictoriaMetrics/issues) if you think MetricsQL misses certain useful functionality.
 
 This functionality can be evaluated at [VictoriaMetrics playground](https://play.victoriametrics.com/select/accounting/1/6a716b0f-38bc-4856-90ce-448fd713e3fe/prometheus/graph/)
 or at your own [VictoriaMetrics instance](https://docs.victoriametrics.com/#how-to-start-victoriametrics).
@@ -1372,7 +1372,7 @@ See [this issue for details](https://github.com/prometheus/prometheus/issues/570
 
 When the [percentile](https://en.wikipedia.org/wiki/Percentile) is calculated over multiple histograms,
 then all the input histograms **must** have buckets with identical boundaries, e.g. they must have the same set of `le` or `vmrange` labels.
-Otherwise, the returned result may be invalid. See [this issue](https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3231) for details.
+Otherwise, the returned result may be invalid. See [this issue](https://github.com/aginetwork7/VictoriaMetrics/issues/3231) for details.
 
 This function is supported by PromQL (except of the `boundLabel` arg).
 

@@ -7,11 +7,11 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/filestream"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/filestream"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fs"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/slicesutil"
 )
 
 // writerWithStats writes data to w and tracks the total amounts of data written at bytesWritten.
@@ -314,7 +314,7 @@ func adjustBloomValuesShardsCount(n uint64) uint64 {
 	if n == 0 {
 		// At least a single shard is needed for writing potential non-const fields,
 		// which can appear after merging of const fields.
-		// This fixes https://github.com/VictoriaMetrics/VictoriaMetrics/issues/7391
+		// This fixes https://github.com/aginetwork7/VictoriaMetrics/issues/7391
 		return 1
 	}
 

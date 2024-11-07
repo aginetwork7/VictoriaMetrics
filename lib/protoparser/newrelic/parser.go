@@ -6,7 +6,7 @@ import (
 	"github.com/valyala/fastjson"
 	"github.com/valyala/fastjson/fastfloat"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
 )
 
 // Rows contains rows parsed from NewRelic Event request

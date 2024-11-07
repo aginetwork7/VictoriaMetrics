@@ -223,7 +223,7 @@ func TestRowsUnmarshal_Success(t *testing.T) {
 	})
 
 	// Whitespace in metric name, tag name and tag value
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3102
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/3102
 	f("s a;ta g1=aaa1;tag2=bb b2;tag3 1 23", &Rows{
 		Rows: []Row{{
 			Metric:    "s a",
@@ -289,7 +289,7 @@ func TestRowsUnmarshal_Success(t *testing.T) {
 		}},
 	})
 	// Empty tags
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1100
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/1100
 	f("foo; 1", &Rows{
 		Rows: []Row{{
 			Metric: "foo",
@@ -397,7 +397,7 @@ func TestRowsUnmarshal_Success(t *testing.T) {
 	})
 
 	// Whitespace after the timestamp
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1865
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/1865
 	f("foo.baz 125 1789 \na 1.34 567\t  ", &Rows{
 		Rows: []Row{
 			{

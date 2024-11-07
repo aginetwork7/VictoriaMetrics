@@ -1,7 +1,7 @@
 import { CodeIcon, IssueIcon, WikiIcon } from "../components/Main/Icons";
 
 const issueLink = {
-  href: "https://github.com/VictoriaMetrics/VictoriaMetrics/issues/new/choose",
+  href: "https://github.com/aginetwork7/VictoriaMetrics/issues/new/choose",
   Icon: IssueIcon,
   title: "Create an issue",
 };

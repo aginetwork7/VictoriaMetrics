@@ -155,7 +155,7 @@ func TestSimplifyRegex(t *testing.T) {
 	// The transformed regexp mustn't match barx
 	f("(foo|bar$)x*", "", "(?-m:(?:foo|bar$)x*)")
 
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5297
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/5297
 	f(".+;|;.+", "", "(?s:.+;|;.+)")
 	f("^(.+);|;(.+)$", "", "(?s-m:\\A.+;|;.+$)")
 	f("^(.+);$|^;(.+)$", "", "(?s-m:\\A.+;$|\\A;.+$)")
@@ -228,7 +228,7 @@ func TestSimplifyPromRegex(t *testing.T) {
 	// The transformed regexp mustn't match barx
 	f("(foo|bar$)x*", "", "(?-m:(?:foo|bar$)x*)")
 
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5297
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/5297
 	f(".+;|;.+", "", "(?s:.+;|;.+)")
 	f("^(.+);|;(.+)$", "", "(?s:.+;|;.+)")
 	f("^(.+);$|^;(.+)$", "", "(?s:.+;|;.+)")

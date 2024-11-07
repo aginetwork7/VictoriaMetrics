@@ -5,8 +5,8 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/regexutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/regexutil"
 )
 
 // filterRegexp matches the given regexp

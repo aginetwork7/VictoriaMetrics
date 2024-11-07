@@ -6,8 +6,8 @@ package prometheus
 
 //line app/vmselect/prometheus/tsdb_status_response.qtpl:1
 import (
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/querytracer"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/querytracer"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
 )
 
 // TSDBStatusResponse generates response for /api/v1/status/tsdb .

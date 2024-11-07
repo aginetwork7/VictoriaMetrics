@@ -3,14 +3,14 @@ package datadogv1
 import (
 	"net/http"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vminsert/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vminsert/relabel"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
-	parserCommon "github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/datadogutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/datadogv1"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/datadogv1/stream"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/app/vminsert/common"
+	"github.com/aginetwork7/VictoriaMetrics/app/vminsert/relabel"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
+	parserCommon "github.com/aginetwork7/VictoriaMetrics/lib/protoparser/common"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/datadogutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/datadogv1"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/datadogv1/stream"
 )
 
 var (

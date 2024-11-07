@@ -9,7 +9,7 @@ var nan = math.NaN()
 // Eq returns true of left == right.
 func Eq(left, right float64) bool {
 	// Special handling for nan == nan.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/150 .
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/150 .
 	if math.IsNaN(left) {
 		return math.IsNaN(right)
 	}
@@ -19,7 +19,7 @@ func Eq(left, right float64) bool {
 // Neq returns true of left != right.
 func Neq(left, right float64) bool {
 	// Special handling for comparison with nan.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/150 .
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/150 .
 	if math.IsNaN(left) {
 		return !math.IsNaN(right)
 	}

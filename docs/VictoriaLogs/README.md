@@ -1,5 +1,5 @@
-VictoriaLogs is [open source](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/app/victoria-logs) user-friendly database for logs
-from [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics/).
+VictoriaLogs is [open source](https://github.com/aginetwork7/VictoriaMetrics/tree/master/app/victoria-logs) user-friendly database for logs
+from [VictoriaMetrics](https://github.com/aginetwork7/VictoriaMetrics/).
 
 VictoriaLogs provides the following features:
 
@@ -54,7 +54,7 @@ vmagent (see [these docs](https://docs.victoriametrics.com/vmagent/#how-to-colle
 
 We recommend installing [Grafana dashboard for VictoriaLogs](https://grafana.com/grafana/dashboards/22084).
 
-We recommend setting up [alerts](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-vlogs.yml)
+We recommend setting up [alerts](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-vlogs.yml)
 via [vmalert](https://docs.victoriametrics.com/vmalert/) or via Prometheus.
 
 VictoriaLogs emits its own logs to stdout. It is recommended to investigate these logs during troubleshooting.
@@ -179,9 +179,9 @@ This schema outlines how to configure a High Availability (HA) setup using Victo
 
 Here are the working example of HA configuration for VictoriaLogs using Docker Compose:
 
-- [Fluent Bit + VictoriaLogs Single-Node + vmauth](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/fluentbit/jsonline-ha)
-- [Logstash + VictoriaLogs Single-Node + vmauth](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/logstash/jsonline-ha)
-- [Vector + VictoriaLogs Single-Node + vmauth](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/vector/jsonline-ha)
+- [Fluent Bit + VictoriaLogs Single-Node + vmauth](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/victorialogs/fluentbit/jsonline-ha)
+- [Logstash + VictoriaLogs Single-Node + vmauth](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/victorialogs/logstash/jsonline-ha)
+- [Vector + VictoriaLogs Single-Node + vmauth](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/victorialogs/vector/jsonline-ha)
 
 ## Backup and restore
 
@@ -246,7 +246,7 @@ VictoriaLogs doesn't perform per-tenant authorization. Use [vmauth](https://docs
 
 ## Benchmarks
 
-Here is a [benchmark suite](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/logs-benchmark) for comparing data ingestion performance
+Here is a [benchmark suite](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/logs-benchmark) for comparing data ingestion performance
 and resource usage between VictoriaLogs and Elasticsearch or Loki.
 
 It is recommended [setting up VictoriaLogs](https://docs.victoriametrics.com/victorialogs/quickstart/) in production alongside the existing

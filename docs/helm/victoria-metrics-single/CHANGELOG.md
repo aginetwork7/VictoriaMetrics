@@ -12,7 +12,7 @@
 - replaced chart templates with common ones
 - multiple paths for a host in ingress
 - Added ability to override PVC name for Deployment
-- bump version of VM components to [v1.106.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.106.0)
+- bump version of VM components to [v1.106.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.106.0)
 
 ## 0.12.3
 
@@ -21,7 +21,7 @@
 ![AppVersion: v1.105.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.105.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.105.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.105.0)
+- bump version of VM components to [v1.105.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.105.0)
 
 ## 0.12.2
 
@@ -48,7 +48,7 @@
 ![AppVersion: v1.104.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.104.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.104.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.104.0)
+- bump version of VM components to [v1.104.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.104.0)
 
 ## 0.11.2
 
@@ -79,7 +79,7 @@
 ![AppVersion: v1.103.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.103.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.103.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.103.0)
+- bump version of VM components to [v1.103.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.103.0)
 - Fixed image pull secrets. See [this issue](https://github.com/VictoriaMetrics/helm-charts/issues/1285)
 - Added global relabelConfig. See [this issue](https://github.com/VictoriaMetrics/helm-charts/issues/207)
 - Renamed `.Values.server.persistentVolume.storageClass` to `.Values.server.persistentVolume.storageClassName`
@@ -130,7 +130,7 @@
 ![AppVersion: v1.102.1](https://img.shields.io/static/v1?label=AppVersion&message=v1.102.1&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.102.1](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.102.1)
+- bump version of VM components to [v1.102.1](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.102.1)
 
 ## 0.9.25
 
@@ -139,7 +139,7 @@
 ![AppVersion: v1.102.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.102.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.102.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.102.0)
+- bump version of VM components to [v1.102.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.102.0)
 
 ## 0.9.24
 
@@ -196,7 +196,7 @@
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
 - properly truncate value of `app.kubernetes.io/managed-by` and `app.kubernetes.io/instance` labels in case release name exceeds 63 characters.
-- bump version of VM components to [v1.101.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.101.0)
+- bump version of VM components to [v1.101.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.101.0)
 
 ## 0.9.18
 
@@ -205,7 +205,7 @@
 ![AppVersion: v1.100.1](https://img.shields.io/static/v1?label=AppVersion&message=v1.100.1&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.100.1](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.100.1)
+- bump version of VM components to [v1.100.1](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.100.1)
 
 **Release date:** 2024-03-28
 
@@ -222,7 +222,7 @@
 ![AppVersion: v1.99.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.99.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.99.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.99.0)
+- bump version of VM components to [v1.99.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.99.0)
 
 ## 0.9.15
 
@@ -231,7 +231,7 @@
 ![AppVersion: v1.97.1](https://img.shields.io/static/v1?label=AppVersion&message=v1.97.1&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.97.1](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.97.1)
+- bump version of VM components to [v1.97.1](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.97.1)
 
 ## 0.9.14
 
@@ -249,7 +249,7 @@
 ![AppVersion: v1.96.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.96.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.96.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.96.0)
+- bump version of VM components to [v1.96.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.96.0)
 
 ## 0.9.12
 
@@ -258,7 +258,7 @@
 ![AppVersion: v1.95.1](https://img.shields.io/static/v1?label=AppVersion&message=v1.95.1&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.95.1](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.95.1)
+- bump version of VM components to [v1.95.1](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.95.1)
 
 ## 0.9.11
 
@@ -267,7 +267,7 @@
 ![AppVersion: v1.95.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.95.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.95.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.95.0)
+- bump version of VM components to [v1.95.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.95.0)
 
 ## 0.9.10
 
@@ -286,7 +286,7 @@
 ![AppVersion: v1.94.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.94.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.94.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.94.0)
+- bump version of VM components to [v1.94.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.94.0)
 - Add support of providing enterprise license key for VictoriaMetrics enterprise. See [these docs](https://docs.victoriametrics.com/enterprise) for details.
 
 ## 0.9.8
@@ -296,7 +296,7 @@
 ![AppVersion: v1.93.5](https://img.shields.io/static/v1?label=AppVersion&message=v1.93.5&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- Bump version of VM components to [v1.93.5](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.93.5)
+- Bump version of VM components to [v1.93.5](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.93.5)
 
 ## 0.9.7
 
@@ -305,7 +305,7 @@
 ![AppVersion: v1.93.4](https://img.shields.io/static/v1?label=AppVersion&message=v1.93.4&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- Bump version of VM components to [v1.93.4](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.93.4)
+- Bump version of VM components to [v1.93.4](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.93.4)
 
 ## 0.9.6
 

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/insertutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlinsert/insertutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logstorage"
 	"github.com/golang/snappy"
 )
 

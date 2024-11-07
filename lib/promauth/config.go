@@ -15,9 +15,9 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fscore"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/netutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fs/fscore"
+	"github.com/aginetwork7/VictoriaMetrics/lib/netutil"
 )
 
 // Secret represents a string secret such as password or auth token.
@@ -25,7 +25,7 @@ import (
 // It is marshaled to "<secret>" string in yaml.
 //
 // This is needed for hiding secret strings in /config page output.
-// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1764
+// See https://github.com/aginetwork7/VictoriaMetrics/issues/1764
 type Secret struct {
 	S string
 }
@@ -326,13 +326,13 @@ func (ac *Config) SetHeaders(req *http.Request, setAuthHeader bool) error {
 	if ac.tlsServerName != "" {
 		// It tlsServerName is set, then it is likely the request is performed via IP address instead of hostname.
 		// In this case users expect that the specified tlsServerName is used as a Host header in the request to https server.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/pull/5802
+		// See https://github.com/aginetwork7/VictoriaMetrics/pull/5802
 		req.Host = ac.tlsServerName
 	}
 	reqHeaders := req.Header
 	for _, h := range ac.headers {
 		if h.key == "Host" {
-			// Host header must be set via req.Host - see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5969
+			// Host header must be set via req.Host - see https://github.com/aginetwork7/VictoriaMetrics/issues/5969
 			req.Host = h.value
 		} else {
 			reqHeaders.Set(h.key, h.value)
@@ -900,7 +900,7 @@ func (tctx *tlsContext) initFromTLSConfig(baseDir string, tc *TLSConfig) error {
 		certPath := fscore.GetFilepath(baseDir, tc.CertFile)
 		keyPath := fscore.GetFilepath(baseDir, tc.KeyFile)
 		tctx.getTLSCert = func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
-			// Re-read TLS certificate from disk. This is needed for https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1420
+			// Re-read TLS certificate from disk. This is needed for https://github.com/aginetwork7/VictoriaMetrics/issues/1420
 			certData, err := fscore.ReadFileOrHTTP(certPath)
 			if err != nil {
 				return nil, fmt.Errorf("cannot read TLS certificate from %q: %w", certPath, err)

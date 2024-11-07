@@ -11,12 +11,12 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/lrucache"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/memory"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/regexutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/stringsutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/lrucache"
+	"github.com/aginetwork7/VictoriaMetrics/lib/memory"
+	"github.com/aginetwork7/VictoriaMetrics/lib/regexutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/stringsutil"
 )
 
 func getCommonMetricNameForTagFilterss(tfss []*TagFilters) []byte {
@@ -79,7 +79,7 @@ func convertToCompositeTagFilters(tfs *TagFilters) []*TagFilters {
 	}
 	// If tfs have no filters on __name__ or have no non-negative filters,
 	// then it is impossible to construct composite tag filter.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/2238
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/2238
 	if len(names) == 0 || !hasPositiveFilter {
 		compositeFilterMissingConversions.Add(1)
 		return []*TagFilters{tfs}
@@ -209,7 +209,7 @@ func (tfs *TagFilters) Add(key, value []byte, isNegative, isRegexp bool) error {
 	if tf.isNegative && tf.isEmptyMatch {
 		// We have {key!~"|foo"} tag filter, which matches non=empty key values.
 		// So add {key=~".+"} tag filter in order to enforce this.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/546 for details.
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/546 for details.
 		tfNew := tfs.addTagFilter()
 		if err := tfNew.Init(tfs.commonPrefix, key, []byte(".+"), false, true); err != nil {
 			return fmt.Errorf(`cannot initialize {%s=".+"} tag filter: %w`, key, err)

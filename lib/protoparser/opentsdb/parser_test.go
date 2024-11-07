@@ -102,7 +102,7 @@ func TestRowsUnmarshalSuccess(t *testing.T) {
 		}},
 	})
 	// Missing first tag
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3290
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/3290
 	f("put aaa 123 43", &Rows{
 		Rows: []Row{{
 			Metric:    "aaa",

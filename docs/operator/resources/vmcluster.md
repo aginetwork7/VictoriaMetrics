@@ -180,7 +180,7 @@ spec:
 
 ## Version management
 
-For `VMCluster` you can specify tag name from [releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases) and repository setting per cluster object:
+For `VMCluster` you can specify tag name from [releases](https://github.com/aginetwork7/VictoriaMetrics/releases) and repository setting per cluster object:
 
 ```yaml
 apiVersion: operator.victoriametrics.com/v1beta1

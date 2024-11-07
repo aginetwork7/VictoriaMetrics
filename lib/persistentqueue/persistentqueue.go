@@ -10,13 +10,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/filestream"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/encoding"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/filestream"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fs"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // MaxBlockSize is the maximum size of the block persistent queue can work with.
@@ -517,7 +517,7 @@ var readDurationSeconds = metrics.NewFloatCounter(`vm_persistentqueue_read_durat
 
 func (q *queue) skipBrokenChunkFile() error {
 	// Try to recover from broken chunk file by skipping it.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1030
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/1030
 	q.readerOffset += q.chunkFileSize - q.readerOffset%q.chunkFileSize
 	if q.readerOffset >= q.writerOffset {
 		q.mustResetFiles()

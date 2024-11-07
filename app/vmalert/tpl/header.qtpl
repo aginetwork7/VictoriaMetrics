@@ -3,7 +3,7 @@
     "path"
     "net/url"
 
-    "github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/utils"
+    "github.com/aginetwork7/VictoriaMetrics/app/vmalert/utils"
 ) %}
 
 {% func Header(r *http.Request, navItems []NavItem, title string, userErr error) %}

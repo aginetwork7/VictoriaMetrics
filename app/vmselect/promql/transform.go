@@ -13,11 +13,11 @@ import (
 
 	"github.com/VictoriaMetrics/metricsql"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/searchutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/searchutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/decimal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
 )
 
 var transformFuncs = map[string]transformFunc{
@@ -128,7 +128,7 @@ var transformFuncs = map[string]transformFunc{
 	"tan":                        newTransformFuncOneArg(transformTan),
 	"tanh":                       newTransformFuncOneArg(transformTanh),
 	"time":                       transformTime,
-	// "timestamp" has been moved to rollup funcs. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/415
+	// "timestamp" has been moved to rollup funcs. See https://github.com/aginetwork7/VictoriaMetrics/issues/415
 	"timezone_offset": transformTimezoneOffset,
 	"union":           transformUnion,
 	"vector":          transformVector,
@@ -573,7 +573,7 @@ func vmrangeBucketsToLE(tss []*timeseries) []*timeseries {
 
 				// Do not store xs in xsPrev in order to properly create `le` time series
 				// for zero buckets.
-				// See https://github.com/VictoriaMetrics/VictoriaMetrics/pull/4021
+				// See https://github.com/aginetwork7/VictoriaMetrics/pull/4021
 				continue
 			}
 			if xs.start != xsPrev.end {
@@ -1045,7 +1045,7 @@ func fixBrokenBuckets(i int, xss []leTimeseries) {
 	// since the next bucket includes all the previous buckets.
 	// If the next bucket has lower value than the current bucket,
 	// then the next bucket must be substituted with the current bucket value.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4580#issuecomment-2186659102
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/4580#issuecomment-2186659102
 	if len(xss) < 2 {
 		return
 	}
@@ -1065,7 +1065,7 @@ func fixBrokenBuckets(i int, xss []leTimeseries) {
 
 func mergeSameLE(xss []leTimeseries) []leTimeseries {
 	// Merge buckets with identical le values.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/pull/3225
+	// See https://github.com/aginetwork7/VictoriaMetrics/pull/3225
 	xsDst := xss[0]
 	dst := xss[:1]
 	for j := 1; j < len(xss); j++ {
@@ -2833,7 +2833,7 @@ func removeCounterResetsMaybeNaNs(values []float64) {
 		if d < 0 {
 			if (-d * 8) < prevValue {
 				// This is likely a partial counter reset.
-				// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/2787
+				// See https://github.com/aginetwork7/VictoriaMetrics/issues/2787
 				correction += prevValue - v
 			} else {
 				correction += prevValue

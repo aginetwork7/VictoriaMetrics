@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/netutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/netutil"
 )
 
 func TestDropPrefixParts(t *testing.T) {

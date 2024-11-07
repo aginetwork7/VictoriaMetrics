@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/htmlcomponents"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/htmlcomponents"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 //line lib/promscrape/targetstatus.qtpl:12

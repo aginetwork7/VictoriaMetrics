@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 func TestSanitizeMetricName(t *testing.T) {
@@ -926,7 +926,7 @@ func TestParsedRelabelConfigsApply(t *testing.T) {
   regex: "a(.+)"
 `, `qwe{foo="bar",baz="aaa"}`, true, `qwe{abc="qwe.bar.aa",baz="aaa",foo="bar"}`)
 
-	// Check $ at the end of regex - see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3131
+	// Check $ at the end of regex - see https://github.com/aginetwork7/VictoriaMetrics/issues/3131
 	f(`
 - target_label: xyz
   regex: "foo\\$$"

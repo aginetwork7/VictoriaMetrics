@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 func getAuthHeaders(cfg *apiConfig, headers http.Header, endpoint, path string) (http.Header, error) {
@@ -34,7 +34,7 @@ func getAuthHeaders(cfg *apiConfig, headers http.Header, endpoint, path string) 
 func setGeneralHeaders(cfg *apiConfig, headers http.Header) http.Header {
 	headers.Set("X-Ovh-Application", cfg.applicationKey)
 	headers.Set("Accept", "application/json")
-	headers.Set("User-Agent", "github.com/VictoriaMetrics/VictoriaMetrics")
+	headers.Set("User-Agent", "github.com/aginetwork7/VictoriaMetrics")
 	return headers
 }
 

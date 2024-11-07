@@ -112,7 +112,7 @@ var transformFuncs = map[string]bool{
 	"tan":                        true,
 	"tanh":                       true,
 	"time":                       true,
-	// "timestamp" has been moved to rollup funcs. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/415
+	// "timestamp" has been moved to rollup funcs. See https://github.com/aginetwork7/VictoriaMetrics/issues/415
 	"timezone_offset": true,
 	"union":           true,
 	"vector":          true,

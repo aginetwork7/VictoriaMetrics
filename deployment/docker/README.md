@@ -5,7 +5,7 @@ Docker compose environment for VictoriaMetrics includes VictoriaMetrics componen
 and [Grafana](https://grafana.com/).
 
 For starting the docker-compose environment ensure you have docker installed and running and access to the Internet.
-**All commands should be executed from the root directory of [the repo](https://github.com/VictoriaMetrics/VictoriaMetrics).**
+**All commands should be executed from the root directory of [the repo](https://github.com/aginetwork7/VictoriaMetrics).**
 
 * [VictoriaMetrics single server](#victoriametrics-single-server)
 * [VictoriaMetrics cluster](#victoriametrics-cluster)
@@ -91,7 +91,7 @@ make docker-cluster-down
 ## vmagent
 
 vmagent is used for scraping and pushing time series to VictoriaMetrics instance. 
-It accepts Prometheus-compatible configuration [prometheus.yml](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/prometheus.yml)
+It accepts Prometheus-compatible configuration [prometheus.yml](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/prometheus.yml)
 with listed targets for scraping.
 
 [Web interface link](http://localhost:8429/).
@@ -100,12 +100,12 @@ with listed targets for scraping.
 
 [vmauth](https://docs.victoriametrics.com/vmauth/) acts as a [balancer](https://docs.victoriametrics.com/vmauth/#load-balancing)
 to spread the load across `vmselect`'s. [Grafana](#grafana) and [vmalert](#vmalert) use vmauth for read queries.
-vmauth config is available [here](ttps://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/auth-cluster.yml)
+vmauth config is available [here](ttps://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/auth-cluster.yml)
 
 
 ## vmalert
 
-vmalert evaluates alerting rules [alerts.yml](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/rules/alerts.yml)
+vmalert evaluates alerting rules [alerts.yml](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/rules/alerts.yml)
 to track VictoriaMetrics health state. It is connected with AlertManager for firing alerts,
 and with VictoriaMetrics for executing queries and storing alert's state.
 
@@ -114,7 +114,7 @@ and with VictoriaMetrics for executing queries and storing alert's state.
 ## alertmanager
 
 AlertManager accepts notifications from `vmalert` and fires alerts.
-All notifications are blackholed according to [alertmanager.yml](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/alertmanager.yml) config.
+All notifications are blackholed according to [alertmanager.yml](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/alertmanager.yml) config.
 
 [Web interface link](http://localhost:9093/).
 
@@ -138,7 +138,7 @@ Grafana is provisioned by default with following entities:
 
 Remember to pick `VictoriaMetrics - cluster` datasource when viewing `VictoriaMetrics - cluster` dashboard.
 
-Optionally, environment with [VictoriaMetrics Grafana datasource](https://github.com/VictoriaMetrics/victoriametrics-datasource)
+Optionally, environment with [VictoriaMetrics Grafana datasource](https://github.com/aginetwork7/VictoriaMetrics-datasource)
 can be started with the following commands:
 ```
 make docker-single-vm-datasource-up    # start single server
@@ -153,19 +153,19 @@ make docker-cluster-vm-datasource-down # shutdown cluster
 See below a list of recommended alerting rules for various VictoriaMetrics components for running in production. 
 Some alerting rules thresholds are just recommendations and could require an adjustment. 
 The list of alerting rules is the following:
-* [alerts-health.yml](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-health.yml):
+* [alerts-health.yml](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-health.yml):
   alerting rules related to all VictoriaMetrics components for tracking their "health" state; 
-* [alerts.yml](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/rules/alerts.yml):
+* [alerts.yml](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/rules/alerts.yml):
   alerting rules related to [single-server VictoriaMetrics](https://docs.victoriametrics.com/single-server-victoriametrics/) installation;
-* [alerts-cluster.yml](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-cluster.yml):
+* [alerts-cluster.yml](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-cluster.yml):
   alerting rules related to [cluster version of VictoriaMetrics](https://docs.victoriametrics.com/cluster-victoriametrics/);
-* [alerts-vmagent.yml](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-vmagent.yml):
+* [alerts-vmagent.yml](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-vmagent.yml):
   alerting rules related to [vmagent](https://docs.victoriametrics.com/vmagent/) component;
-* [alerts-vmalert.yml](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-vmalert.yml):
+* [alerts-vmalert.yml](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-vmalert.yml):
   alerting rules related to [vmalert](https://docs.victoriametrics.com/vmalert/) component;
-* [alerts-vmauth.yml](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-vmauth.yml):
+* [alerts-vmauth.yml](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-vmauth.yml):
   alerting rules related to [vmauth](https://docs.victoriametrics.com/vmauth/) component;
-* [alerts-vlogs.yml](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-vlogs.yml):
+* [alerts-vlogs.yml](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/rules/alerts-vlogs.yml):
     alerting rules related to [VictoriaLogs](https://docs.victoriametrics.com/victorialogs/);
 
 Please, also see [how to monitor](https://docs.victoriametrics.com/single-server-victoriametrics/#monitoring) 
@@ -198,9 +198,9 @@ make docker-victorialogs-down
 ```
 
 Please see more examples on integration of VictoriaLogs with other log shippers below:
-* [filebeat-docker](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/filebeat-docker) 
-* [filebeat-syslog](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/filebeat-syslog) 
-* [fluentbit-docker](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/fluentbit-docker) 
-* [logstash](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/logstash) 
-* [promtail](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/promtail) 
-* [vector-docker](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/vector-docker)
+* [filebeat-docker](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/victorialogs/filebeat-docker) 
+* [filebeat-syslog](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/victorialogs/filebeat-syslog) 
+* [fluentbit-docker](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/victorialogs/fluentbit-docker) 
+* [logstash](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/victorialogs/logstash) 
+* [promtail](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/victorialogs/promtail) 
+* [vector-docker](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/victorialogs/vector-docker)

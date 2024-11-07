@@ -1,7 +1,7 @@
 package remotewrite
 
 import (
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
 )
 
 // RWClient represents an HTTP client for pushing data via remote write protocol

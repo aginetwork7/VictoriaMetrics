@@ -116,7 +116,7 @@
 ![AppVersion: v0.28.0-victorialogs](https://img.shields.io/static/v1?label=AppVersion&message=v0.28.0-victorialogs&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- update VictoriaLogs to [v0.28.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v0.28.0-victorialogs).
+- update VictoriaLogs to [v0.28.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v0.28.0-victorialogs).
 
 ## 0.5.3
 
@@ -143,7 +143,7 @@
 ![AppVersion: v0.15.0-victorialogs](https://img.shields.io/static/v1?label=AppVersion&message=v0.15.0-victorialogs&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- Update VictoriaLogs to [v0.15.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v0.15.0-victorialogs).
+- Update VictoriaLogs to [v0.15.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v0.15.0-victorialogs).
 
 ## 0.5.0
 
@@ -162,7 +162,7 @@
 ![AppVersion: v0.8.0-victorialogs](https://img.shields.io/static/v1?label=AppVersion&message=v0.8.0-victorialogs&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- Upgrade VictoriaLogs to [v0.8.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v0.8.0-victorialogs)
+- Upgrade VictoriaLogs to [v0.8.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v0.8.0-victorialogs)
 - Move `.Values.server.name`, `.Values.server.fullnameOverride` to `.Values.global.victoriaLogs.server`. This allows to avoid issues with Fluent Bit output definition. See the [pull request]() for the details.
 - Include `kubernetes_namespace_name` field in the [stream fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#stream-fields) configuration of Fluent Bit output.
 
@@ -183,7 +183,7 @@
 ![AppVersion: v0.5.2-victorialogs](https://img.shields.io/static/v1?label=AppVersion&message=v0.5.2-victorialogs&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of victorialogs to [0.5.2](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v0.5.2-victorialogs)
+- bump version of victorialogs to [0.5.2](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v0.5.2-victorialogs)
 
 ## 0.3.6
 
@@ -201,7 +201,7 @@
 ![AppVersion: v0.5.0-victorialogs](https://img.shields.io/static/v1?label=AppVersion&message=v0.5.0-victorialogs&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of vlogs single to [0.5.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v0.5.0-victorialogs)
+- bump version of vlogs single to [0.5.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v0.5.0-victorialogs)
 
 ## 0.3.4
 
@@ -210,7 +210,7 @@
 ![AppVersion: v0.4.2-victorialogs](https://img.shields.io/static/v1?label=AppVersion&message=v0.4.2-victorialogs&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of vlogs single to [0.4.2](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v0.4.2-victorialogs)
+- bump version of vlogs single to [0.4.2](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v0.4.2-victorialogs)
 
 ## 0.3.3
 
@@ -228,7 +228,7 @@
 ![AppVersion: v0.4.1-victorialogs](https://img.shields.io/static/v1?label=AppVersion&message=v0.4.1-victorialogs&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of vlogs single to [0.4.1](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v0.4.1-victorialogs)
+- bump version of vlogs single to [0.4.1](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v0.4.1-victorialogs)
 
 ## 0.3.1
 

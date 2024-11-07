@@ -278,7 +278,7 @@ Change the values according to the need of the environment in ``victoria-metrics
 </code>
 </pre>
 </td>
-      <td><p>Additional environment variables (ex.: secret tokens, flags). Check <a href="https://github.com/VictoriaMetrics/VictoriaMetrics#environment-variables" target="_blank">here</a> for details.</p>
+      <td><p>Additional environment variables (ex.: secret tokens, flags). Check <a href="https://github.com/aginetwork7/VictoriaMetrics#environment-variables" target="_blank">here</a> for details.</p>
 </td>
     </tr>
     <tr>

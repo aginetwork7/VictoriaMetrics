@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
 )
 
 // Request represents DataDog POST request to /api/v1/series
@@ -16,7 +16,7 @@ func (req *Request) reset() {
 	// recursively reset all the fields in req in order to avoid field value
 	// re-use in json.Unmarshal() when the corresponding field is missing
 	// in the unmarshaled JSON.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3432
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/3432
 	series := req.Series
 	for i := range series {
 		series[i].reset()

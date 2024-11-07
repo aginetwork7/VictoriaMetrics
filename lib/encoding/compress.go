@@ -3,8 +3,8 @@ package encoding
 import (
 	"fmt"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding/zstd"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/encoding/zstd"
 )
 
 // CompressZSTDLevel appends compressed src to dst and returns

@@ -58,7 +58,7 @@ You can set up vmalert in each Ground control region that evaluates recording an
 
 For alert deduplication, please use [cluster mode in Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/#high-availability).
 
-We also recommend adopting the list of [alerting rules](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker#alerts)
+We also recommend adopting the list of [alerting rules](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker#alerts)
 for VictoriaMetrics components.
 
 ### Monitoring

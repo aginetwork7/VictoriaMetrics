@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/backoff"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/barpool"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/limiter"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/backoff"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/barpool"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/limiter"
+	"github.com/aginetwork7/VictoriaMetrics/lib/decimal"
 )
 
 // Config contains list of params to configure

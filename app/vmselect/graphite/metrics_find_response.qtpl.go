@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // MetricsFindResponse generates response for /metrics/find .See https://graphite-api.readthedocs.io/en/latest/api.html#metrics-find

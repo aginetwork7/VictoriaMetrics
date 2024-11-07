@@ -10,9 +10,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/notifier"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/tpl"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/utils"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/notifier"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/tpl"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/utils"
 )
 
 //line app/vmalert/web.qtpl:14
@@ -1596,7 +1596,7 @@ func StreamRuleDetails(qw422016 *qt422016.Writer, r *http.Request, rule apiRule)
        Rule's expressions without time series selector, like <strong>expr: 42</strong> or <strong>expr: time()</strong>
        aren't fetching time series from datasource, so they could have "Series fetched" equal to 0 and this won't be a problem.
        <br>
-       See more details about this detection <a target="_blank" href="https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4039">here</a>.
+       See more details about this detection <a target="_blank" href="https://github.com/aginetwork7/VictoriaMetrics/issues/4039">here</a>.
     </div>
     `)
 //line app/vmalert/web.qtpl:553

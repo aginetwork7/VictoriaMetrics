@@ -3,7 +3,7 @@ package logstorage
 import (
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // filterWeekRange filters by week range.

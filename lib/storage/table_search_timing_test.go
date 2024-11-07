@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
+	"github.com/aginetwork7/VictoriaMetrics/lib/cgroup"
 )
 
 func TestMain(m *testing.M) {

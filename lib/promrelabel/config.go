@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/envtemplate"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fscore"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/regexutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/envtemplate"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fs/fscore"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/regexutil"
 	"gopkg.in/yaml.v2"
 )
 
@@ -109,7 +109,7 @@ func stringValue(v any) (string, error) {
 func (mlr *MultiLineRegex) MarshalYAML() (any, error) {
 	if strings.ContainsAny(mlr.S, "([") {
 		// The mlr.S contains groups. Fall back to returning the regexp as is without splitting it into parts.
-		// This fixes https://github.com/VictoriaMetrics/VictoriaMetrics/issues/2928 .
+		// This fixes https://github.com/aginetwork7/VictoriaMetrics/issues/2928 .
 		return mlr.S, nil
 	}
 	a := strings.Split(mlr.S, "|")

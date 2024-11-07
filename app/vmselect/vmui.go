@@ -9,19 +9,19 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fs"
 )
 
 var (
 	vmuiCustomDashboardsPath = flag.String("vmui.customDashboardsPath", "", "Optional path to vmui dashboards. "+
-		"See https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/app/vmui/packages/vmui/public/dashboards")
+		"See https://github.com/aginetwork7/VictoriaMetrics/tree/master/app/vmui/packages/vmui/public/dashboards")
 	vmuiDefaultTimezone = flag.String("vmui.defaultTimezone", "", "The default timezone to be used in vmui. "+
 		"Timezone must be a valid IANA Time Zone. For example: America/New_York, Europe/Berlin, Etc/GMT+3 or Local")
 )
 
 // dashboardSettings represents dashboard settings file struct.
 //
-// See https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/app/vmui/packages/vmui/public/dashboards
+// See https://github.com/aginetwork7/VictoriaMetrics/tree/master/app/vmui/packages/vmui/public/dashboards
 type dashboardSettings struct {
 	Title    string         `json:"title,omitempty"`
 	Filename string         `json:"filename,omitempty"`
@@ -30,7 +30,7 @@ type dashboardSettings struct {
 
 // panelSettings represents fields which used to show graph.
 //
-// See https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/app/vmui/packages/vmui/public/dashboards
+// See https://github.com/aginetwork7/VictoriaMetrics/tree/master/app/vmui/packages/vmui/public/dashboards
 type panelSettings struct {
 	Title       string   `json:"title,omitempty"`
 	Description string   `json:"description,omitempty"`
@@ -43,7 +43,7 @@ type panelSettings struct {
 
 // dashboardRow represents panels on dashboard.
 //
-// See https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/app/vmui/packages/vmui/public/dashboards
+// See https://github.com/aginetwork7/VictoriaMetrics/tree/master/app/vmui/packages/vmui/public/dashboards
 type dashboardRow struct {
 	Title  string          `json:"title,omitempty"`
 	Panels []panelSettings `json:"panels"`

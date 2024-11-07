@@ -1462,7 +1462,7 @@ updateStrategy: {}
 </code>
 </pre>
 </td>
-      <td><p>create cluster of vmagents. Check <a href="https://docs.victoriametrics.com/vmagent#scraping-big-number-of-targets" target="_blank">here</a> available since <a href="https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.77.2" target="_blank">v1.77.2</a></p>
+      <td><p>create cluster of vmagents. Check <a href="https://docs.victoriametrics.com/vmagent#scraping-big-number-of-targets" target="_blank">here</a> available since <a href="https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.77.2" target="_blank">v1.77.2</a></p>
 </td>
     </tr>
     <tr>

@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/config/fslocal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/config/fsurl"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/config/fslocal"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/config/fsurl"
 )
 
 // FS represent a file system abstract for reading files.

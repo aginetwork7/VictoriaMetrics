@@ -79,7 +79,7 @@ var rollupFuncs = map[string]bool{
 	"tfirst_over_time":        true,
 	// `timestamp` function must return timestamp for the last datapoint on the current window
 	// in order to properly handle offset and timestamps unaligned to the current step.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/415 for details.
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/415 for details.
 	"timestamp":              true,
 	"timestamp_with_name":    true,
 	"tlast_change_over_time": true,

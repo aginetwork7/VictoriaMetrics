@@ -14,20 +14,20 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/auth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/backoff"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/barpool"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/native"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/remoteread"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/auth"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/backoff"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/barpool"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/native"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/remoteread"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/influx"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/opentsdb"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/prometheus"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/vm"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/buildinfo"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httputils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/native/stream"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/influx"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/opentsdb"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/prometheus"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/vm"
+	"github.com/aginetwork7/VictoriaMetrics/lib/buildinfo"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httputils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/common"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/native/stream"
 )
 
 func main() {

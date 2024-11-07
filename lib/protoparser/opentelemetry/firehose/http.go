@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/stringsutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/stringsutil"
 )
 
 // WriteSuccessResponse writes success response for AWS Firehose request.

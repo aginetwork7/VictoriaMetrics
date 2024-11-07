@@ -6,7 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // PrepareBlockCallback can transform the passed items allocated at the given data.
@@ -128,7 +128,7 @@ again:
 	compareEveryItem := true
 	if bsr.currItemIdx < len(items) {
 		// An optimization, which allows skipping costly comparison for every merged item in the loop below.
-		// Thanks to @ahfuzhang for the suggestion at https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5651
+		// Thanks to @ahfuzhang for the suggestion at https://github.com/aginetwork7/VictoriaMetrics/issues/5651
 		lastItem := items[len(items)-1].String(data)
 		compareEveryItem = hasNextItem && lastItem > nextItem
 	}

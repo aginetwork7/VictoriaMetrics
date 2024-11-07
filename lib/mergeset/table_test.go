@@ -120,7 +120,7 @@ func TestTableCreateSnapshotAt(t *testing.T) {
 	}
 
 	// Close and open the table in order to flush all the data to disk before creating snapshots.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4272#issuecomment-1550221840
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/4272#issuecomment-1550221840
 	tb.MustClose()
 	tb = MustOpenTable(path, nil, nil, &isReadOnly)
 

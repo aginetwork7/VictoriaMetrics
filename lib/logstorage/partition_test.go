@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/timerpool"
+	"github.com/aginetwork7/VictoriaMetrics/lib/timerpool"
 )
 
 func TestPartitionLifecycle(t *testing.T) {

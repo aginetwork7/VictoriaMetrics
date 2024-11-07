@@ -7,17 +7,17 @@ import (
 	"os"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlselect"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/buildinfo"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/envflag"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httpserver"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/procutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/pushmetrics"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlinsert"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlselect"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/buildinfo"
+	"github.com/aginetwork7/VictoriaMetrics/lib/envflag"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fs"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httpserver"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/procutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/pushmetrics"
 )
 
 var (

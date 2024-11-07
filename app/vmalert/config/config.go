@@ -11,10 +11,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/config/log"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/utils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/envtemplate"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/config/log"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/utils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/envtemplate"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 	"gopkg.in/yaml.v2"
 )
 
@@ -31,7 +31,7 @@ type Group struct {
 	Interval   *promutils.Duration `yaml:"interval,omitempty"`
 	EvalOffset *promutils.Duration `yaml:"eval_offset,omitempty"`
 	// EvalDelay will adjust the `time` parameter of rule evaluation requests to compensate intentional query delay from datasource.
-	// see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5155
+	// see https://github.com/aginetwork7/VictoriaMetrics/issues/5155
 	EvalDelay   *promutils.Duration `yaml:"eval_delay,omitempty"`
 	Limit       int                 `yaml:"limit,omitempty"`
 	Rules       []Rule              `yaml:"rules"`

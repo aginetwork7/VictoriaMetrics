@@ -10,7 +10,7 @@ tests:
     input_series:
       - series: test
         # Max time in time.Duration is 106751d from 1970 (2^63/10^9), i.e. 2262.
-        # But VictoriaMetrics supports maxTimestamp value +2 days from now. see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/827.
+        # But VictoriaMetrics supports maxTimestamp value +2 days from now. see https://github.com/aginetwork7/VictoriaMetrics/issues/827.
         # We input series to 2024-01-01T00:00:00 here.
         values: "0+1x19723"
 

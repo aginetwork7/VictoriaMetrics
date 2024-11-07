@@ -5,16 +5,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/syncwg"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/syncwg"
 )
 
 // MustRemoveAll removes path with all the contents.
 //
 // It properly fsyncs the parent directory after path removal.
 //
-// It properly handles NFS issue https://github.com/VictoriaMetrics/VictoriaMetrics/issues/61 .
+// It properly handles NFS issue https://github.com/aginetwork7/VictoriaMetrics/issues/61 .
 func MustRemoveAll(path string) {
 	if tryRemoveAll(path) {
 		return
@@ -53,7 +53,7 @@ func tryRemoveAll(path string) bool {
 		logger.Panicf("FATAL: cannot remove %q: %s", path, err)
 	}
 	// NFS prevents from removing directories with open files.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/61 .
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/61 .
 	// Schedule for later directory removal.
 	nfsDirRemoveFailedAttempts.Inc()
 	return false
@@ -74,8 +74,8 @@ func isStaleNFSFileHandleError(err error) bool {
 }
 
 func isTemporaryNFSError(err error) bool {
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/61
-	// and https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6396 for details.
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/61
+	// and https://github.com/aginetwork7/VictoriaMetrics/issues/6396 for details.
 	errStr := err.Error()
 	return strings.Contains(errStr, "directory not empty") ||
 		strings.Contains(errStr, "device or resource busy") ||

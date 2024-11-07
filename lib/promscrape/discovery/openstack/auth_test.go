@@ -3,7 +3,7 @@ package openstack
 import (
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promauth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promauth"
 )
 
 func TestBuildAuthRequestBody_Failure(t *testing.T) {

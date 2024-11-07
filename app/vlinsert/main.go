@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/datadog"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/elasticsearch"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/journald"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/jsonline"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/loki"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/opentelemetry"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/syslog"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlinsert/datadog"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlinsert/elasticsearch"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlinsert/journald"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlinsert/jsonline"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlinsert/loki"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlinsert/opentelemetry"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlinsert/syslog"
 )
 
 // Init initializes vlinsert

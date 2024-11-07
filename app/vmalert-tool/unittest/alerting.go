@@ -1,7 +1,7 @@
 package unittest
 
 import (
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 // alertTestCase holds alert_rule_test cases defined in test file

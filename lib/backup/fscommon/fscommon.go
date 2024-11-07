@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/backup/backupnames"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/backup/backupnames"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // AppendFiles appends paths to all the files from local dir to dst.

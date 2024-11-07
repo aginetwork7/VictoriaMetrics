@@ -130,7 +130,7 @@ func TestRemoveCounterResets(t *testing.T) {
 	testRowsEqual(t, values, timestampsExpected, valuesExpected, timestampsExpected)
 
 	// verify how partial counter reset is handled.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/2787
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/2787
 	values = []float64{100, 95, 120, 119, 139, 50}
 	removeCounterResets(values)
 	valuesExpected = []float64{100, 100, 125, 125, 145, 195}
@@ -1520,8 +1520,8 @@ func testRowsEqual(t *testing.T, values []float64, timestamps []int64, valuesExp
 			continue
 		}
 		// Compare values with the reduced precision because of different precision errors
-		// on different OS/architectures. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1738
-		// and https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1653
+		// on different OS/architectures. See https://github.com/aginetwork7/VictoriaMetrics/issues/1738
+		// and https://github.com/aginetwork7/VictoriaMetrics/issues/1653
 		if math.Abs(v-vExpected)/math.Abs(vExpected) > 1e-13 {
 			t.Fatalf("unexpected value at values[%d]; got %v; want %v\nvalues=\n%v\nvaluesExpected=\n%v",
 				i, v, vExpected, values, valuesExpected)

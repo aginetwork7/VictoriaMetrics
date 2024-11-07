@@ -12,17 +12,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/awsapi"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/netutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/persistentqueue"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promauth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/ratelimiter"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/timerpool"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/timeutil"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/awsapi"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/netutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/persistentqueue"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promauth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/common"
+	"github.com/aginetwork7/VictoriaMetrics/lib/ratelimiter"
+	"github.com/aginetwork7/VictoriaMetrics/lib/timerpool"
+	"github.com/aginetwork7/VictoriaMetrics/lib/timeutil"
 )
 
 var (
@@ -309,7 +309,7 @@ func (c *client) runWorker() {
 		}
 		if len(block) == 0 {
 			// skip empty data blocks from sending
-			// see https://github.com/VictoriaMetrics/VictoriaMetrics/pull/6241
+			// see https://github.com/aginetwork7/VictoriaMetrics/pull/6241
 			continue
 		}
 		go func() {
@@ -359,7 +359,7 @@ func (c *client) doRequest(url string, body []byte) (*http.Response, error) {
 	// It is likely connection became stale or timed out during the first request.
 	// Make another attempt in hope request will succeed.
 	// If not, the error should be handled by the caller as usual.
-	// This should help with https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4139
+	// This should help with https://github.com/aginetwork7/VictoriaMetrics/issues/4139
 	req, err = c.newRequest(url, body)
 	if err != nil {
 		return nil, fmt.Errorf("second attempt: %w", err)
@@ -454,8 +454,8 @@ again:
 				len(block), c.sanitizedURL, statusCode, string(body))
 		}
 		// Just drop block on 409 and 400 status codes like Prometheus does.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/873
-		// and https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1149
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/873
+		// and https://github.com/aginetwork7/VictoriaMetrics/issues/1149
 		_ = resp.Body.Close()
 		c.packetsDropped.Inc()
 		return true
@@ -494,7 +494,7 @@ var remoteWriteRejectedLogger = logger.WithThrottler("remoteWriteRejected", 5*ti
 // If retryAfterDuration is not specified, retryDuration gets doubled.
 // retryDuration can't exceed maxRetryDuration.
 //
-// Also see: https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6097
+// Also see: https://github.com/aginetwork7/VictoriaMetrics/issues/6097
 func getRetryDuration(retryAfterDuration, retryDuration, maxRetryDuration time.Duration) time.Duration {
 	// retryAfterDuration has the highest priority duration
 	if retryAfterDuration > 0 {

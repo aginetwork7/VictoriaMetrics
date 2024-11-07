@@ -15,10 +15,10 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/netutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promauth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/proxy"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/timerpool"
+	"github.com/aginetwork7/VictoriaMetrics/lib/netutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promauth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/proxy"
+	"github.com/aginetwork7/VictoriaMetrics/lib/timerpool"
 )
 
 var (
@@ -84,7 +84,7 @@ type HTTPClient struct {
 
 func (hc *HTTPClient) stop() {
 	// Close idle connections to server in order to free up resources.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4724
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/4724
 	hc.client.CloseIdleConnections()
 }
 
@@ -309,7 +309,7 @@ func doRequestWithPossibleRetry(hc *HTTPClient, req *http.Request) (*http.Respon
 	// The first attempt was unsuccessful. Use exponential backoff for further attempts.
 	// Perform the second attempt immediately after the first attempt - this should help
 	// in cases when the remote side closes the keep-alive connection before the first attempt.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3293
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/3293
 	sleepTime := time.Second
 	// It is expected that the deadline is already set to req.Context(), so the loop below
 	// should eventually finish if all the attempt() calls are unsuccessful.

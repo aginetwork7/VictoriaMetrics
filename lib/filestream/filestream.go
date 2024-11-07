@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/envutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/memory"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/envutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/memory"
 )
 
 var disableFadvise = flag.Bool("filestream.disableFadvise", false, "Whether to disable fadvise() syscall when reading large data files. "+
@@ -99,7 +99,7 @@ func MustOpen(path string, nocache bool) *Reader {
 	}
 	if *disableFadvise {
 		// Unconditionally disable fadvise() syscall
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/pull/5120 for details on why this is needed
+		// See https://github.com/aginetwork7/VictoriaMetrics/pull/5120 for details on why this is needed
 		nocache = false
 	}
 	if nocache {

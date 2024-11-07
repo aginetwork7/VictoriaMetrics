@@ -10,15 +10,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/backoff"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/barpool"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/native"
-	remote_read_integration "github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/testdata/servers_integration_test"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/vm"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/promql"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompb"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/backoff"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/barpool"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/native"
+	remote_read_integration "github.com/aginetwork7/VictoriaMetrics/app/vmctl/testdata/servers_integration_test"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/vm"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/promql"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompb"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
 )
 
 const (

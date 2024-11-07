@@ -27,13 +27,13 @@ There are the following options exist:
 
 ### Pre-built binaries
 
-Pre-built binaries for VictoriaLogs are available at the [releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/) page.
+Pre-built binaries for VictoriaLogs are available at the [releases](https://github.com/aginetwork7/VictoriaMetrics/releases/) page.
 Just download archive for the needed Operating system and architecture, unpack it and run `victoria-logs-prod` from it.
 
 For example, the following commands download VictoriaLogs archive for Linux/amd64, unpack and run it:
 
 ```sh
-curl -L -O https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v0.41.0-victorialogs/victoria-logs-linux-amd64-v0.41.0-victorialogs.tar.gz
+curl -L -O https://github.com/aginetwork7/VictoriaMetrics/releases/download/v0.41.0-victorialogs/victoria-logs-linux-amd64-v0.41.0-victorialogs.tar.gz
 tar xzf victoria-logs-linux-amd64-v0.41.0-victorialogs.tar.gz
 ./victoria-logs-prod
 ```
@@ -79,7 +79,7 @@ Follow the following steps in order to build VictoriaLogs from source code:
 - Checkout VictoriaLogs source code. It is located in the VictoriaMetrics repository:
 
   ```sh
-  git clone https://github.com/VictoriaMetrics/VictoriaMetrics
+  git clone https://github.com/aginetwork7/VictoriaMetrics
   cd VictoriaMetrics
   ```
 
@@ -139,11 +139,11 @@ See also:
 
 Here are a Docker-compose demos, which start VictoriaLogs and push logs to it via various log collectors:
 
-- [Filebeat demo](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/filebeat)
-- [Fluentbit demo](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/fluentbit)
-- [Logstash demo](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/logstash)
-- [Vector demo](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/vector)
-- [Promtail demo](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/promtail)
+- [Filebeat demo](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/victorialogs/filebeat)
+- [Fluentbit demo](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/victorialogs/fluentbit)
+- [Logstash demo](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/victorialogs/logstash)
+- [Vector demo](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/victorialogs/vector)
+- [Promtail demo](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/victorialogs/promtail)
 
 You can use [this Helm chart](https://github.com/VictoriaMetrics/helm-charts/blob/master/charts/victoria-logs-single/README.md)
 as a demo for running Fluentbit in Kubernetes with VictoriaLogs.

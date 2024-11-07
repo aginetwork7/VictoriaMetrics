@@ -91,7 +91,7 @@ groups:
           description: | 
             The rate of TSID misses during query lookups is too high for \"{{ $labels.job }}\" ({{ $labels.instance }}).
             Make sure you're running VictoriaMetrics of v1.85.3 or higher.
-            Related issue https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3502
+            Related issue https://github.com/aginetwork7/VictoriaMetrics/issues/3502
 
       - alert: ConcurrentInsertsHitTheLimit
         expr: avg_over_time(vm_concurrent_insert_current[1m]) >= vm_concurrent_insert_capacity

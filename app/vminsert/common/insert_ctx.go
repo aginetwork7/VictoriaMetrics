@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vminsert/relabel"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httpserver"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompb"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
+	"github.com/aginetwork7/VictoriaMetrics/app/vminsert/relabel"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httpserver"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompb"
+	"github.com/aginetwork7/VictoriaMetrics/lib/slicesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
 )
 
 // InsertCtx contains common bits for data points insertion.
@@ -102,7 +102,7 @@ func (ctx *InsertCtx) addRow(metricNameRaw []byte, timestamp int64, value float6
 func (ctx *InsertCtx) AddLabelBytes(name, value []byte) {
 	if len(value) == 0 {
 		// Skip labels without values, since they have no sense.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/600
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/600
 		// Do not skip labels with empty name, since they are equal to __name__.
 		return
 	}
@@ -120,7 +120,7 @@ func (ctx *InsertCtx) AddLabelBytes(name, value []byte) {
 func (ctx *InsertCtx) AddLabel(name, value string) {
 	if len(value) == 0 {
 		// Skip labels without values, since they have no sense.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/600
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/600
 		// Do not skip labels with empty name, since they are equal to __name__.
 		return
 	}

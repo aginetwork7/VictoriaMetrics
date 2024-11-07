@@ -8,7 +8,7 @@ import (
 
 	"github.com/valyala/quicktemplate"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
 )
 
 type statsUniqValues struct {

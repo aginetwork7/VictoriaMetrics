@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discoveryutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discoveryutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 func (eps *Endpoints) key() string {
@@ -136,7 +136,7 @@ func (eps *Endpoints) getTargetLabels(gw *groupWatcher) []*promutils.Labels {
 
 			// Prometheus sets endpoints_name and namespace labels for all endpoints
 			// Even if port is not matching service port.
-			// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4154
+			// See https://github.com/aginetwork7/VictoriaMetrics/issues/4154
 			p.appendEndpointLabels(m, eps)
 			if svc != nil {
 				svc.appendCommonLabels(m)
@@ -191,7 +191,7 @@ func getEndpointLabelsForAddressAndPort(gw *groupWatcher, podPortsSeen map[*Pod]
 	}
 	p.appendCommonLabels(m, gw)
 	// always add pod targetRef, even if epp port doesn't match container port
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/2134
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/2134
 	if _, ok := podPortsSeen[p]; !ok {
 		podPortsSeen[p] = []int{}
 	}

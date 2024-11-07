@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/graphite"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/graphite"
 )
 
 func TestStreamContextRead(t *testing.T) {
@@ -66,7 +66,7 @@ func TestStreamContextRead(t *testing.T) {
 			Timestamp: int64(fasttime.UnixTimestamp()) * 1000,
 		}},
 	})
-	// -1 timestamp. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/610
+	// -1 timestamp. See https://github.com/aginetwork7/VictoriaMetrics/issues/610
 	// Note that this test may be flaky due to timing issues. TODO: fix it.
 	f("aaa 1123 -1", &graphite.Rows{
 		Rows: []graphite.Row{{

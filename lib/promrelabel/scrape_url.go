@@ -4,8 +4,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 // GetScrapeURL makes scrape url and __address_ labels for the given labels and extraParams.
@@ -40,7 +40,7 @@ func GetScrapeURL(labels *promutils.Labels, extraParams map[string][]string) (st
 
 	// If port is missing, typically it should be 80/443. This WAS written in a label and used as scrapeURL.
 	// However, adding the port by default can cause some issues, see: https://github.com/prometheus/prometheus/pull/9523#issuecomment-2059314966
-	// After https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6792:
+	// After https://github.com/aginetwork7/VictoriaMetrics/issues/6792:
 	// - don't add the default port to scrapeURL.
 	// - continue adding the default port to the label value for backward compatibility and avoid generating new time series.
 	addressMustWithPort := addMissingPort(address, scheme == "https")

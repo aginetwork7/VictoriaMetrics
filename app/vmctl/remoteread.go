@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/barpool"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/remoteread"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/stepper"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/vm"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/barpool"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/remoteread"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/stepper"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/vm"
 )
 
 type remoteReadProcessor struct {

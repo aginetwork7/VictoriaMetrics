@@ -13,7 +13,7 @@ aliases:
 `VMAlert` - executes a list of given [alerting](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/) 
 or [recording](https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/) rules against configured address. 
 
-The `VMAlert` CRD declaratively defines a desired [VMAlert](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/app/vmalert)
+The `VMAlert` CRD declaratively defines a desired [VMAlert](https://github.com/aginetwork7/VictoriaMetrics/tree/master/app/vmalert)
 setup to run in a Kubernetes cluster.
 
 It has few required config options - `datasource` and `notifier` are required, for other config parameters
@@ -221,7 +221,7 @@ More details about `remoteWrite` and `remoteRead` you can read in [vmalert docs]
 
 ## Version management
 
-To set `VMAlert` version add `spec.image.tag` name from [releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases)
+To set `VMAlert` version add `spec.image.tag` name from [releases](https://github.com/aginetwork7/VictoriaMetrics/releases)
 
 ```yaml
 apiVersion: operator.victoriametrics.com/v1beta1

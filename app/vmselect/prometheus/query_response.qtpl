@@ -1,7 +1,7 @@
 {% import (
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/netstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/promql"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/querytracer"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/netstorage"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/promql"
+	"github.com/aginetwork7/VictoriaMetrics/lib/querytracer"
 ) %}
 
 {% stripspace %}

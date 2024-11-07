@@ -8,8 +8,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/netstorage"
 	"github.com/VictoriaMetrics/metricsql"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/netstorage"
 )
 
 func TestIncrementalAggr(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // for get requests there is no need to calculate payload hash each time.
@@ -42,7 +42,7 @@ func signRequestWithTime(req *http.Request, service, region, payloadHash string,
 	canonicalURL := uri.Path
 	canonicalQS := uri.Query().Encode()
 	// Replace "%20" with "+" according to AWS requirements.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3171
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/3171
 	canonicalQS = strings.ReplaceAll(canonicalQS, "+", "%20")
 
 	canonicalHeaders := fmt.Sprintf("host:%s\nx-amz-date:%s\n", uri.Host, amzdate)

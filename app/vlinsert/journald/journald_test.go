@@ -3,7 +3,7 @@ package journald
 import (
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/insertutils"
+	"github.com/aginetwork7/VictoriaMetrics/app/vlinsert/insertutils"
 )
 
 func TestPushJournaldOk(t *testing.T) {

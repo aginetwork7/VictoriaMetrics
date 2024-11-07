@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/netutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promauth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/netutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promauth"
 )
 
 type datasourceType string
@@ -117,7 +117,7 @@ func (c *Client) ApplyParams(params QuerierParams) *Client {
 			for _, v := range vl {
 				// don't use .Set() instead of Del/Add since it is allowed
 				// for GET params to be duplicated
-				// see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4908
+				// see https://github.com/aginetwork7/VictoriaMetrics/issues/4908
 				c.extraParams.Add(k, v)
 			}
 		}

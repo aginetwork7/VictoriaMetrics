@@ -3,8 +3,8 @@ package memory
 import (
 	"syscall"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/cgroup"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 const maxInt = int(^uint(0) >> 1)
@@ -21,7 +21,7 @@ func sysTotalMemory() int {
 	mem := cgroup.GetMemoryLimit()
 	if mem <= 0 || int64(int(mem)) != mem || int(mem) > totalMem {
 		// Try reading hierarchical memory limit.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/699
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/699
 		mem = cgroup.GetHierarchicalMemoryLimit()
 		if mem <= 0 || int64(int(mem)) != mem || int(mem) > totalMem {
 			return totalMem

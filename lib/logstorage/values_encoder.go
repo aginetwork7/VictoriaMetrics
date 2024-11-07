@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/timeutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/encoding"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/timeutil"
 )
 
 // valueType is the type of values stored in every column block.
@@ -469,7 +469,7 @@ func tryParseTimestampSecs(s string) (int64, bool, string) {
 	//
 	// Allow whitespace additionally to T as the delimiter after DD,
 	// so SQL datetime format can be parsed additionally to RFC3339.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6721
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/6721
 	delim := s[len("DD")]
 	if delim != 'T' && delim != ' ' {
 		return 0, false, s

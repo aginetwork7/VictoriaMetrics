@@ -10,7 +10,7 @@ aliases:
 ---
 `vmagent` is a tiny agent which helps you collect metrics from various sources,
 [relabel and filter the collected metrics](#relabeling)
-and store them in [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics)
+and store them in [VictoriaMetrics](https://github.com/aginetwork7/VictoriaMetrics)
 or any other storage systems via Prometheus `remote_write` protocol
 or via [VictoriaMetrics `remote_write` protocol](#victoriametrics-remote-write-protocol).
 
@@ -54,7 +54,7 @@ additionally to [discovering Prometheus-compatible targets and scraping metrics 
 
 ## Quick Start
 
-Please download `vmutils-*` archive from [releases page](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest) (
+Please download `vmutils-*` archive from [releases page](https://github.com/aginetwork7/VictoriaMetrics/releases/latest) (
 `vmagent` is also available in [docker images](https://hub.docker.com/r/victoriametrics/vmagent/tags)),
 unpack it and pass the following flags to the `vmagent` binary in order to start scraping Prometheus-compatible targets
 and sending the data to the Prometheus-compatible remote storage:
@@ -991,7 +991,7 @@ See [these docs](https://docs.victoriametrics.com/#deduplication) for details.
 
 It is also recommended passing different values to `-promscrape.cluster.name` command-line flag per each `vmagent` 
 instance or per each `vmagent` cluster in HA setup. This is needed for proper data de-duplication. 
-See [this issue](https://github.com/VictoriaMetrics/VictoriaMetrics/issues/2679) for details.
+See [this issue](https://github.com/aginetwork7/VictoriaMetrics/issues/2679) for details.
 
 ## Scraping targets via a proxy
 
@@ -1369,7 +1369,7 @@ and gzipped [JSON line](https://docs.victoriametrics.com/#json-line-format) mess
 #### Command-line flags for PubSub consumer
 
 These command-line flags are available only in [enterprise](https://docs.victoriametrics.com/enterprise/) version of `vmagent`,
-which can be downloaded for evaluation from [releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest) page
+which can be downloaded for evaluation from [releases](https://github.com/aginetwork7/VictoriaMetrics/releases/latest) page
 (see `vmutils-...-enterprise.tar.gz` archives) and from [docker images](https://hub.docker.com/r/victoriametrics/vmagent/tags) with tags containing `enterprise` suffix.
 
 ```sh
@@ -1403,7 +1403,7 @@ These messages can be read later from Google PubSub by another `vmagent` instanc
 #### Command-line flags for PubSub producer
 
 These command-line flags are available only in [enterprise](https://docs.victoriametrics.com/enterprise/) version of `vmagent`,
-which can be downloaded for evaluation from [releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest) page
+which can be downloaded for evaluation from [releases](https://github.com/aginetwork7/VictoriaMetrics/releases/latest) page
 (see `vmutils-...-enterprise.tar.gz` archives) and from [docker images](https://hub.docker.com/r/victoriametrics/vmagent/tags) with tags containing `enterprise` suffix.
 
 ```sh
@@ -1432,7 +1432,7 @@ which can be downloaded for evaluation from [releases](https://github.com/Victor
 * [Reading metrics from Kafka](#reading-metrics-from-kafka)
 * [Writing metrics to Kafka](#writing-metrics-to-kafka)
 
-The enterprise version of vmagent is available for evaluation at [releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest) page
+The enterprise version of vmagent is available for evaluation at [releases](https://github.com/aginetwork7/VictoriaMetrics/releases/latest) page
 in `vmutils-...-enterprise.tar.gz` archives and in [docker images](https://hub.docker.com/r/victoriametrics/vmagent/tags) with tags containing `enterprise` suffix.
 See how to request a free trial license [here](https://victoriametrics.com/products/enterprise/trial/).
 
@@ -1508,7 +1508,7 @@ See also [how to write metrics to multiple distinct tenants](https://docs.victor
 #### Command-line flags for Kafka consumer
 
 These command-line flags are available only in [enterprise](https://docs.victoriametrics.com/enterprise/) version of `vmagent`,
-which can be downloaded for evaluation from [releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest) page
+which can be downloaded for evaluation from [releases](https://github.com/aginetwork7/VictoriaMetrics/releases/latest) page
 (see `vmutils-...-enterprise.tar.gz` archives) and from [docker images](https://hub.docker.com/r/victoriametrics/vmagent/tags) with tags containing `enterprise` suffix.
 
 ```sh
@@ -1601,26 +1601,26 @@ See also [mTLS protection docs](#mtls-protection).
 
 ## How to build from sources
 
-We recommend using [official binary releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest) - `vmagent` is located in the `vmutils-...` archives.
+We recommend using [official binary releases](https://github.com/aginetwork7/VictoriaMetrics/releases/latest) - `vmagent` is located in the `vmutils-...` archives.
 
 It may be needed to build `vmagent` from source code when developing or testing new feature or bugfix.
 
 ### Development build
 
 1. [Install Go](https://golang.org/doc/install). The minimum supported version is Go 1.22.
-1. Run `make vmagent` from the root folder of [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics).
+1. Run `make vmagent` from the root folder of [the repository](https://github.com/aginetwork7/VictoriaMetrics).
    It builds the `vmagent` binary and puts it into the `bin` folder.
 
 ### Production build
 
 1. [Install docker](https://docs.docker.com/install/).
-1. Run `make vmagent-prod` from the root folder of [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics).
+1. Run `make vmagent-prod` from the root folder of [the repository](https://github.com/aginetwork7/VictoriaMetrics).
    It builds `vmagent-prod` binary and puts it into the `bin` folder.
 
 ### Building docker images
 
 Run `make package-vmagent`. It builds `victoriametrics/vmagent:<PKG_TAG>` docker image locally.
-`<PKG_TAG>` is an auto-generated image tag, which depends on source code in [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics).
+`<PKG_TAG>` is an auto-generated image tag, which depends on source code in [the repository](https://github.com/aginetwork7/VictoriaMetrics).
 The `<PKG_TAG>` may be manually set via `PKG_TAG=foobar make package-vmagent`.
 
 The base docker image is [alpine](https://hub.docker.com/_/alpine) but it is possible to use any other base image
@@ -1637,13 +1637,13 @@ ARM build may run on Raspberry Pi or on [energy-efficient ARM servers](https://b
 ### Development ARM build
 
 1. [Install Go](https://golang.org/doc/install). The minimum supported version is Go 1.22.
-1. Run `make vmagent-linux-arm` or `make vmagent-linux-arm64` from the root folder of [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics)
+1. Run `make vmagent-linux-arm` or `make vmagent-linux-arm64` from the root folder of [the repository](https://github.com/aginetwork7/VictoriaMetrics)
    It builds `vmagent-linux-arm` or `vmagent-linux-arm64` binary respectively and puts it into the `bin` folder.
 
 ### Production ARM build
 
 1. [Install docker](https://docs.docker.com/install/).
-1. Run `make vmagent-linux-arm-prod` or `make vmagent-linux-arm64-prod` from the root folder of [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics).
+1. Run `make vmagent-linux-arm-prod` or `make vmagent-linux-arm64-prod` from the root folder of [the repository](https://github.com/aginetwork7/VictoriaMetrics).
    It builds `vmagent-linux-arm-prod` or `vmagent-linux-arm64-prod` binary respectively and puts it into the `bin` folder.
 
 ## Profiling

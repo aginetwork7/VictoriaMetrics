@@ -12,7 +12,7 @@ menu:
    so they could use these components in the most efficient way**.
 1. Fixing bugs in the essential functionality of VictoriaMetrics components. Small usability bugs are usually the most annoying,
    so they **must be fixed first**.
-1. Improving [docs](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/docs) for VictoriaMetrics components,
+1. Improving [docs](https://github.com/aginetwork7/VictoriaMetrics/tree/master/docs) for VictoriaMetrics components,
    so users could find answers to their questions via Google or [Perplexity](https://www.perplexity.ai/) without the need
    to ask these questions at our [support channels](https://docs.victoriametrics.com/#community-and-contributions).
 1. Simplifying usage of VictoriaMetrics components without breaking backwards compatibility, so users could regularly

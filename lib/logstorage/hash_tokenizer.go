@@ -5,7 +5,7 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
 )
 
 // tokenizeHashes extracts word tokens from a, hashes them, appends hashes to dst and returns the result.

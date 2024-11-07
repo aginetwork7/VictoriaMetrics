@@ -216,7 +216,7 @@ func TestRowsUnmarshalFailure(t *testing.T) {
 	f(`a {foo  ="bar" , `)
 	f(`a {foo  ="bar" , baz } 2`)
 
-	// invalid tags - see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4284
+	// invalid tags - see https://github.com/aginetwork7/VictoriaMetrics/issues/4284
 	f(`a{"__name__":"upsd_time_left_ns","host":"myhost", status_OB="true"} 12`)
 	f(`a{host:"myhost"} 12`)
 	f(`a{host:"myhost",foo="bar"} 12`)
@@ -396,7 +396,7 @@ cassandra_token_ownership_ratio 78.9`, &Rows{
 
 	// "Infinity" word - this has been added in OpenMetrics.
 	// See https://github.com/OpenObservability/OpenMetrics/blob/master/OpenMetrics.md
-	// Checks for https://github.com/VictoriaMetrics/VictoriaMetrics/issues/924
+	// Checks for https://github.com/aginetwork7/VictoriaMetrics/issues/924
 	inf := math.Inf(1)
 	f(`
 		foo Infinity
@@ -499,7 +499,7 @@ cassandra_token_ownership_ratio 78.9`, &Rows{
 	})
 
 	// Trailing comma after tag
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/350
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/350
 	f(`foo{bar="baz",} 1 2`, &Rows{
 		Rows: []Row{{
 			Metric: "foo",

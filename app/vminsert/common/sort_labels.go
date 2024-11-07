@@ -4,7 +4,7 @@ import (
 	"flag"
 	"sort"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompb"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompb"
 )
 
 var sortLabels = flag.Bool("sortLabels", false, `Whether to sort labels for incoming samples before writing them to storage. `+

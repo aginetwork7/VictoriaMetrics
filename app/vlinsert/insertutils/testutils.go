@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logstorage"
 )
 
 // TestLogMessageProcessor implements LogMessageProcessor for testing.

@@ -41,7 +41,7 @@ After you run `vmanomaly` with `preset` arg specified, available assets can be v
 
 The Node-Exporter preset simplifies the monitoring and anomaly detection of key system metrics collected by [`node_exporter`](https://github.com/prometheus/node_exporter). This preset reduces the need for manual configuration and detects anomalies in metrics such as CPU usage, network errors, and disk latency, ensuring timely identification of potential issues. Below are detailed instructions on enabling and using the Node-Exporter preset, along with a list of included assets like alerting rules and Grafana dashboard.
 
-> **Note: Node-Exporter preset assets can be also found [here](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/vmanomaly/vmanomaly-node-exporter-preset/)**
+> **Note: Node-Exporter preset assets can be also found [here](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/vmanomaly/vmanomaly-node-exporter-preset/)**
 
 For enabling Node-Exporter in config file set the `preset` arg accordingly. Also, include at least `datasource_url`-s (and `tenant_id` if using cluster version of VictoriaMetrics) in reader and writer sections, like that:
 
@@ -86,8 +86,8 @@ anomaly_score{for="cpu_seconds_total", instance="node-exporter:9100", preset="no
 > Provided `vmanomaly` alerts are set to fire only if *all anomaly detection models* vote that the datapoint is anomalous.
 
 You can find corresponding alerting rules here:
-- `vmanomaly` [Anomaly Detection alerts](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/vmanomaly/vmanomaly-node-exporter-preset/vmanomaly_alerts.yml): `http://localhost:8490/presets/vmanomaly_alerts.yml`
-- [Modified Awesome Alerts](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/vmanomaly/vmanomaly-node-exporter-preset/awesome_alerts.yml): `http://localhost:8490/presets/awesome_alerts.yml`
+- `vmanomaly` [Anomaly Detection alerts](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/vmanomaly/vmanomaly-node-exporter-preset/vmanomaly_alerts.yml): `http://localhost:8490/presets/vmanomaly_alerts.yml`
+- [Modified Awesome Alerts](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/vmanomaly/vmanomaly-node-exporter-preset/awesome_alerts.yml): `http://localhost:8490/presets/awesome_alerts.yml`
 
 #### Awesome Alerts replaced by Machine Learning alerts
 - HostMemoryUnderMemoryPressure
@@ -102,7 +102,7 @@ You can find corresponding alerting rules here:
 - HostUnusualNetworkThroughputOut
 
 ### Grafana dashboard
-Grafana dashboard `.json` file can be found [here](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/vmanomaly/vmanomaly-node-exporter-preset/dashboard.json): `http://localhost:8490/presets/dashboard.json`
+Grafana dashboard `.json` file can be found [here](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/vmanomaly/vmanomaly-node-exporter-preset/dashboard.json): `http://localhost:8490/presets/dashboard.json`
 
 ### Indicators monitored by preset
 
@@ -212,7 +212,7 @@ Disk latency. The total read/write time spent in seconds. / The total number of 
 
 ## Example
 
-Here's how attached [Grafana dashboard](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/vmanomaly/vmanomaly-node-exporter-preset/dashboard.json) can be used to drill down anomalies:
+Here's how attached [Grafana dashboard](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker/vmanomaly/vmanomaly-node-exporter-preset/dashboard.json) can be used to drill down anomalies:
 
 On the (global) graph **'Percentage of Anomalies'**, you can see a spike 8.75% of anomalies at the timestamp '2024-06-03 10:35:00'. The (global) graph **'Anomalies per Indicator'** shows the indicators that were anomalous at the corresponding time.
 

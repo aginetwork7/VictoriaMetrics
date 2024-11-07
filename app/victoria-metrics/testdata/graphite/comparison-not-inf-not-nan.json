@@ -1,6 +1,6 @@
 {
   "name": "comparison-not-inf-not-nan",
-  "issue": "https://github.com/VictoriaMetrics/VictoriaMetrics/issues/150",
+  "issue": "https://github.com/aginetwork7/VictoriaMetrics/issues/150",
   "data": [
     "not_nan_not_inf;item=x 1 {TIME_S-1m}",
     "not_nan_not_inf;item=x 1 {TIME_S-2m}",

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fs"
 )
 
 func TestComplexFilters(t *testing.T) {

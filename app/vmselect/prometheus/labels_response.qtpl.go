@@ -6,7 +6,7 @@ package prometheus
 
 //line app/vmselect/prometheus/labels_response.qtpl:3
 import (
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/querytracer"
+	"github.com/aginetwork7/VictoriaMetrics/lib/querytracer"
 )
 
 // LabelsResponse generates response for /api/v1/labels .See https://prometheus.io/docs/prometheus/latest/querying/api/#getting-label-names

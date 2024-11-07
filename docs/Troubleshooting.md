@@ -55,21 +55,21 @@ then please follow the following steps in order to quickly find the solution:
    via multiple keywords and phrases specific to the issue. There are high chances that the issue
    and the solution is already documented somewhere.
 
-1. Try searching for the issue at [VictoriaMetrics GitHub](https://github.com/VictoriaMetrics/VictoriaMetrics/issues).
+1. Try searching for the issue at [VictoriaMetrics GitHub](https://github.com/aginetwork7/VictoriaMetrics/issues).
    The signal/noise quality of search results here is much lower than in Google, but sometimes it may help
    finding the relevant information about the issue when Google fails to find the needed information.
    If you located the relevant GitHub issue, but it misses some information on how to diagnose or troubleshoot it,
    then please provide this information in comments to the issue. This increases chances that it will be resolved soon.
 
 1. Try searching for information about the issue in [VictoriaMetrics source code](https://github.com/search?q=repo%3AVictoriaMetrics%2FVictoriaMetrics&type=code).
-   GitHub code search may be not very good in some cases, so it is recommended [checking out VictoriaMetrics source code](https://github.com/VictoriaMetrics/VictoriaMetrics/)
+   GitHub code search may be not very good in some cases, so it is recommended [checking out VictoriaMetrics source code](https://github.com/aginetwork7/VictoriaMetrics/)
    and perform local search in the checked out code.
-   Note that the source code for VictoriaMetrics cluster is located in [the cluster](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/cluster) branch.
+   Note that the source code for VictoriaMetrics cluster is located in [the cluster](https://github.com/aginetwork7/VictoriaMetrics/tree/cluster) branch.
 
 1. Try searching for information about the issue in the history of [VictoriaMetrics Slack chat](https://victoriametrics.slack.com).
    There are non-zero chances that somebody already stuck with the same issue and documented the solution at Slack.
 
-1. If steps above didn't help finding the solution to the issue, then please [file a new issue](https://github.com/VictoriaMetrics/VictoriaMetrics/issues/new/choose)
+1. If steps above didn't help finding the solution to the issue, then please [file a new issue](https://github.com/aginetwork7/VictoriaMetrics/issues/new/choose)
    by providing the maximum details on how to reproduce the issue.
 
    After that you can post the link to the issue to [VictoriaMetrics Slack chat](https://victoriametrics.slack.com),
@@ -80,7 +80,7 @@ then please follow the following steps in order to quickly find the solution:
 1. Pro tip 1: if you see that [VictoriaMetrics docs](https://docs.victoriametrics.com/) contain incomplete or incorrect information,
    then please create a pull request with the relevant changes. This will help VictoriaMetrics community.
 
-   All the docs published at `https://docs.victoriametrics.com` are located in the [docs](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/docs)
+   All the docs published at `https://docs.victoriametrics.com` are located in the [docs](https://github.com/aginetwork7/VictoriaMetrics/tree/master/docs)
    folder inside VictoriaMetrics repository.
 
 1. Pro tip 2: please provide links to existing docs / GitHub issues / StackOverflow questions
@@ -179,7 +179,7 @@ If you see unexpected or unreliable query results from VictoriaMetrics, then try
 1. If you observe recently written data is not immediately visible/queryable, then read more about 
    [query latency](https://docs.victoriametrics.com/keyconcepts/#query-latency) behavior.
 
-1. Try upgrading to the [latest available version of VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest)
+1. Try upgrading to the [latest available version of VictoriaMetrics](https://github.com/aginetwork7/VictoriaMetrics/releases/latest)
    and verifying whether the issue is fixed there.
 
 1. Try executing the query with `trace=1` query arg. This enables query tracing, which may contain
@@ -191,7 +191,7 @@ If you see unexpected or unreliable query results from VictoriaMetrics, then try
    VictoriaMetrics is optimized for running with default flag values (e.g. when they aren't set explicitly).
 
 1. If the steps above didn't help identifying the root cause of unexpected query results,
-   then [file a bugreport](https://github.com/VictoriaMetrics/VictoriaMetrics/issues/new) with details on how to reproduce the issue.
+   then [file a bugreport](https://github.com/aginetwork7/VictoriaMetrics/issues/new) with details on how to reproduce the issue.
    Instead of sharing screenshots in the issue, consider sharing query and [trace](https://docs.victoriametrics.com/#query-tracing) 
    results in [VMUI](https://docs.victoriametrics.com/#vmui) by clicking on `Export query` button in top right corner of the graph area.
 
@@ -293,7 +293,7 @@ There are the following most commons reasons for slow data ingestion in Victoria
 1. If you see `TooHighSlowInsertsRate` [alert](https://docs.victoriametrics.com/#monitoring) when single-node VictoriaMetrics or `vmstorage` has enough
    free CPU and RAM, then increase `-cacheExpireDuration` command-line flag at single-node VictoriaMetrics or at `vmstorage` to the value,
    which exceeds the interval between ingested samples for the same time series (aka `scrape_interval`).
-   See [this comment](https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3976#issuecomment-1476883183) for more details.
+   See [this comment](https://github.com/aginetwork7/VictoriaMetrics/issues/3976#issuecomment-1476883183) for more details.
 
 1. If you see constant and abnormally high CPU usage of VictoriaMetrics component, check `CPU spent on GC` panel
    on the corresponding [Grafana dashboard](https://grafana.com/orgs/victoriametrics) in `Resource usage` section. If percentage of CPU time spent on garbage collection
@@ -468,7 +468,7 @@ would help identify and prevent most of the issues listed above.
 [Grafana dashboards](https://grafana.com/orgs/victoriametrics/dashboards) contain panels reflecting the
 health state, resource usage and other specific metrics for VictoriaMetrics components.
 
-The list of [recommended alerting rules](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker#alerts)
+The list of [recommended alerting rules](https://github.com/aginetwork7/VictoriaMetrics/tree/master/deployment/docker#alerts)
 for VictoriaMetrics components will notify about issues and provide recommendations for how to solve them.
 
 Internally, we heavily rely both on dashboards and alerts, and constantly improve them.

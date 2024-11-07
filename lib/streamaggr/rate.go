@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
 )
 
 // rateAggrState calculates output=rate_avg and rate_sum, e.g. the average per-second increase rate for counter metrics.

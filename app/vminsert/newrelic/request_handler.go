@@ -5,12 +5,12 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vminsert/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vminsert/relabel"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
-	parserCommon "github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/common"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/newrelic"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/newrelic/stream"
+	"github.com/aginetwork7/VictoriaMetrics/app/vminsert/common"
+	"github.com/aginetwork7/VictoriaMetrics/app/vminsert/relabel"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
+	parserCommon "github.com/aginetwork7/VictoriaMetrics/lib/protoparser/common"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/newrelic"
+	"github.com/aginetwork7/VictoriaMetrics/lib/protoparser/newrelic/stream"
 )
 
 var (

@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/utils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httputils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/netutil"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmalert/utils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httputils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/netutil"
 )
 
 var (
@@ -57,7 +57,7 @@ var (
 	queryTimeAlignment = flag.Bool("datasource.queryTimeAlignment", true, `Deprecated: please use "eval_alignment" in rule group instead. `+
 		`Whether to align "time" parameter with evaluation interval. `+
 		"Alignment supposed to produce deterministic results despite number of vmalert replicas or time they were started. "+
-		"See more details at https://github.com/VictoriaMetrics/VictoriaMetrics/pull/1257")
+		"See more details at https://github.com/aginetwork7/VictoriaMetrics/pull/1257")
 	maxIdleConnections    = flag.Int("datasource.maxIdleConnections", 100, `Defines the number of idle (keep-alive connections) to each configured datasource. Consider setting this value equal to the value: groups_total * group.concurrency. Too low a value may result in a high number of sockets in TIME_WAIT state.`)
 	idleConnectionTimeout = flag.Duration("datasource.idleConnTimeout", 50*time.Second, `Defines a duration for idle (keep-alive connections) to exist. Consider setting this value less than "-http.idleConnTimeout". It must prevent possible "write: broken pipe" and "read: connection reset by peer" errors.`)
 	disableKeepAlive      = flag.Bool("datasource.disableKeepAlive", false, `Whether to disable long-lived connections to the datasource. `+
@@ -94,7 +94,7 @@ func Init(extraParams url.Values) (QuerierBuilder, error) {
 		logger.Warnf("flag `-datasource.queryTimeAlignment` is deprecated and will be removed in next releases. Please use `eval_alignment` in rule group instead.")
 	}
 	if *lookBack != 0 {
-		logger.Warnf("flag `-datasource.lookback` is deprecated and will be removed in next releases. Please adjust `-search.latencyOffset` at datasource side or specify `latency_offset` in rule group's params. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5155 for details.")
+		logger.Warnf("flag `-datasource.lookback` is deprecated and will be removed in next releases. Please adjust `-search.latencyOffset` at datasource side or specify `latency_offset` in rule group's params. See https://github.com/aginetwork7/VictoriaMetrics/issues/5155 for details.")
 	}
 
 	tr, err := httputils.Transport(*addr, *tlsCertFile, *tlsKeyFile, *tlsCAFile, *tlsServerName, *tlsInsecureSkipVerify)

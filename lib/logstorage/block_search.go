@@ -4,10 +4,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/encoding"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/slicesutil"
 )
 
 // The number of blocks to search at once by a single worker
@@ -574,7 +574,7 @@ func (bs *blockSearch) getStreamStrSlow() string {
 		// Couldn't find stream tags by sid. This may be the case when the corresponding log stream
 		// was recently registered and its tags aren't visible to search yet.
 		// The stream tags must become visible in a few seconds.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6042
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/6042
 		return ""
 	}
 

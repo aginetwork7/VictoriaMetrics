@@ -187,7 +187,7 @@ func TestTryParseTimestampRFC3339NanoString_Success(t *testing.T) {
 	f("2023-01-16T00:45:51.123-01:00", "2023-01-16T01:45:51.123Z")
 
 	// SQL datetime format
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6721
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/6721
 	f("2023-01-16 00:45:51+01:00", "2023-01-15T23:45:51Z")
 	f("2023-01-16 00:45:51.123-01:00", "2023-01-16T01:45:51.123Z")
 }

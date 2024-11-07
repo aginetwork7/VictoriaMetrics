@@ -5,10 +5,10 @@ import (
 	"math"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
 	"github.com/VictoriaMetrics/metricsql"
 	"github.com/VictoriaMetrics/metricsql/binaryop"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
 )
 
 var binaryOpFuncs = map[string]binaryOpFunc{
@@ -384,7 +384,7 @@ func mergeNonOverlappingTimeseries(dst, src *timeseries) bool {
 	}
 	// Do not merge time series with too small number of datapoints.
 	// This can be the case during evaluation of instant queries (alerting or recording rules).
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1141
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/1141
 	if len(srcValues) <= 2 && len(dstValues) <= 2 {
 		return false
 	}
@@ -487,7 +487,7 @@ func binaryOpOr(bfa *binaryOpFuncArg) ([]*timeseries, error) {
 		rvs = append(rvs, tss...)
 	}
 	// Sort left-hand-side series by metric name as Prometheus does.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5393
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/5393
 	sortSeriesByMetricName(rvs)
 	rvsLen := len(rvs)
 
@@ -500,7 +500,7 @@ func binaryOpOr(bfa *binaryOpFuncArg) ([]*timeseries, error) {
 		fillLeftNaNsWithRightValues(tssLeft, tssRight)
 	}
 	// Sort the added right-hand-side series by metric name as Prometheus does.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5393
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/5393
 	sortSeriesByMetricName(rvs[rvsLen:])
 
 	return rvs, nil
@@ -508,7 +508,7 @@ func binaryOpOr(bfa *binaryOpFuncArg) ([]*timeseries, error) {
 
 func fillLeftNaNsWithRightValues(tssLeft, tssRight []*timeseries) {
 	// Fill gaps in tssLeft with values from tssRight as Prometheus does.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/552
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/552
 	for _, tsLeft := range tssLeft {
 		valuesLeft := tsLeft.Values
 		for i, v := range valuesLeft {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmctl/stepper"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmctl/stepper"
 )
 
 const (
@@ -461,7 +461,7 @@ var (
 			Name: vmNativeFilterMatch,
 			Usage: "Time series selector to match series for export. For example, select {instance!=\"localhost\"} will " +
 				"match all series with \"instance\" label different to \"localhost\".\n" +
-				" See more details here https://github.com/VictoriaMetrics/VictoriaMetrics#how-to-export-data-in-native-format",
+				" See more details here https://github.com/aginetwork7/VictoriaMetrics#how-to-export-data-in-native-format",
 			Value: `{__name__!=""}`,
 		},
 		&cli.StringFlag{

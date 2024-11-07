@@ -6,9 +6,9 @@ package prometheus
 
 //line app/vmselect/prometheus/query_response.qtpl:1
 import (
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/netstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/promql"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/querytracer"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/netstorage"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/promql"
+	"github.com/aginetwork7/VictoriaMetrics/lib/querytracer"
 )
 
 // QueryResponse generates response for /api/v1/query.See https://prometheus.io/docs/prometheus/latest/querying/api/#instant-queries

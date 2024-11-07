@@ -12,21 +12,21 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/netstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/searchutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httpserver"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/memory"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/querytracer"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/stringsutil"
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/VictoriaMetrics/metricsql"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/netstorage"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/searchutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/cgroup"
+	"github.com/aginetwork7/VictoriaMetrics/lib/decimal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httpserver"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/memory"
+	"github.com/aginetwork7/VictoriaMetrics/lib/querytracer"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/stringsutil"
 )
 
 var (
@@ -72,7 +72,7 @@ func ValidateMaxPointsPerSeries(start, end, step int64, maxPoints int) error {
 func AdjustStartEnd(start, end, step int64) (int64, int64) {
 	if *disableCache {
 		// Do not adjust start and end values when cache is disabled.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/563
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/563
 		return start, end
 	}
 	points := (end-start)/step + 1
@@ -481,7 +481,7 @@ func execBinaryOpArgs(qt *querytracer.Tracer, ec *EvalConfig, exprFirst, exprSec
 	if !canPushdownCommonFilters(be) {
 		// Execute exprFirst and exprSecond in parallel, since it is impossible to pushdown common filters
 		// from exprFirst to exprSecond.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/2886
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/2886
 		qt = qt.NewChild("execute left and right sides of %q in parallel", be.Op)
 		defer qt.Done()
 		var wg sync.WaitGroup
@@ -546,7 +546,7 @@ func execBinaryOpArgs(qt *querytracer.Tracer, ec *EvalConfig, exprFirst, exprSec
 	if len(tssFirst) == 0 && !strings.EqualFold(be.Op, "or") {
 		// Fast path: there is no sense in executing the exprSecond when exprFirst returns an empty result,
 		// since the "exprFirst op exprSecond" would return an empty result in any case.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3349
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/3349
 		return nil, nil, nil
 	}
 	lfs := getCommonLabelFilters(tssFirst)
@@ -847,12 +847,12 @@ func evalRollupFuncWithoutAt(qt *querytracer.Tracer, ec *EvalConfig, funcName st
 		// There is no need in calling AdjustStartEnd() on ecNew if ecNew.MayCache is set to true,
 		// since the time range alignment has been already performed by the caller,
 		// so cache hit rate should be quite good.
-		// See also https://github.com/VictoriaMetrics/VictoriaMetrics/issues/976
+		// See also https://github.com/aginetwork7/VictoriaMetrics/issues/976
 	}
 	if funcName == "rollup_candlestick" {
 		// Automatically apply `offset -step` to `rollup_candlestick` function
 		// in order to obtain expected OHLC results.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/309#issuecomment-582113462
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/309#issuecomment-582113462
 		step := ecNew.Step
 		ecNew = copyEvalConfig(ecNew)
 		ecNew.Start += step
@@ -895,7 +895,7 @@ func evalRollupFuncWithoutAt(qt *querytracer.Tracer, ec *EvalConfig, funcName st
 //
 // Values for returned series are set to nan if at least a single tss series contains nan at that point.
 // This means that tss contains a series with non-empty results at that point.
-// This follows Prometheus logic - see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/2130
+// This follows Prometheus logic - see https://github.com/aginetwork7/VictoriaMetrics/issues/2130
 func aggregateAbsentOverTime(ec *EvalConfig, expr metricsql.Expr, tss []*timeseries) []*timeseries {
 	rvs := getAbsentTimeseries(ec, expr)
 	if len(tss) == 0 {

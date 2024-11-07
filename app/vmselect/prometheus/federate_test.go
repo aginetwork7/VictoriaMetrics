@@ -3,8 +3,8 @@ package prometheus
 import (
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/netstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/netstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
 )
 
 func TestFederate(t *testing.T) {
@@ -32,7 +32,7 @@ func TestFederate(t *testing.T) {
 				},
 				{
 					Key: []byte("abc"),
-					// Verify that < isn't encoded. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5431
+					// Verify that < isn't encoded. See https://github.com/aginetwork7/VictoriaMetrics/issues/5431
 					Value: []byte("a<b\"\\c"),
 				},
 			},

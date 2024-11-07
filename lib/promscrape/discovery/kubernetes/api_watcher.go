@@ -21,12 +21,12 @@ import (
 	"github.com/VictoriaMetrics/metrics"
 	"golang.org/x/net/http2"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promauth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/timerpool"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/timeutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/cgroup"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promauth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/timerpool"
+	"github.com/aginetwork7/VictoriaMetrics/lib/timeutil"
 )
 
 var (
@@ -487,7 +487,7 @@ func (gw *groupWatcher) startWatchersForRole(role string, aw *apiWatcher) {
 				// Refresh targets in background, since they depend on other object types such as pod, service or node.
 				// This should guarantee that the ScrapeWork objects for these objects are properly updated
 				// as soon as the objects they depend on are updated.
-				// This should fix https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1240 .
+				// This should fix https://github.com/aginetwork7/VictoriaMetrics/issues/1240 .
 				go uw.recreateScrapeWorks()
 			}
 		}
@@ -709,7 +709,7 @@ func (uw *urlWatcher) reloadObjects() string {
 
 	// Set resourceVersion to 0 in order to reduce load on Kubernetes control plane.
 	// See https://kubernetes.io/docs/reference/using-api/api-concepts/#semantics-for-get-and-list
-	// and https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4855 .
+	// and https://github.com/aginetwork7/VictoriaMetrics/issues/4855 .
 	delimiter := getQueryArgsDelimiter(apiURL)
 	requestURL := apiURL + delimiter + "resourceVersion=0&resourceVersionMatch=NotOlderThan"
 	resp, err := gw.doRequest(gw.ctx, requestURL)

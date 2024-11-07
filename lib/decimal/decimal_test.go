@@ -100,7 +100,7 @@ func TestPositiveFloatToDecimal(t *testing.T) {
 	f(1<<62, 4611686018427387, 3)
 	f(1<<63, 9223372036854775, 3)
 	// Skip this test, since M1 returns 18446744073709551 instead of 18446744073709548
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1653
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/1653
 	// f(1<<64, 18446744073709548, 3)
 	f(1<<65, 368934881474191, 5)
 	f(1<<66, 737869762948382, 5)
@@ -118,7 +118,7 @@ func TestPositiveFloatToDecimal(t *testing.T) {
 	f(vInfPos, 9223372036854775, 3)
 	f(vMax, 9223372036854775, 3)
 
-	// Extreme cases. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1114
+	// Extreme cases. See https://github.com/aginetwork7/VictoriaMetrics/issues/1114
 	f(2.964393875e-100, 2964393875, -109)
 	f(2.964393875e-309, 2964393875, -318)
 	f(2.964393875e-314, 296439387505, -325)
@@ -220,7 +220,7 @@ func TestCalibrateScale(t *testing.T) {
 	testCalibrateScale(t, []int64{vMax, vMin, 123}, []int64{100}, 0, 30, []int64{92233, -92233, 0}, []int64{100e16}, 14)
 	testCalibrateScale(t, []int64{vStaleNaN, vMin, 123}, []int64{100}, 0, 30, []int64{vStaleNaN, -92233, 0}, []int64{100e16}, 14)
 
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/805
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/805
 	testCalibrateScale(t, []int64{123}, []int64{vInfPos}, 0, 0, []int64{123}, []int64{vInfPos}, 0)
 	testCalibrateScale(t, []int64{123, vInfPos}, []int64{vInfNeg}, 0, 0, []int64{123, vInfPos}, []int64{vInfNeg}, 0)
 	testCalibrateScale(t, []int64{123, vInfPos, vInfNeg}, []int64{456}, 0, 0, []int64{123, vInfPos, vInfNeg}, []int64{456}, 0)

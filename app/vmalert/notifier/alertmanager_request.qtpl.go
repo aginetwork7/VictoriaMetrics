@@ -8,7 +8,7 @@ package notifier
 import (
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promrelabel"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promrelabel"
 )
 
 //line app/vmalert/notifier/alertmanager_request.qtpl:8

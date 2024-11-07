@@ -514,18 +514,18 @@ Run `vmbackup -help` in order to see all the available options:
 
 ## How to build from sources
 
-It is recommended using [binary releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest) - see `vmutils-*` archives there.
+It is recommended using [binary releases](https://github.com/aginetwork7/VictoriaMetrics/releases/latest) - see `vmutils-*` archives there.
 
 ### Development build
 
 1. [Install Go](https://golang.org/doc/install). The minimum supported version is Go 1.22.
-1. Run `make vmbackup` from the root folder of [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics).
+1. Run `make vmbackup` from the root folder of [the repository](https://github.com/aginetwork7/VictoriaMetrics).
    It builds `vmbackup` binary and puts it into the `bin` folder.
 
 ### Production build
 
 1. [Install docker](https://docs.docker.com/install/).
-1. Run `make vmbackup-prod` from the root folder of [the repository](https://github.com/VictoriaMetrics/VictoriaMetrics).
+1. Run `make vmbackup-prod` from the root folder of [the repository](https://github.com/aginetwork7/VictoriaMetrics).
    It builds `vmbackup-prod` binary and puts it into the `bin` folder.
 
 ### Building docker images

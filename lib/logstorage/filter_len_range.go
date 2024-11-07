@@ -3,7 +3,7 @@ package logstorage
 import (
 	"unicode/utf8"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // filterLenRange matches field values with the length in the given range [minLen, maxLen].

@@ -9,33 +9,33 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/auth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/procutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/azure"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/consul"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/consulagent"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/digitalocean"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/dns"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/docker"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/dockerswarm"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/ec2"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/eureka"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/gce"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/hetzner"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/http"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/kubernetes"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/kuma"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/nomad"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/openstack"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/ovhcloud"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/puppetdb"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/vultr"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discovery/yandexcloud"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/auth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/procutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/azure"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/consul"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/consulagent"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/digitalocean"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/dns"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/docker"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/dockerswarm"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/ec2"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/eureka"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/gce"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/hetzner"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/http"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/kubernetes"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/kuma"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/nomad"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/openstack"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/ovhcloud"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/puppetdb"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/vultr"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discovery/yandexcloud"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
 )
 
 var (
@@ -110,7 +110,7 @@ func runScraper(configFile string, pushData func(at *auth.Token, wr *prompbmarsh
 
 	// Register SIGHUP handler for config reload before loadConfig.
 	// This guarantees that the config will be re-read if the signal arrives just after loadConfig.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1240
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/1240
 	sighupCh := procutil.NewSighupChan()
 
 	logger.Infof("reading scrape configs from %q", configFile)

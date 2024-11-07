@@ -5,7 +5,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
 )
 
 func BenchmarkIfExpression(b *testing.B) {

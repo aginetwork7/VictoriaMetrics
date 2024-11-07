@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 	"golang.org/x/sys/unix"
 )
 

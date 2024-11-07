@@ -1,11 +1,11 @@
 # VictoriaMetrics
 
-[![Latest Release](https://img.shields.io/github/release/VictoriaMetrics/VictoriaMetrics.svg?style=flat-square)](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest)
+[![Latest Release](https://img.shields.io/github/release/VictoriaMetrics/VictoriaMetrics.svg?style=flat-square)](https://github.com/aginetwork7/VictoriaMetrics/releases/latest)
 [![Docker Pulls](https://img.shields.io/docker/pulls/victoriametrics/victoria-metrics.svg?maxAge=604800)](https://hub.docker.com/r/victoriametrics/victoria-metrics)
 [![Slack](https://img.shields.io/badge/join%20slack-%23victoriametrics-brightgreen.svg)](https://slack.victoriametrics.com/)
-[![GitHub license](https://img.shields.io/github/license/VictoriaMetrics/VictoriaMetrics.svg)](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/LICENSE)
-[![Go Report](https://goreportcard.com/badge/github.com/VictoriaMetrics/VictoriaMetrics)](https://goreportcard.com/report/github.com/VictoriaMetrics/VictoriaMetrics)
-[![Build Status](https://github.com/VictoriaMetrics/VictoriaMetrics/workflows/main/badge.svg)](https://github.com/VictoriaMetrics/VictoriaMetrics/actions)
+[![GitHub license](https://img.shields.io/github/license/VictoriaMetrics/VictoriaMetrics.svg)](https://github.com/aginetwork7/VictoriaMetrics/blob/master/LICENSE)
+[![Go Report](https://goreportcard.com/badge/github.com/aginetwork7/VictoriaMetrics)](https://goreportcard.com/report/github.com/aginetwork7/VictoriaMetrics)
+[![Build Status](https://github.com/aginetwork7/VictoriaMetrics/workflows/main/badge.svg)](https://github.com/aginetwork7/VictoriaMetrics/actions)
 [![codecov](https://codecov.io/gh/VictoriaMetrics/VictoriaMetrics/branch/master/graph/badge.svg)](https://codecov.io/gh/VictoriaMetrics/VictoriaMetrics)
 
 <picture>
@@ -20,7 +20,7 @@ Here are some resources and information about VictoriaMetrics:
 
 - Documentation: [docs.victoriametrics.com](https://docs.victoriametrics.com)
 - Case studies: [Grammarly, Roblox, Wix,...](https://docs.victoriametrics.com/casestudies/).
-- Available: [Binary releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest), [Docker images](https://hub.docker.com/r/victoriametrics/victoria-metrics/), [Source code](https://github.com/VictoriaMetrics/VictoriaMetrics)
+- Available: [Binary releases](https://github.com/aginetwork7/VictoriaMetrics/releases/latest), [Docker images](https://hub.docker.com/r/victoriametrics/victoria-metrics/), [Source code](https://github.com/aginetwork7/VictoriaMetrics)
 - Deployment types: [Single-node version](https://docs.victoriametrics.com/), [Cluster version](https://docs.victoriametrics.com/cluster-victoriametrics/), and [Enterprise version](https://docs.victoriametrics.com/enterprise/)
 - Changelog: [CHANGELOG](https://docs.victoriametrics.com/changelog/), and [How to upgrade](https://docs.victoriametrics.com/#how-to-upgrade-victoriametrics)
 - Community: [Slack](https://slack.victoriametrics.com/), [X (Twitter)](https://x.com/VictoriaMetrics), [LinkedIn](https://www.linkedin.com/company/victoriametrics/), [YouTube](https://www.youtube.com/@VictoriaMetrics)
@@ -64,7 +64,7 @@ In addition, the Enterprise version includes extra features:
 - **Comprehensive support**: First-class consulting, feature requests and technical support provided by the core VictoriaMetrics dev team.
 - Many other features, which you can read about on [the Enterprise page](https://docs.victoriametrics.com/enterprise/).
 
-[Contact us](mailto:info@victoriametrics.com) if you need enterprise support for VictoriaMetrics. Or you can request a free trial license [here](https://victoriametrics.com/products/enterprise/trial/), downloaded Enterprise binaries are available at [Github Releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest).
+[Contact us](mailto:info@victoriametrics.com) if you need enterprise support for VictoriaMetrics. Or you can request a free trial license [here](https://victoriametrics.com/products/enterprise/trial/), downloaded Enterprise binaries are available at [Github Releases](https://github.com/aginetwork7/VictoriaMetrics/releases/latest).
 
 We strictly apply security measures in everything we do. VictoriaMetrics has achieved security certifications for Database Software Development and Software-Based Monitoring Services. See [Security page](https://victoriametrics.com/security/) for more details.
 
@@ -95,7 +95,7 @@ If you like VictoriaMetrics and want to contribute, then please [read these docs
 
 ## VictoriaMetrics Logo
 
-The provided [ZIP file](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/VM_logo.zip) contains three folders with different logo orientations. Each folder includes the following file types:
+The provided [ZIP file](https://github.com/aginetwork7/VictoriaMetrics/blob/master/VM_logo.zip) contains three folders with different logo orientations. Each folder includes the following file types:
 
 * JPEG: Preview files
 * PNG: Preview files with transparent background

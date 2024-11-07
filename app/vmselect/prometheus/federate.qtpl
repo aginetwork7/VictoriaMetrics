@@ -1,7 +1,7 @@
 {% import (
 	"math"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/netstorage"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/netstorage"
 ) %}
 
 {% stripspace %}
@@ -21,7 +21,7 @@
 		{% comment %}
 			This is most likely a staleness marker.
 			Return nothing after the staleness marker.
-			See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3185
+			See https://github.com/aginetwork7/VictoriaMetrics/issues/3185
 		{% endcomment %}
 		{% return %}
 	{% endif %}

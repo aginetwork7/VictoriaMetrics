@@ -20,7 +20,7 @@
 
 - multiple paths for a host in ingress
 - support HPA for vmselect statefulset
-- bump version of VM components to [v1.106.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.106.0)
+- bump version of VM components to [v1.106.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.106.0)
 
 ## 0.14.6
 
@@ -29,7 +29,7 @@
 ![AppVersion: v1.105.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.105.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.105.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.105.0)
+- bump version of VM components to [v1.105.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.105.0)
 
 ## 0.14.5
 
@@ -87,7 +87,7 @@
 ![AppVersion: v1.104.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.104.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.104.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.104.0)
+- bump version of VM components to [v1.104.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.104.0)
 
 ## 0.13.7
 
@@ -162,7 +162,7 @@
 ![AppVersion: v1.103.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.103.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.103.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.103.0)
+- bump version of VM components to [v1.103.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.103.0)
 - Fixed image pull secrets. See [this issue](https://github.com/VictoriaMetrics/helm-charts/issues/1285)
 - Renamed `.Values.vmstorage.persistentVolume.storageClass` to `.Values.vmstorage.persistentVolume.storageClassName`
 - Removed necessity to set `.Values.vmstorage.persistentVolume.existintClaim` when it should be created by chart. See [this issue](https://github.com/VictoriaMetrics/helm-charts/issues/189)
@@ -221,7 +221,7 @@
 ![AppVersion: v1.102.1](https://img.shields.io/static/v1?label=AppVersion&message=v1.102.1&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.102.1](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.102.1)
+- bump version of VM components to [v1.102.1](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.102.1)
 
 ## 0.11.22
 
@@ -239,7 +239,7 @@
 ![AppVersion: v1.102.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.102.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.102.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.102.0)
+- bump version of VM components to [v1.102.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.102.0)
 
 ## 0.11.20
 
@@ -289,7 +289,7 @@
 
 - properly truncate value of `app.kubernetes.io/managed-by` and `app.kubernetes.io/instance` labels in case release name exceeds 63 characters. See [this issue](https://github.com/VictoriaMetrics/helm-charts/issues/931) and [this PR](https://github.com/VictoriaMetrics/helm-charts/pull/936).
 - enable templating for `port name` so users can replace the default with custom values in use cases such as outlined in [this issue](https://github.com/VictoriaMetrics/helm-charts/issues/972) and has been addressed in [this PR](https://github.com/VictoriaMetrics/helm-charts/pull/975).
-- bump version of VM components to [v1.101.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.101.0)
+- bump version of VM components to [v1.101.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.101.0)
 
 ## 0.11.15
 
@@ -298,7 +298,7 @@
 ![AppVersion: v1.100.1](https://img.shields.io/static/v1?label=AppVersion&message=v1.100.1&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.100.1](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.100.1)
+- bump version of VM components to [v1.100.1](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.100.1)
 
 ## 0.11.14
 
@@ -317,7 +317,7 @@
 ![AppVersion: v1.99.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.99.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.99.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.99.0)
+- bump version of VM components to [v1.99.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.99.0)
 
 ## 0.11.12
 
@@ -335,7 +335,7 @@
 ![AppVersion: v1.97.1](https://img.shields.io/static/v1?label=AppVersion&message=v1.97.1&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.97.1](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.97.1)
+- bump version of VM components to [v1.97.1](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.97.1)
 - Switch probes scheme to `HTTPS` if vminsert and vmselect enabled tls in extraArgs.
 
 ## 0.11.10
@@ -363,7 +363,7 @@
 ![AppVersion: v1.96.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.96.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.96.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.96.0)
+- bump version of VM components to [v1.96.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.96.0)
 
 ## 0.11.7
 
@@ -381,7 +381,7 @@
 ![AppVersion: v1.95.1](https://img.shields.io/static/v1?label=AppVersion&message=v1.95.1&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.95.1](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.95.1)
+- bump version of VM components to [v1.95.1](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.95.1)
 
 ## 0.11.5
 
@@ -390,7 +390,7 @@
 ![AppVersion: v1.95.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.95.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.95.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.95.0)
+- bump version of VM components to [v1.95.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.95.0)
 
 ## 0.11.4
 
@@ -417,7 +417,7 @@
 ![AppVersion: v1.94.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.94.0&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- bump version of VM components to [v1.94.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.94.0)
+- bump version of VM components to [v1.94.0](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.94.0)
 - Add support of providing enterprise license key for VictoriaMetrics enterprise. See [these docs](https://docs.victoriametrics.com/enterprise) for details.
 
 ## 0.11.1
@@ -446,7 +446,7 @@
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
 - Support `behavior` setting in horizontal pod autoscalers for vminsert and vmselect (#679)
-- Bump version of VM components to [v1.93.5](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.93.5)
+- Bump version of VM components to [v1.93.5](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.93.5)
 
 ## 0.10.8
 
@@ -455,7 +455,7 @@
 ![AppVersion: v1.93.4](https://img.shields.io/static/v1?label=AppVersion&message=v1.93.4&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-- Bump version of VM components to [v1.93.4](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.93.4)
+- Bump version of VM components to [v1.93.4](https://github.com/aginetwork7/VictoriaMetrics/releases/tag/v1.93.4)
 
 ## 0.10.7
 

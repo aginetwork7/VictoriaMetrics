@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
 	"github.com/valyala/histogram"
 )
 

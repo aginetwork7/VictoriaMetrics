@@ -1,6 +1,6 @@
 {
   "name": "max_lookback_unset",
-  "issue": "https://github.com/VictoriaMetrics/VictoriaMetrics/issues/209",
+  "issue": "https://github.com/aginetwork7/VictoriaMetrics/issues/209",
   "data": [
     "max_lookback_unset 1 {TIME_S-30s}",
     "max_lookback_unset 2 {TIME_S-60s}",

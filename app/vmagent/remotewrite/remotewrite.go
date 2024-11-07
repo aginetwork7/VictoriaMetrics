@@ -12,25 +12,25 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httpserver"
+	"github.com/aginetwork7/VictoriaMetrics/lib/httpserver"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/auth"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bloomfilter"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/memory"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/persistentqueue"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/procutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promrelabel"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/ratelimiter"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/streamaggr"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/auth"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bloomfilter"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/cgroup"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/flagutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fs"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/memory"
+	"github.com/aginetwork7/VictoriaMetrics/lib/persistentqueue"
+	"github.com/aginetwork7/VictoriaMetrics/lib/procutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/prompbmarshal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promrelabel"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promutils"
+	"github.com/aginetwork7/VictoriaMetrics/lib/ratelimiter"
+	"github.com/aginetwork7/VictoriaMetrics/lib/streamaggr"
 	"github.com/cespare/xxhash/v2"
 )
 
@@ -196,7 +196,7 @@ func Init() {
 
 	// Register SIGHUP handler for config reload before loadRelabelConfigs.
 	// This guarantees that the config will be re-read if the signal arrives just after loadRelabelConfig.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1240
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/1240
 	sighupCh := procutil.NewSighupChan()
 
 	rcs, err := loadRelabelConfigs()
@@ -244,11 +244,11 @@ func dropDanglingQueues() {
 	}
 	// Remove dangling persistent queues, if any.
 	// This is required for the case when the number of queues has been changed or URL have been changed.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4014
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/4014
 	//
 	// In case if there were many persistent queues with identical *remoteWriteURLs
 	// the queue with the last index will be dropped.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6140
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/6140
 	existingQueues := make(map[string]struct{}, len(rwctxsGlobal))
 	for _, rwctx := range rwctxsGlobal {
 		existingQueues[rwctx.fq.Dirname()] = struct{}{}
@@ -787,7 +787,7 @@ func newRemoteWriteCtx(argIdx int, remoteWriteURL *url.URL, maxInmemoryBlocks in
 	queuePath := filepath.Join(*tmpDataPath, persistentQueueDirname, fmt.Sprintf("%d_%016X", argIdx+1, h))
 	maxPendingBytes := maxPendingBytesPerURL.GetOptionalArg(argIdx)
 	if maxPendingBytes != 0 && maxPendingBytes < persistentqueue.DefaultChunkFileSize {
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/4195
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/4195
 		logger.Warnf("rounding the -remoteWrite.maxDiskUsagePerURL=%d to the minimum supported value: %d", maxPendingBytes, persistentqueue.DefaultChunkFileSize)
 		maxPendingBytes = persistentqueue.DefaultChunkFileSize
 	}
@@ -896,8 +896,8 @@ func (rwctx *remoteWriteCtx) TryPush(tss []prompbmarshal.TimeSeries, forceDropSa
 		rctx = getRelabelCtx()
 		// Make a copy of tss before applying relabeling in order to prevent
 		// from affecting time series for other remoteWrite.url configs.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/467
-		// and https://github.com/VictoriaMetrics/VictoriaMetrics/issues/599
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/467
+		// and https://github.com/aginetwork7/VictoriaMetrics/issues/599
 		v = tssPool.Get().(*[]prompbmarshal.TimeSeries)
 		tss = append(*v, tss...)
 		rowsCountBeforeRelabel := getRowsCount(tss)

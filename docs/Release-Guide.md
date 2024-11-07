@@ -39,17 +39,17 @@ Bumping the limits may significantly improve build speed.
 
 ## Release version and Docker images
 
-1. Make sure all the changes are documented in [CHANGELOG.md](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/docs/CHANGELOG.md).
+1. Make sure all the changes are documented in [CHANGELOG.md](https://github.com/aginetwork7/VictoriaMetrics/blob/master/docs/CHANGELOG.md).
    Ideally, every change must be documented in the commit with the change. Alternatively, the change must be documented immediately
    after the commit, which adds the change.
-1. Run `make vmui-update` and `make vmui-logs-update` commands to re-build static files for `vmui`. See [commit example](https://github.com/VictoriaMetrics/VictoriaMetrics/commit/9dde5b8ee3fdc9d4cd495c8118e04ff4ee32e650). 
+1. Run `make vmui-update` and `make vmui-logs-update` commands to re-build static files for `vmui`. See [commit example](https://github.com/aginetwork7/VictoriaMetrics/commit/9dde5b8ee3fdc9d4cd495c8118e04ff4ee32e650). 
 1. Make sure all the changes are synced between `master`, `cluster`, `enterprise-single-node` and `enterprise-cluster` branches.
    Changes in these branches must be synced immediately after they are committed in at least a single branch.
 1. Make sure that the release branches have no security issues.
-1. Update release versions if needed in [SECURITY.md](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/SECURITY.md).
+1. Update release versions if needed in [SECURITY.md](https://github.com/aginetwork7/VictoriaMetrics/blob/master/SECURITY.md).
 1. Add `(available starting from v1.xx.y)` line to feature docs introduced in the upcoming release.
-1. Cut new version in [CHANGELOG.md](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/docs/CHANGELOG.md)
-   and make it merged. See example in this [commit](https://github.com/VictoriaMetrics/VictoriaMetrics/commit/b771152039d23b5ccd637a23ea748bc44a9511a7).
+1. Cut new version in [CHANGELOG.md](https://github.com/aginetwork7/VictoriaMetrics/blob/master/docs/CHANGELOG.md)
+   and make it merged. See example in this [commit](https://github.com/aginetwork7/VictoriaMetrics/commit/b771152039d23b5ccd637a23ea748bc44a9511a7).
 1. Cherry-pick bug fixes relevant for [LTS releases](https://docs.victoriametrics.com/lts-releases/).
 1. Make sure you get all changes fetched `git fetch --all`.
 1. Create the following release tags:
@@ -69,8 +69,8 @@ Bumping the limits may significantly improve build speed.
       * linux/ppc64le
       * linux/386
       This step can be run manually with the command `make publish` from the needed git tag.
-1. Verify that created images are stable and don't introduce regressions on [test environment](https://github.com/VictoriaMetrics/VictoriaMetrics-enterprise/blob/master/Release-Guide.md#testing-releases).
-1. Push the tags `v1.xx.y` and `v1.xx.y-cluster` created at previous steps to public GitHub repository at https://github.com/VictoriaMetrics/VictoriaMetrics.
+1. Verify that created images are stable and don't introduce regressions on [test environment](https://github.com/aginetwork7/VictoriaMetrics-enterprise/blob/master/Release-Guide.md#testing-releases).
+1. Push the tags `v1.xx.y` and `v1.xx.y-cluster` created at previous steps to public GitHub repository at https://github.com/aginetwork7/VictoriaMetrics.
    Push the tags `v1.xx.y`, `v1.xx.y-cluster`, `v1.xx.y-enterprise` and `v1.xx.y-enterprise-cluster` to the corresponding
    branches in private repository.
    **Important note:** do not push enterprise tags to public GitHub repository - they must be pushed only to private repository.
@@ -88,15 +88,15 @@ Bumping the limits may significantly improve build speed.
         file created at the step `a`.
       - To run the command `TAG=v1.xx.y make github-create-release github-upload-assets`, so new release is created
         and all the needed assets are re-uploaded to it.
-1. Test new images on [sandbox](https://github.com/VictoriaMetrics/VictoriaMetrics-enterprise/blob/master/Release-Guide.md#testing-releases).
-1. Go to <https://github.com/VictoriaMetrics/VictoriaMetrics/releases> and verify that draft release with the name `TAG` has been created
+1. Test new images on [sandbox](https://github.com/aginetwork7/VictoriaMetrics-enterprise/blob/master/Release-Guide.md#testing-releases).
+1. Go to <https://github.com/aginetwork7/VictoriaMetrics/releases> and verify that draft release with the name `TAG` has been created
    and this release contains all the needed binaries and checksums.
-1. Update the release description with the content of [CHANGELOG](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/docs/CHANGELOG.md) for this release.
+1. Update the release description with the content of [CHANGELOG](https://github.com/aginetwork7/VictoriaMetrics/blob/master/docs/CHANGELOG.md) for this release.
 1. Publish release by pressing "Publish release" green button in GitHub's UI.
-1. Update GitHub tickets related to the new release. Usually, such tickets have label [waiting for release](https://github.com/VictoriaMetrics/VictoriaMetrics/issues?q=is%3Aopen+is%3Aissue+label%3A%22waiting+for+release%22). Close such tickets by mentioning which release they were included into, and remove the label. See example [here](https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6637#issuecomment-2390729511). 
+1. Update GitHub tickets related to the new release. Usually, such tickets have label [waiting for release](https://github.com/aginetwork7/VictoriaMetrics/issues?q=is%3Aopen+is%3Aissue+label%3A%22waiting+for+release%22). Close such tickets by mentioning which release they were included into, and remove the label. See example [here](https://github.com/aginetwork7/VictoriaMetrics/issues/6637#issuecomment-2390729511). 
 1. Bump VictoriaMetrics version at `deployment/docker/docker-compose.yml` and at `deployment/docker/docker-compose-cluster.yml`.
-1. Bump VictoriaMetrics version mentioned in [docs](https://github.com/VictoriaMetrics/VictoriaMetrics/issues/7388).
-1. Follow the instructions in [release follow-up](https://github.com/VictoriaMetrics/VictoriaMetrics-enterprise/blob/master/Release-Guide.md).
+1. Bump VictoriaMetrics version mentioned in [docs](https://github.com/aginetwork7/VictoriaMetrics/issues/7388).
+1. Follow the instructions in [release follow-up](https://github.com/aginetwork7/VictoriaMetrics-enterprise/blob/master/Release-Guide.md).
 
 ### Public Announcement
 

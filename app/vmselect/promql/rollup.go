@@ -11,10 +11,10 @@ import (
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/VictoriaMetrics/metricsql"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/decimal"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/storage"
 )
 
 var minStalenessInterval = flag.Duration("search.minStalenessInterval", 0, "The minimum interval for staleness calculations. "+
@@ -96,7 +96,7 @@ var rollupFuncs = map[string]newRollupFunc{
 	"tfirst_over_time":        newRollupFuncOneArg(rollupTfirst),
 	// `timestamp` function must return timestamp for the last datapoint on the current window
 	// in order to properly handle offset and timestamps unaligned to the current step.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/415 for details.
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/415 for details.
 	"timestamp":              newRollupFuncOneArg(rollupTlast),
 	"timestamp_with_name":    newRollupFuncOneArg(rollupTlast), // + rollupFuncsKeepMetricName
 	"tlast_change_over_time": newRollupFuncOneArg(rollupTlastChange),
@@ -115,7 +115,7 @@ var needSilenceIntervalForRollupFunc = map[string]bool{
 	"changes":             true,
 	"decreases_over_time": true,
 	// The default_rollup implicitly relies on the previous samples in order to fill gaps.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5388
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/5388
 	"default_rollup":         true,
 	"delta":                  true,
 	"deriv_fast":             true,
@@ -720,12 +720,12 @@ func (rc *rollupConfig) doInternal(dstValues []float64, tsm *timeseriesMap, valu
 			// If the user explicitly sets the lookbehind window to some fixed value, e.g. rate(foo[1s]),
 			// then it is expected he knows what he is doing. Do not adjust the lookbehind window then.
 			//
-			// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3483
+			// See https://github.com/aginetwork7/VictoriaMetrics/issues/3483
 			window = maxPrevInterval
 		}
 		if rc.isDefaultRollup && rc.LookbackDelta > 0 && window > rc.LookbackDelta {
 			// Implicit window exceeds -search.maxStalenessInterval, so limit it to -search.maxStalenessInterval
-			// according to https://github.com/VictoriaMetrics/VictoriaMetrics/issues/784
+			// according to https://github.com/aginetwork7/VictoriaMetrics/issues/784
 			window = rc.LookbackDelta
 		}
 	}
@@ -867,7 +867,7 @@ func getScrapeInterval(timestamps []int64, defaultInterval int64) int64 {
 func getMaxPrevInterval(scrapeInterval int64) int64 {
 	// Increase scrapeInterval more for smaller scrape intervals in order to hide possible gaps
 	// when high jitter is present.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/139 .
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/139 .
 	if scrapeInterval <= 2*1000 {
 		return scrapeInterval + 4*scrapeInterval
 	}
@@ -899,7 +899,7 @@ func removeCounterResets(values []float64) {
 		if d < 0 {
 			if (-d * 8) < prevValue {
 				// This is likely a partial counter reset.
-				// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/2787
+				// See https://github.com/aginetwork7/VictoriaMetrics/issues/2787
 				correction += prevValue - v
 			} else {
 				correction += prevValue
@@ -908,7 +908,7 @@ func removeCounterResets(values []float64) {
 		prevValue = v
 		values[i] = v + correction
 		// Check again, there could be precision error in float operations,
-		// see https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5571
+		// see https://github.com/aginetwork7/VictoriaMetrics/issues/5571
 		if i > 0 && values[i] < values[i-1] {
 			values[i] = values[i-1]
 		}
@@ -1822,7 +1822,7 @@ func rollupDelta(rfa *rollupFuncArg) float64 {
 		if !math.IsNaN(rfa.realPrevValue) {
 			// Assume that the value didn't change during the current gap.
 			// This should fix high delta() and increase() values at the end of gaps.
-			// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/894
+			// See https://github.com/aginetwork7/VictoriaMetrics/issues/894
 			return values[len(values)-1] - rfa.realPrevValue
 		}
 		// Assume that the previous non-existing value was 0
@@ -1859,7 +1859,7 @@ func rollupDeltaPrometheus(rfa *rollupFuncArg) float64 {
 	// before calling rollup funcs.
 	values := rfa.values
 	// Just return the difference between the last and the first sample like Prometheus does.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1962
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/1962
 	if len(values) < 2 {
 		return nan
 	}
@@ -1892,7 +1892,7 @@ func rollupIdelta(rfa *rollupFuncArg) float64 {
 
 func rollupDerivSlow(rfa *rollupFuncArg) float64 {
 	// Use linear regression like Prometheus does.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/73
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/73
 	_, k := linearRegression(rfa.values, rfa.timestamps, rfa.currTimestamp)
 	return k
 }
@@ -2030,7 +2030,7 @@ func rollupChangesPrometheus(rfa *rollupFuncArg) float64 {
 	// before calling rollup funcs.
 	values := rfa.values
 	// Do not take into account rfa.prevValue like Prometheus does.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1962
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/1962
 	if len(values) < 1 {
 		return nan
 	}
@@ -2039,7 +2039,7 @@ func rollupChangesPrometheus(rfa *rollupFuncArg) float64 {
 	for _, v := range values[1:] {
 		if v != prevValue {
 			if math.Abs(v-prevValue) < 1e-12*math.Abs(v) {
-				// This may be precision error. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/767#issuecomment-1650932203
+				// This may be precision error. See https://github.com/aginetwork7/VictoriaMetrics/issues/767#issuecomment-1650932203
 				continue
 			}
 			n++
@@ -2066,7 +2066,7 @@ func rollupChanges(rfa *rollupFuncArg) float64 {
 	for _, v := range values {
 		if v != prevValue {
 			if math.Abs(v-prevValue) < 1e-12*math.Abs(v) {
-				// This may be precision error. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/767#issuecomment-1650932203
+				// This may be precision error. See https://github.com/aginetwork7/VictoriaMetrics/issues/767#issuecomment-1650932203
 				continue
 			}
 			n++
@@ -2098,7 +2098,7 @@ func rollupIncreases(rfa *rollupFuncArg) float64 {
 	for _, v := range values {
 		if v > prevValue {
 			if math.Abs(v-prevValue) < 1e-12*math.Abs(v) {
-				// This may be precision error. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/767#issuecomment-1650932203
+				// This may be precision error. See https://github.com/aginetwork7/VictoriaMetrics/issues/767#issuecomment-1650932203
 				continue
 			}
 			n++
@@ -2133,7 +2133,7 @@ func rollupResets(rfa *rollupFuncArg) float64 {
 	for _, v := range values {
 		if v < prevValue {
 			if math.Abs(v-prevValue) < 1e-12*math.Abs(v) {
-				// This may be precision error. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/767#issuecomment-1650932203
+				// This may be precision error. See https://github.com/aginetwork7/VictoriaMetrics/issues/767#issuecomment-1650932203
 				continue
 			}
 			n++
@@ -2145,7 +2145,7 @@ func rollupResets(rfa *rollupFuncArg) float64 {
 
 // getCandlestickValues returns a subset of rfa.values suitable for rollup_candlestick
 //
-// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/309 for details.
+// See https://github.com/aginetwork7/VictoriaMetrics/issues/309 for details.
 func getCandlestickValues(rfa *rollupFuncArg) []float64 {
 	currTimestamp := rfa.currTimestamp
 	timestamps := rfa.timestamps
@@ -2336,7 +2336,7 @@ func rollupDefault(rfa *rollupFuncArg) float64 {
 		return nan
 	}
 	// Intentionally do not skip the possible last Prometheus staleness mark.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1526 .
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/1526 .
 	return values[len(values)-1]
 }
 

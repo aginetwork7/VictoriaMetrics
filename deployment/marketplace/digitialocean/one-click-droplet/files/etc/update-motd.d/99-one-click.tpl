@@ -20,13 +20,13 @@ On the server:
 
 ********************************************************************************
   # This image includes VM_VERSION version of VictoriaMetrics. 
-  # See Release notes https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/vVM_VERSION
+  # See Release notes https://github.com/aginetwork7/VictoriaMetrics/releases/tag/vVM_VERSION
 
   # Welcome to VictoriaMetrics droplet!
 
   # Website:       https://victoriametrics.com
   # Documentation: https://docs.victoriametrics.com
-  # VictoriaMetrics Github : https://github.com/VictoriaMetrics/VictoriaMetrics
+  # VictoriaMetrics Github : https://github.com/aginetwork7/VictoriaMetrics
   # VictoriaMetrics Slack Community: https://slack.victoriametrics.com
   # VictoriaMetrics Telegram Community: https://t.me/VictoriaMetrics_en
 

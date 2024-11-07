@@ -8,7 +8,7 @@ package prometheus
 import (
 	"math"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/netstorage"
+	"github.com/aginetwork7/VictoriaMetrics/app/vmselect/netstorage"
 )
 
 // Federate writes rs in /federate format.// See https://prometheus.io/docs/prometheus/latest/federation/

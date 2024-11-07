@@ -3,8 +3,8 @@ package csvimport
 import (
 	"fmt"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 	"github.com/valyala/fastjson/fastfloat"
 )
 

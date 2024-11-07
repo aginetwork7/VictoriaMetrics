@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
 )
 
 // The maximum size of a single line returned by ReadLinesBlock.
@@ -57,7 +57,7 @@ again:
 			// Missing newline in the end of stream. This is OK,
 			// so suppress io.EOF for now. It will be returned during the next
 			// call to ReadLinesBlock.
-			// This fixes https://github.com/VictoriaMetrics/VictoriaMetrics/issues/60 .
+			// This fixes https://github.com/aginetwork7/VictoriaMetrics/issues/60 .
 			return dstBuf, tailBuf, nil
 		}
 		if !isEOF {

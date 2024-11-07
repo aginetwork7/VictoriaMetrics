@@ -3,7 +3,7 @@ package insertutils
 import (
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logstorage"
 )
 
 func TestExtractTimestampRFC3339NanoFromFields_Success(t *testing.T) {

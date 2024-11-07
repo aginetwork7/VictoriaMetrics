@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
+	"github.com/aginetwork7/VictoriaMetrics/lib/cgroup"
 )
 
 // virtualMachine represents an Azure virtual machine (which can also be created by a VMSS)
@@ -87,7 +87,7 @@ func visitAllAPIObjects(ac *apiConfig, apiURL string, cb func(data json.RawMessa
 		}
 
 		// Azure API returns NextLink with apiServer in it, so we need to remove it.
-		// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/3247
+		// See https://github.com/aginetwork7/VictoriaMetrics/issues/3247
 		if lar.NextLink == "" {
 			break
 		}
@@ -97,7 +97,7 @@ func visitAllAPIObjects(ac *apiConfig, apiURL string, cb func(data json.RawMessa
 		}
 
 		// Sometimes Azure will respond a host with a port. Since all possible apiServer defined in cloudEnvironments do not include a port,
-		// it is best to check the host without the port. See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/6912
+		// it is best to check the host without the port. See https://github.com/aginetwork7/VictoriaMetrics/issues/6912
 		if nextURL.Host != "" && nextURL.Hostname() != ac.apiServerHost {
 			return fmt.Errorf("unexpected nextLink host %q, expecting %q", nextURL.Hostname(), ac.apiServerHost)
 		}

@@ -7,8 +7,8 @@ import (
 	"net"
 	"sync/atomic"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
 )
 
 type connMetrics struct {

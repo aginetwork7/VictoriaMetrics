@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promscrape/discoveryutils"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
+	"github.com/aginetwork7/VictoriaMetrics/lib/promscrape/discoveryutils"
 )
 
 // SDCheckInterval is check interval for Consul service discovery.
@@ -314,7 +314,7 @@ func ShouldCollectServiceByName(filterServices []string, serviceName string) boo
 		return true
 	}
 	for _, filterService := range filterServices {
-		// Use case-insensitive comparison for service names according to https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1422
+		// Use case-insensitive comparison for service names according to https://github.com/aginetwork7/VictoriaMetrics/issues/1422
 		if strings.EqualFold(filterService, serviceName) {
 			return true
 		}

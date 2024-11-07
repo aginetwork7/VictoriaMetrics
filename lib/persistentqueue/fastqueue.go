@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/aginetwork7/VictoriaMetrics/lib/bytesutil"
+	"github.com/aginetwork7/VictoriaMetrics/lib/fasttime"
+	"github.com/aginetwork7/VictoriaMetrics/lib/logger"
 )
 
 // FastQueue is fast persistent queue, which prefers sending data via memory.
@@ -94,7 +94,7 @@ func (fq *FastQueue) UnblockAllReaders() {
 
 	// Unblock blocked readers
 	// Allow for up to 5 seconds for sending Prometheus stale markers.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1526
+	// See https://github.com/aginetwork7/VictoriaMetrics/issues/1526
 	fq.stopDeadline = fasttime.UnixTimestamp() + 5
 	fq.cond.Broadcast()
 }
@@ -210,7 +210,7 @@ func (fq *FastQueue) tryWriteBlock(block []byte, ignoreDisabledPQ bool) bool {
 	fq.pendingInmemoryBytes += uint64(len(block))
 
 	// Notify potentially blocked reader.
-	// See https://github.com/VictoriaMetrics/VictoriaMetrics/pull/484 for the context.
+	// See https://github.com/aginetwork7/VictoriaMetrics/pull/484 for the context.
 	fq.cond.Signal()
 	return true
 }

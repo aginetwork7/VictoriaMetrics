@@ -230,7 +230,7 @@ The Victoria Metrics Operator ensures that Alertmanager clusters are properly co
 
 ## Version management
 
-To set `VMAlertmanager` version add `spec.image.tag` name from [releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases)
+To set `VMAlertmanager` version add `spec.image.tag` name from [releases](https://github.com/aginetwork7/VictoriaMetrics/releases)
 
 ```yaml
 apiVersion: operator.victoriametrics.com/v1beta1
