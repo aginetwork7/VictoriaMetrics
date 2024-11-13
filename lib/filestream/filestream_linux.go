@@ -2,6 +2,8 @@ package filestream
 
 import (
 	"fmt"
+	"log/slog"
+
 	"golang.org/x/sys/unix"
 )
 
@@ -33,7 +35,8 @@ func (st *streamTracker) close() error {
 	}
 	// Advise the whole file as it shouldn't be cached.
 	if err := unix.Fadvise(int(st.fd), 0, 0, unix.FADV_DONTNEED); err != nil {
-		return fmt.Errorf("unix.Fadvise(FADV_DONTNEEDED, 0, 0) error: %w", err)
+		slog.Warn("unix.Fadvise(FADV_DONTNEEDED, 0, 0)", "error", err)
+		return nil
 	}
 	return nil
 }
