@@ -20,10 +20,10 @@ import (
 )
 
 // MaxBlockSize is the maximum size of the block persistent queue can work with.
-const MaxBlockSize = 4 * 1024 * 1024
+const MaxBlockSize = 2 * 1024 * 1024
 
 // DefaultChunkFileSize represents default chunk file size
-const DefaultChunkFileSize = (MaxBlockSize + 8) * 2
+const DefaultChunkFileSize = (MaxBlockSize + 8) * 1
 
 var chunkFileNameRegex = regexp.MustCompile("^[0-9A-F]{16}$")
 
