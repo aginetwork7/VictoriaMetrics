@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"gopkg.in/natefinch/lumberjack.v2"
+
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/buildinfo"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/stringsutil"
 	"github.com/VictoriaMetrics/metrics"
@@ -76,8 +78,15 @@ func setLoggerOutput() {
 		output = os.Stderr
 	case "stdout":
 		output = os.Stdout
-	default:
+	case "":
 		panic(fmt.Errorf("FATAL: unsupported `loggerOutput` value: %q; supported values are: stderr, stdout", *loggerOutput))
+	default:
+		logFile := &lumberjack.Logger{
+			Filename:   *loggerOutput,
+			MaxSize:    10,
+			MaxBackups: 5,
+		}
+		output = logFile
 	}
 }
 
