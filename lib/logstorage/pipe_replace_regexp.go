@@ -37,6 +37,10 @@ func (pr *pipeReplaceRegexp) String() string {
 	return s
 }
 
+func (pr *pipeReplaceRegexp) splitToRemoteAndLocal(_ int64) (pipe, []pipe) {
+	return pr, nil
+}
+
 func (pr *pipeReplaceRegexp) canLiveTail() bool {
 	return true
 }
@@ -45,16 +49,12 @@ func (pr *pipeReplaceRegexp) updateNeededFields(neededFields, unneededFields fie
 	updateNeededFieldsForUpdatePipe(neededFields, unneededFields, pr.field, pr.iff)
 }
 
-func (pr *pipeReplaceRegexp) optimize() {
-	pr.iff.optimizeFilterIn()
-}
-
 func (pr *pipeReplaceRegexp) hasFilterInWithQuery() bool {
 	return pr.iff.hasFilterInWithQuery()
 }
 
-func (pr *pipeReplaceRegexp) initFilterInValues(cache map[string][]string, getFieldValuesFunc getFieldValuesFunc) (pipe, error) {
-	iffNew, err := pr.iff.initFilterInValues(cache, getFieldValuesFunc)
+func (pr *pipeReplaceRegexp) initFilterInValues(cache *inValuesCache, getFieldValuesFunc getFieldValuesFunc, keepSubquery bool) (pipe, error) {
+	iffNew, err := pr.iff.initFilterInValues(cache, getFieldValuesFunc, keepSubquery)
 	if err != nil {
 		return nil, err
 	}
@@ -63,18 +63,22 @@ func (pr *pipeReplaceRegexp) initFilterInValues(cache map[string][]string, getFi
 	return &peNew, nil
 }
 
-func (pr *pipeReplaceRegexp) newPipeProcessor(workersCount int, _ <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
+func (pr *pipeReplaceRegexp) visitSubqueries(visitFunc func(q *Query)) {
+	pr.iff.visitSubqueries(visitFunc)
+}
+
+func (pr *pipeReplaceRegexp) newPipeProcessor(_ int, _ <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
 	updateFunc := func(a *arena, v string) string {
 		bLen := len(a.b)
 		a.b = appendReplaceRegexp(a.b, v, pr.re, pr.replacement, pr.limit)
 		return bytesutil.ToUnsafeString(a.b[bLen:])
 	}
 
-	return newPipeUpdateProcessor(workersCount, updateFunc, ppNext, pr.field, pr.iff)
+	return newPipeUpdateProcessor(updateFunc, ppNext, pr.field, pr.iff)
 
 }
 
-func parsePipeReplaceRegexp(lex *lexer) (*pipeReplaceRegexp, error) {
+func parsePipeReplaceRegexp(lex *lexer) (pipe, error) {
 	if !lex.isKeyword("replace_regexp") {
 		return nil, fmt.Errorf("unexpected token: %q; want %q", lex.token, "replace_regexp")
 	}

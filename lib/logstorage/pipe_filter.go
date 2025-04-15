@@ -2,7 +2,8 @@ package logstorage
 
 import (
 	"fmt"
-	"unsafe"
+
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/atomicutil"
 )
 
 // pipeFilter processes '| filter ...' queries.
@@ -15,6 +16,10 @@ type pipeFilter struct {
 
 func (pf *pipeFilter) String() string {
 	return "filter " + pf.f.String()
+}
+
+func (pf *pipeFilter) splitToRemoteAndLocal(_ int64) (pipe, []pipe) {
+	return pf, nil
 }
 
 func (pf *pipeFilter) canLiveTail() bool {
@@ -33,16 +38,12 @@ func (pf *pipeFilter) updateNeededFields(neededFields, unneededFields fieldsSet)
 	}
 }
 
-func (pf *pipeFilter) optimize() {
-	optimizeFilterIn(pf.f)
-}
-
 func (pf *pipeFilter) hasFilterInWithQuery() bool {
 	return hasFilterInWithQueryForFilter(pf.f)
 }
 
-func (pf *pipeFilter) initFilterInValues(cache map[string][]string, getFieldValuesFunc getFieldValuesFunc) (pipe, error) {
-	fNew, err := initFilterInValuesForFilter(cache, pf.f, getFieldValuesFunc)
+func (pf *pipeFilter) initFilterInValues(cache *inValuesCache, getFieldValuesFunc getFieldValuesFunc, keepSubquery bool) (pipe, error) {
+	fNew, err := initFilterInValuesForFilter(cache, pf.f, getFieldValuesFunc, keepSubquery)
 	if err != nil {
 		return nil, err
 	}
@@ -51,14 +52,14 @@ func (pf *pipeFilter) initFilterInValues(cache map[string][]string, getFieldValu
 	return &pfNew, nil
 }
 
-func (pf *pipeFilter) newPipeProcessor(workersCount int, _ <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
-	shards := make([]pipeFilterProcessorShard, workersCount)
+func (pf *pipeFilter) visitSubqueries(visitFunc func(q *Query)) {
+	visitSubqueriesInFilter(pf.f, visitFunc)
+}
 
+func (pf *pipeFilter) newPipeProcessor(_ int, _ <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
 	pfp := &pipeFilterProcessor{
 		pf:     pf,
 		ppNext: ppNext,
-
-		shards: shards,
 	}
 	return pfp
 }
@@ -67,17 +68,10 @@ type pipeFilterProcessor struct {
 	pf     *pipeFilter
 	ppNext pipeProcessor
 
-	shards []pipeFilterProcessorShard
+	shards atomicutil.Slice[pipeFilterProcessorShard]
 }
 
 type pipeFilterProcessorShard struct {
-	pipeFilterProcessorShardNopad
-
-	// The padding prevents false sharing on widespread platforms with 128 mod (cache line size) = 0 .
-	_ [128 - unsafe.Sizeof(pipeFilterProcessorShardNopad{})%128]byte
-}
-
-type pipeFilterProcessorShardNopad struct {
 	br blockResult
 	bm bitmap
 }
@@ -87,7 +81,7 @@ func (pfp *pipeFilterProcessor) writeBlock(workerID uint, br *blockResult) {
 		return
 	}
 
-	shard := &pfp.shards[workerID]
+	shard := pfp.shards.Get(workerID)
 
 	bm := &shard.bm
 	bm.init(br.rowsLen)
@@ -112,7 +106,7 @@ func (pfp *pipeFilterProcessor) flush() error {
 	return nil
 }
 
-func parsePipeFilter(lex *lexer, needFilterKeyword bool) (*pipeFilter, error) {
+func parsePipeFilter(lex *lexer, needFilterKeyword bool) (pipe, error) {
 	if needFilterKeyword {
 		if !lex.isKeyword("filter", "where") {
 			return nil, fmt.Errorf("expecting 'filter' or 'where'; got %q", lex.token)

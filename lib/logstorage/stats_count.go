@@ -1,10 +1,11 @@
 package logstorage
 
 import (
+	"fmt"
 	"slices"
 	"strconv"
-	"unsafe"
 
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 )
 
@@ -24,21 +25,17 @@ func (sc *statsCount) updateNeededFields(neededFields fieldsSet) {
 	neededFields.addFields(sc.fields)
 }
 
-func (sc *statsCount) newStatsProcessor() (statsProcessor, int) {
-	scp := &statsCountProcessor{
-		sc: sc,
-	}
-	return scp, int(unsafe.Sizeof(*scp))
+func (sc *statsCount) newStatsProcessor(a *chunkedAllocator) statsProcessor {
+	return a.newStatsCountProcessor()
 }
 
 type statsCountProcessor struct {
-	sc *statsCount
-
 	rowsCount uint64
 }
 
-func (scp *statsCountProcessor) updateStatsForAllRows(br *blockResult) int {
-	fields := scp.sc.fields
+func (scp *statsCountProcessor) updateStatsForAllRows(sf statsFunc, br *blockResult) int {
+	sc := sf.(*statsCount)
+	fields := sc.fields
 	if len(fields) == 0 {
 		// Fast path - unconditionally count all the columns.
 		scp.rowsCount += uint64(br.rowsLen)
@@ -77,7 +74,8 @@ func (scp *statsCountProcessor) updateStatsForAllRows(br *blockResult) int {
 				}
 			}
 			return 0
-		case valueTypeUint8, valueTypeUint16, valueTypeUint32, valueTypeUint64, valueTypeFloat64, valueTypeIPv4, valueTypeTimestampISO8601:
+		case valueTypeUint8, valueTypeUint16, valueTypeUint32, valueTypeUint64, valueTypeInt64,
+			valueTypeFloat64, valueTypeIPv4, valueTypeTimestampISO8601:
 			scp.rowsCount += uint64(br.rowsLen)
 			return 0
 		default:
@@ -121,7 +119,8 @@ func (scp *statsCountProcessor) updateStatsForAllRows(br *blockResult) int {
 				dictIdx := valuesEncoded[i][0]
 				return c.dictValues[dictIdx] == ""
 			})
-		case valueTypeUint8, valueTypeUint16, valueTypeUint32, valueTypeUint64, valueTypeFloat64, valueTypeIPv4, valueTypeTimestampISO8601:
+		case valueTypeUint8, valueTypeUint16, valueTypeUint32, valueTypeUint64, valueTypeInt64,
+			valueTypeFloat64, valueTypeIPv4, valueTypeTimestampISO8601:
 			scp.rowsCount += uint64(br.rowsLen)
 			return 0
 		default:
@@ -135,8 +134,9 @@ func (scp *statsCountProcessor) updateStatsForAllRows(br *blockResult) int {
 	return 0
 }
 
-func (scp *statsCountProcessor) updateStatsForRow(br *blockResult, rowIdx int) int {
-	fields := scp.sc.fields
+func (scp *statsCountProcessor) updateStatsForRow(sf statsFunc, br *blockResult, rowIdx int) int {
+	sc := sf.(*statsCount)
+	fields := sc.fields
 	if len(fields) == 0 {
 		// Fast path - unconditionally count the given column
 		scp.rowsCount++
@@ -169,7 +169,8 @@ func (scp *statsCountProcessor) updateStatsForRow(br *blockResult, rowIdx int) i
 				scp.rowsCount++
 			}
 			return 0
-		case valueTypeUint8, valueTypeUint16, valueTypeUint32, valueTypeUint64, valueTypeFloat64, valueTypeIPv4, valueTypeTimestampISO8601:
+		case valueTypeUint8, valueTypeUint16, valueTypeUint32, valueTypeUint64, valueTypeInt64,
+			valueTypeFloat64, valueTypeIPv4, valueTypeTimestampISO8601:
 			scp.rowsCount++
 			return 0
 		default:
@@ -189,13 +190,33 @@ func (scp *statsCountProcessor) updateStatsForRow(br *blockResult, rowIdx int) i
 	return 0
 }
 
-func (scp *statsCountProcessor) mergeState(sfp statsProcessor) {
+func (scp *statsCountProcessor) mergeState(_ *chunkedAllocator, _ statsFunc, sfp statsProcessor) {
 	src := sfp.(*statsCountProcessor)
 	scp.rowsCount += src.rowsCount
 }
 
-func (scp *statsCountProcessor) finalizeStats() string {
-	return strconv.FormatUint(scp.rowsCount, 10)
+func (scp *statsCountProcessor) exportState(dst []byte, _ <-chan struct{}) []byte {
+	return encoding.MarshalVarUint64(dst, scp.rowsCount)
+}
+
+func (scp *statsCountProcessor) importState(src []byte, _ <-chan struct{}) (int, error) {
+	rowsCount, n := encoding.UnmarshalVarUint64(src)
+	if n <= 0 {
+		return 0, fmt.Errorf("cannot unmarshal rowsCount")
+	}
+	src = src[n:]
+
+	scp.rowsCount = rowsCount
+
+	if len(src) > 0 {
+		return 0, fmt.Errorf("unexpected non-empty tail left; len(tail)=%d", len(src))
+	}
+
+	return 0, nil
+}
+
+func (scp *statsCountProcessor) finalizeStats(_ statsFunc, dst []byte, _ <-chan struct{}) []byte {
+	return strconv.AppendUint(dst, scp.rowsCount, 10)
 }
 
 func parseStatsCount(lex *lexer) (*statsCount, error) {

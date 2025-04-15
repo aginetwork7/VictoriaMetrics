@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v2"
+
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httputil"
 )
 
 func TestOptionsNewConfigFailure(t *testing.T) {
@@ -240,7 +242,7 @@ func TestOauth2ConfigValidateFailure(t *testing.T) {
 		}
 	}
 
-	// emtpy client_id
+	// empty client_id
 	f(`
 client_secret: some-secret
 token_url: http://some-url
@@ -643,8 +645,9 @@ func TestTLSConfigWithCertificatesFilesUpdate(t *testing.T) {
 		t.Fatalf("unexpected error when parsing config: %s", err)
 	}
 
+	tr := httputil.NewTransport(false, "test_client")
 	client := http.Client{
-		Transport: ac.NewRoundTripper(&http.Transport{}),
+		Transport: ac.NewRoundTripper(tr),
 	}
 
 	resp, err := client.Do(&http.Request{

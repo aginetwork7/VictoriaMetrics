@@ -10,9 +10,10 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promutils"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/regexutil"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/timeutil"
 )
 
 type lexer struct {
@@ -38,31 +39,51 @@ type lexer struct {
 
 	// currentTimestamp is the current timestamp in nanoseconds
 	currentTimestamp int64
+
+	// opts is a stack of options for nested parsed queries
+	optss []*queryOptions
 }
 
 type lexerState struct {
 	lex lexer
 }
 
+func (lex *lexer) copyFrom(src *lexer) {
+	*lex = *src
+	lex.optss = append(lex.optss[:0:0], src.optss...)
+}
+
 func (lex *lexer) backupState() *lexerState {
-	return &lexerState{
-		lex: *lex,
-	}
+	var ls lexerState
+	ls.lex.copyFrom(lex)
+	return &ls
 }
 
 func (lex *lexer) restoreState(ls *lexerState) {
-	*lex = ls.lex
+	lex.copyFrom(&ls.lex)
 }
 
-// newLexer returns new lexer for the given s.
+func (lex *lexer) pushQueryOptions(opts *queryOptions) {
+	lex.optss = append(lex.optss, opts)
+}
+
+func (lex *lexer) popQueryOptions() {
+	lex.optss = lex.optss[:len(lex.optss)-1]
+}
+
+func (lex *lexer) getQueryOptions() *queryOptions {
+	if len(lex.optss) == 0 {
+		return nil
+	}
+	return lex.optss[len(lex.optss)-1]
+}
+
+// newLexer returns new lexer for the given s at the given timestamp.
+//
+// The timestamp is used for properly parsing relative timestamps such as _time:1d.
 //
 // The lex.token points to the first token in s.
-func newLexer(s string) *lexer {
-	timestamp := time.Now().UnixNano()
-	return newLexerAtTimestamp(s, timestamp)
-}
-
-func newLexerAtTimestamp(s string, timestamp int64) *lexer {
+func newLexer(s string, timestamp int64) *lexer {
 	lex := &lexer{
 		s:                s,
 		sOrig:            s,
@@ -224,6 +245,8 @@ again:
 
 // Query represents LogsQL query.
 type Query struct {
+	opts *queryOptions
+
 	f filter
 
 	pipes []pipe
@@ -232,15 +255,62 @@ type Query struct {
 	timestamp int64
 }
 
+type queryOptions struct {
+	// concurrency is the number of concurrent workers to use for query execution on every.
+	//
+	// By default the number of concurrent workers equals to the number of available CPU cores.
+	concurrency uint
+
+	// if ignoreGlobalTimeFilter is set, then Query.AddTimeFilter doesn't add the time filter to the query and to all its subqueries.
+	ignoreGlobalTimeFilter *bool
+}
+
+func (opts *queryOptions) String() string {
+	if opts == nil {
+		return ""
+	}
+	var a []string
+	if opts.concurrency > 0 {
+		a = append(a, fmt.Sprintf("concurrency=%d", opts.concurrency))
+	}
+	if opts.ignoreGlobalTimeFilter != nil {
+		a = append(a, fmt.Sprintf("ignore_global_time_filter=%v", *opts.ignoreGlobalTimeFilter))
+	}
+	if len(a) == 0 {
+		return ""
+	}
+	return "options(" + strings.Join(a, ", ") + ")"
+}
+
 // String returns string representation for q.
 func (q *Query) String() string {
-	s := q.f.String()
+	s := q.opts.String()
+	if len(s) > 0 {
+		s += " "
+	}
+
+	s += q.f.String()
 
 	for _, p := range q.pipes {
 		s += " | " + p.String()
 	}
 
 	return s
+}
+
+// GetConcurrency returns concurrency for the q.
+//
+// See https://docs.victoriametrics.com/victorialogs/logsql/#query-options
+func (q *Query) GetConcurrency() int {
+	concurrency := cgroup.AvailableCPUs()
+	if q.opts != nil && q.opts.concurrency > 0 && int(q.opts.concurrency) < concurrency {
+		// Limit the number of workers by the number of available CPU cores,
+		// since bigger number of workers won't improve CPU-bound query performance -
+		// they just increase RAM usage and slow down query execution because
+		// of more context switches between workers.
+		concurrency = int(q.opts.concurrency)
+	}
+	return concurrency
 }
 
 // CanLiveTail returns true if q can be used in live tailing
@@ -295,6 +365,42 @@ func (q *Query) DropAllPipes() {
 	q.pipes = nil
 }
 
+func (q *Query) addFieldsFilters(neededColumnNames, unneededColumnNames []string) {
+	qStr := "*" + toFieldsFilters(neededColumnNames, unneededColumnNames)
+	qTmp, err := ParseQueryAtTimestamp(qStr, q.GetTimestamp())
+	if err != nil {
+		logger.Panicf("BUG: cannot parse query with fields filters: %s", err)
+	}
+	q.pipes = append(q.pipes, qTmp.pipes...)
+}
+
+// AddFacetsPipe adds ' facets <limit> max_values_per_field <maxValuesPerField> max_value_len <maxValueLen> <keepConstFields>` to the end of q.
+func (q *Query) AddFacetsPipe(limit, maxValuesPerField, maxValueLen int, keepConstFields bool) {
+	s := "facets"
+	if limit > 0 {
+		s += fmt.Sprintf(" %d", limit)
+	}
+	if maxValuesPerField > 0 {
+		s += fmt.Sprintf(" max_values_per_field %d", maxValuesPerField)
+	}
+	if maxValueLen > 0 {
+		s += fmt.Sprintf(" max_value_len %d", maxValueLen)
+	}
+	if keepConstFields {
+		s += " keep_const_fields"
+	}
+	lex := newLexer(s, q.timestamp)
+
+	pf, err := parsePipeFacets(lex)
+	if err != nil {
+		logger.Panicf("BUG: unexpected error when parsing [%s]: %w", s, err)
+	}
+	if !lex.isEnd() {
+		logger.Panicf("BUG: unexpected tail left after parsing [%s]: %q", s, lex.s)
+	}
+	q.pipes = append(q.pipes, pf)
+}
+
 // AddCountByTimePipe adds '| stats by (_time:step offset off, field1, ..., fieldN) count() hits' to the end of q.
 func (q *Query) AddCountByTimePipe(step, off int64, fields []string) {
 	{
@@ -306,7 +412,7 @@ func (q *Query) AddCountByTimePipe(step, off int64, fields []string) {
 			byFieldsStr += ", " + quoteTokenIfNeeded(f)
 		}
 		s := fmt.Sprintf("stats by (%s) count() hits", byFieldsStr)
-		lex := newLexer(s)
+		lex := newLexer(s, q.timestamp)
 
 		ps, err := parsePipeStats(lex, true)
 		if err != nil {
@@ -326,7 +432,7 @@ func (q *Query) AddCountByTimePipe(step, off int64, fields []string) {
 			sortFieldsStr += ", " + quoteTokenIfNeeded(f)
 		}
 		s := fmt.Sprintf("sort by (%s)", sortFieldsStr)
-		lex := newLexer(s)
+		lex := newLexer(s, q.timestamp)
 		ps, err := parsePipeSort(lex)
 		if err != nil {
 			logger.Panicf("BUG: unexpected error when parsing %q: %s", s, err)
@@ -335,7 +441,7 @@ func (q *Query) AddCountByTimePipe(step, off int64, fields []string) {
 	}
 }
 
-// Clone returns a copy of q.
+// Clone returns a copy of q at the given timestamp.
 func (q *Query) Clone(timestamp int64) *Query {
 	qStr := q.String()
 	qCopy, err := ParseQueryAtTimestamp(qStr, timestamp)
@@ -345,22 +451,46 @@ func (q *Query) Clone(timestamp int64) *Query {
 	return qCopy
 }
 
+func (q *Query) cloneShallow() *Query {
+	qCopy := *q
+	return &qCopy
+}
+
+// CloneWithTimeFilter clones q at the given timestamp and adds _time:[start, end] filter to the cloned q.
+func (q *Query) CloneWithTimeFilter(timestamp, start, end int64) *Query {
+	q = q.Clone(timestamp)
+	q.AddTimeFilter(start, end)
+	return q
+}
+
 // CanReturnLastNResults returns true if time range filter at q can be adjusted for returning the last N results.
 func (q *Query) CanReturnLastNResults() bool {
 	for _, p := range q.pipes {
-		switch p.(type) {
+		switch t := p.(type) {
 		case *pipeBlockStats,
 			*pipeBlocksCount,
+			*pipeFacets,
 			*pipeFieldNames,
 			*pipeFieldValues,
+			*pipeFirst,
 			*pipeJoin,
+			*pipeLast,
 			*pipeLimit,
 			*pipeOffset,
 			*pipeTop,
 			*pipeSort,
 			*pipeStats,
+			*pipeUnion,
 			*pipeUniq:
 			return false
+		case *pipeFields:
+			if !t.containsStar && !slices.Contains(t.fields, "_time") {
+				return false
+			}
+		case *pipeDelete:
+			if slices.Contains(t.fields, "_time") {
+				return false
+			}
 		}
 	}
 	return true
@@ -400,6 +530,16 @@ func (q *Query) AddTimeFilter(start, end int64) {
 		stringRepr:   fmt.Sprintf("[%s, %s]", startStr, endStr),
 	}
 
+	q.visitSubqueries(func(q *Query) {
+		q.addTimeFilterNoSubqueries(ft)
+	})
+}
+
+func (q *Query) addTimeFilterNoSubqueries(ft *filterTime) {
+	if q.opts.ignoreGlobalTimeFilter != nil && *q.opts.ignoreGlobalTimeFilter {
+		return
+	}
+
 	fa, ok := q.f.(*filterAnd)
 	if ok {
 		filters := make([]filter, len(fa.filters)+1)
@@ -413,106 +553,27 @@ func (q *Query) AddTimeFilter(start, end int64) {
 	}
 }
 
-// AddExtraStreamFilters adds stream filters to q in the form `{f1.Name=f1.Value, ..., fN.Name=fN.Value}`
-func (q *Query) AddExtraStreamFilters(filters []Field) {
-	if len(filters) == 0 {
+// AddExtraFilters adds extraFilters to q
+func (q *Query) AddExtraFilters(extraFilters *Filter) {
+	if extraFilters == nil || extraFilters.f == nil {
 		return
 	}
 
+	filters := []filter{extraFilters.f}
+	q.visitSubqueries(func(q *Query) {
+		q.addExtraFiltersNoSubqueries(filters)
+	})
+}
+
+func (q *Query) addExtraFiltersNoSubqueries(filters []filter) {
 	fa, ok := q.f.(*filterAnd)
-	if !ok {
-		if fs, ok := q.f.(*filterStream); ok {
-			addExtraStreamFilters(fs, filters)
-			return
-		}
-
-		fa = &filterAnd{
-			filters: []filter{
-				newEmptyFilterStream(),
-				q.f,
-			},
-		}
-		q.f = fa
-	}
-
-	hasStreamFilters := false
-	for _, f := range fa.filters {
-		if _, ok := f.(*filterStream); ok {
-			hasStreamFilters = true
-			break
+	if ok {
+		fa.filters = append(filters, fa.filters...)
+	} else {
+		q.f = &filterAnd{
+			filters: append(filters, q.f),
 		}
 	}
-	if !hasStreamFilters {
-		var dst []filter
-		dst = append(dst, newEmptyFilterStream())
-		fa.filters = append(dst, fa.filters...)
-	}
-
-	for _, f := range fa.filters {
-		if fs, ok := f.(*filterStream); ok {
-			addExtraStreamFilters(fs, filters)
-		}
-	}
-}
-
-func newEmptyFilterStream() *filterStream {
-	return &filterStream{
-		f: &StreamFilter{},
-	}
-}
-
-func addExtraStreamFilters(fs *filterStream, filters []Field) {
-	f := fs.f
-	if len(f.orFilters) == 0 {
-		f.orFilters = []*andStreamFilter{
-			{
-				tagFilters: appendExtraStreamFilters(nil, filters),
-			},
-		}
-		return
-	}
-	for _, af := range f.orFilters {
-		af.tagFilters = appendExtraStreamFilters(af.tagFilters, filters)
-	}
-}
-
-func appendExtraStreamFilters(orig []*streamTagFilter, filters []Field) []*streamTagFilter {
-	var dst []*streamTagFilter
-	for _, f := range filters {
-		dst = append(dst, &streamTagFilter{
-			tagName: f.Name,
-			op:      "=",
-			value:   f.Value,
-		})
-	}
-	return append(dst, orig...)
-}
-
-// AddExtraFilters adds filters to q in the form of `f1.Name:=f1.Value AND ... fN.Name:=fN.Value`
-func (q *Query) AddExtraFilters(filters []Field) {
-	if len(filters) == 0 {
-		return
-	}
-
-	fa, ok := q.f.(*filterAnd)
-	if !ok {
-		fa = &filterAnd{
-			filters: []filter{q.f},
-		}
-		q.f = fa
-	}
-	fa.filters = addExtraFilters(fa.filters, filters)
-}
-
-func addExtraFilters(orig []filter, filters []Field) []filter {
-	var dst []filter
-	for _, f := range filters {
-		dst = append(dst, &filterExact{
-			fieldName: f.Name,
-			value:     f.Value,
-		})
-	}
-	return append(dst, orig...)
 }
 
 // AddPipeLimit adds `| limit n` pipe to q.
@@ -524,8 +585,14 @@ func (q *Query) AddPipeLimit(n uint64) {
 	})
 }
 
-// Optimize tries optimizing the query.
-func (q *Query) Optimize() {
+// optimize applies various optimations to q.
+func (q *Query) optimize() {
+	q.visitSubqueries(func(q *Query) {
+		q.optimizeNoSubqueries()
+	})
+}
+
+func (q *Query) optimizeNoSubqueries() {
 	q.pipes = optimizeSortOffsetPipes(q.pipes)
 	q.pipes = optimizeSortLimitPipes(q.pipes)
 	q.pipes = optimizeUniqLimitPipes(q.pipes)
@@ -548,15 +615,114 @@ func (q *Query) Optimize() {
 		}
 	}
 
+	// flatten nested AND filters
+	q.f = flattenFiltersAnd(q.f)
+
+	// flatten nested OR filters
+	q.f = flattenFiltersOr(q.f)
+
 	// Substitute '*' prefixFilter with filterNoop in order to avoid reading _msg data.
 	q.f = removeStarFilters(q.f)
 
-	// Call Optimize for queries from 'in(query)' filters.
-	optimizeFilterIn(q.f)
+	// Merge multiple {...} filters into a single one.
+	q.f = mergeFiltersStream(q.f)
+}
 
-	// Optimize individual pipes.
+func (q *Query) visitSubqueries(visitFunc func(q *Query)) {
+	if q == nil {
+		return
+	}
+
+	// call f for the query itself.
+	visitFunc(q)
+
+	// Visit subqueries in all the filters at q.
+	visitSubqueriesInFilter(q.f, visitFunc)
+
+	// Visit subqueries in all the pipes at q.
 	for _, p := range q.pipes {
-		p.optimize()
+		p.visitSubqueries(visitFunc)
+	}
+}
+
+func visitSubqueriesInFilter(f filter, visitFunc func(q *Query)) {
+	if f == nil {
+		return
+	}
+	callback := func(f filter) bool {
+		switch t := f.(type) {
+		case *filterIn:
+			t.values.q.visitSubqueries(visitFunc)
+		case *filterContainsAll:
+			t.values.q.visitSubqueries(visitFunc)
+		case *filterContainsAny:
+			t.values.q.visitSubqueries(visitFunc)
+		case *filterStreamID:
+			t.q.visitSubqueries(visitFunc)
+		}
+		return false
+	}
+	_ = visitFilter(f, callback)
+}
+
+func mergeFiltersStream(f filter) filter {
+	fa, ok := f.(*filterAnd)
+	if !ok {
+		return f
+	}
+	fss := make([]*filterStream, 0, len(fa.filters))
+	otherFilters := make([]filter, 0, len(fa.filters))
+	for _, f := range fa.filters {
+		fs, ok := f.(*filterStream)
+		if ok {
+			fss = append(fss, fs)
+		} else {
+			otherFilters = append(otherFilters, f)
+		}
+	}
+	if len(fss) == 0 {
+		// Nothing to merge
+		return f
+	}
+
+	fss = mergeFiltersStreamInternal(fss)
+	filters := make([]filter, 0, len(fss)+len(otherFilters))
+	for _, fs := range fss {
+		filters = append(filters, fs)
+	}
+	filters = append(filters, otherFilters...)
+	fa = &filterAnd{
+		filters: filters,
+	}
+	return fa
+}
+
+func mergeFiltersStreamInternal(fss []*filterStream) []*filterStream {
+	if len(fss) < 2 {
+		return fss
+	}
+
+	for _, fs := range fss {
+		if len(fs.f.orFilters) != 1 {
+			// Cannot merge or filters :(
+			return fss
+		}
+	}
+
+	var tfs []*streamTagFilter
+	for _, fs := range fss {
+		tfs = append(tfs, fs.f.orFilters[0].tagFilters...)
+	}
+	return []*filterStream{
+		{
+			f: &StreamFilter{
+				orFilters: []*andStreamFilter{
+					{
+						tagFilters: tfs,
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -575,13 +741,18 @@ func (q *Query) GetStatsByFieldsAddGroupingByTime(step int64) ([]string, error) 
 	if idx < 0 {
 		return nil, fmt.Errorf("missing `| stats ...` pipe in the query [%s]", q)
 	}
-
 	ps := pipes[idx].(*pipeStats)
 
-	// add _time:step to ps.byFields if it doesn't contain it yet.
-	ps.byFields = addByTimeField(ps.byFields, step)
+	// add _time:step to by (...) list at stats pipes.
+	q.addByTimeFieldToStatsPipes(step)
 
-	// extract by(...) field names from stats pipe
+	// propagate the step into rate* funcs at stats pipes.
+	q.initStatsRateFuncs(step)
+
+	// add 'partition by (_time)' to 'sort', 'first' and 'last' pipes.
+	q.addPartitionByTime(step)
+
+	// extract by(...) field names from ps
 	byFields := make([]string, len(ps.byFields))
 	for i, f := range ps.byFields {
 		byFields[i] = f.name
@@ -601,7 +772,9 @@ func (q *Query) GetStatsByFieldsAddGroupingByTime(step int64) ([]string, error) 
 	for i := idx + 1; i < len(pipes); i++ {
 		p := pipes[i]
 		switch t := p.(type) {
-		case *pipeSort, *pipeOffset, *pipeLimit, *pipeFilter:
+		case *pipeFilter:
+			// This pipe doesn't change the set of fields.
+		case *pipeFirst, *pipeLast, *pipeSort:
 			// These pipes do not change the set of fields.
 		case *pipeMath:
 			// Allow `| math ...` pipe, since it adds additional metrics to the given set of fields.
@@ -682,9 +855,8 @@ func (q *Query) GetStatsByFieldsAddGroupingByTime(step int64) ([]string, error) 
 			// Assume that `| format ...` pipe generates an additional by(...) label
 			if slices.Contains(byFields, t.resultField) {
 				return nil, fmt.Errorf("the %q field cannot be overridden at %q in the query [%s]", t.resultField, t, q)
-			} else {
-				byFields = append(byFields, t.resultField)
 			}
+			byFields = append(byFields, t.resultField)
 			delete(metricFields, t.resultField)
 		default:
 			return nil, fmt.Errorf("the %q pipe cannot be put after %q pipe in the query [%s]", p, ps, q)
@@ -707,35 +879,80 @@ func getLastPipeStatsIdx(pipes []pipe) int {
 	return -1
 }
 
-func addByTimeField(byFields []*byStatsField, step int64) []*byStatsField {
-	if step <= 0 {
-		return byFields
-	}
-	stepStr := fmt.Sprintf("%d", step)
-	dstFields := make([]*byStatsField, 0, len(byFields)+1)
-	hasByTime := false
-	for _, f := range byFields {
-		if f.name == "_time" {
-			f = &byStatsField{
-				name:          "_time",
-				bucketSizeStr: stepStr,
-				bucketSize:    float64(step),
-			}
-			hasByTime = true
+func flattenFiltersAnd(f filter) filter {
+	visitFunc := func(f filter) bool {
+		fa, ok := f.(*filterAnd)
+		if !ok {
+			return false
 		}
-		dstFields = append(dstFields, f)
+		for _, f := range fa.filters {
+			if _, ok := f.(*filterAnd); ok {
+				return true
+			}
+		}
+		return false
 	}
-	if !hasByTime {
-		dstFields = append(dstFields, &byStatsField{
-			name:          "_time",
-			bucketSizeStr: stepStr,
-			bucketSize:    float64(step),
-		})
+	copyFunc := func(f filter) (filter, error) {
+		fa := f.(*filterAnd)
+
+		var resultFilters []filter
+		for _, f := range fa.filters {
+			child, ok := f.(*filterAnd)
+			if !ok {
+				resultFilters = append(resultFilters, f)
+				continue
+			}
+			resultFilters = append(resultFilters, child.filters...)
+		}
+		return &filterAnd{
+			filters: resultFilters,
+		}, nil
 	}
-	return dstFields
+	f, err := copyFilter(f, visitFunc, copyFunc)
+	if err != nil {
+		logger.Panicf("BUG: unexpected error: %s", err)
+	}
+	return f
+}
+
+func flattenFiltersOr(f filter) filter {
+	visitFunc := func(f filter) bool {
+		fo, ok := f.(*filterOr)
+		if !ok {
+			return false
+		}
+		for _, f := range fo.filters {
+			if _, ok := f.(*filterOr); ok {
+				return true
+			}
+		}
+		return false
+	}
+	copyFunc := func(f filter) (filter, error) {
+		fo := f.(*filterOr)
+
+		var resultFilters []filter
+		for _, f := range fo.filters {
+			child, ok := f.(*filterOr)
+			if !ok {
+				resultFilters = append(resultFilters, f)
+				continue
+			}
+			resultFilters = append(resultFilters, child.filters...)
+		}
+		return &filterOr{
+			filters: resultFilters,
+		}, nil
+	}
+	f, err := copyFilter(f, visitFunc, copyFunc)
+	if err != nil {
+		logger.Panicf("BUG: unexpected error: %s", err)
+	}
+	return f
 }
 
 func removeStarFilters(f filter) filter {
+	// Substitute `*` filterPrefix with filterNoop
 	visitFunc := func(f filter) bool {
 		fp, ok := f.(*filterPrefix)
 		return ok && isMsgFieldName(fp.fieldName) && fp.prefix == ""
@@ -746,8 +963,45 @@ func removeStarFilters(f filter) filter {
 	}
 	f, err := copyFilter(f, visitFunc, copyFunc)
 	if err != nil {
-		logger.Fatalf("BUG: unexpected error: %s", err)
+		logger.Panicf("BUG: unexpected error: %s", err)
 	}
+
+	// Drop filterNoop inside filterAnd
+	visitFunc = func(f filter) bool {
+		fa, ok := f.(*filterAnd)
+		if !ok {
+			return false
+		}
+		for _, f := range fa.filters {
+			if _, ok := f.(*filterNoop); ok {
+				return true
+			}
+		}
+		return false
+	}
+	copyFunc = func(f filter) (filter, error) {
+		fa := f.(*filterAnd)
+		var resultFilters []filter
+		for _, f := range fa.filters {
+			if _, ok := f.(*filterNoop); !ok {
+				resultFilters = append(resultFilters, f)
+			}
+		}
+		if len(resultFilters) == 0 {
+			return &filterNoop{}, nil
+		}
+		if len(resultFilters) == 1 {
+			return resultFilters[0], nil
+		}
+		return &filterAnd{
+			filters: resultFilters,
+		}, nil
+	}
+	f, err = copyFilter(f, visitFunc, copyFunc)
+	if err != nil {
+		logger.Panicf("BUG: unexpected error: %s", err)
+	}
+
 	return f
 }
 
@@ -859,12 +1113,11 @@ func mergeFiltersAnd(f1, f2 filter) filter {
 	}
 }
 
-func (q *Query) getNeededColumns() ([]string, []string) {
+func getNeededColumns(pipes []pipe) ([]string, []string) {
 	neededFields := newFieldsSet()
 	neededFields.add("*")
 	unneededFields := newFieldsSet()
 
-	pipes := q.pipes
 	for i := len(pipes) - 1; i >= 0; i-- {
 		pipes[i].updateNeededFields(neededFields, unneededFields)
 	}
@@ -878,9 +1131,9 @@ func ParseQuery(s string) (*Query, error) {
 	return ParseQueryAtTimestamp(s, timestamp)
 }
 
-// ParseStatsQuery parses s with needed stats query checks.
-func ParseStatsQuery(s string) (*Query, error) {
-	q, err := ParseQuery(s)
+// ParseStatsQuery parses LogsQL query s at the given timestamp with the needed stats query checks.
+func ParseStatsQuery(s string, timestamp int64) (*Query, error) {
+	q, err := ParseQueryAtTimestamp(s, timestamp)
 	if err != nil {
 		return nil, err
 	}
@@ -890,43 +1143,17 @@ func ParseStatsQuery(s string) (*Query, error) {
 	return q, nil
 }
 
-// ContainAnyTimeFilter returns true when query contains a global time filter.
-func (q *Query) ContainAnyTimeFilter() bool {
-	if hasTimeFilter(q.f) {
-		return true
-	}
-	for _, p := range q.pipes {
-		if pf, ok := p.(*pipeFilter); ok {
-			if hasTimeFilter(pf.f) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func hasTimeFilter(f filter) bool {
-	if f == nil {
-		return false
-	}
-	switch t := f.(type) {
-	case *filterAnd:
-		for _, subF := range t.filters {
-			if hasTimeFilter(subF) {
-				return true
-			}
-		}
-	case *filterTime:
-		return true
-	}
-	return false
+// HasGlobalTimeFilter returns true when query contains a global time filter.
+func (q *Query) HasGlobalTimeFilter() bool {
+	start, end := q.GetFilterTimeRange()
+	return start != math.MinInt64 && end != math.MaxInt64
 }
 
 // ParseQueryAtTimestamp parses s in the context of the given timestamp.
 //
 // E.g. _time:duration filters are adjusted according to the provided timestamp as _time:[timestamp-duration, duration].
 func ParseQueryAtTimestamp(s string, timestamp int64) (*Query, error) {
-	lex := newLexerAtTimestamp(s, timestamp)
+	lex := newLexer(s, timestamp)
 
 	q, err := parseQuery(lex)
 	if err != nil {
@@ -935,8 +1162,44 @@ func ParseQueryAtTimestamp(s string, timestamp int64) (*Query, error) {
 	if !lex.isEnd() {
 		return nil, fmt.Errorf("unexpected unparsed tail after [%s]; context: [%s]; tail: [%s]", q, lex.context(), lex.s)
 	}
-	q.timestamp = timestamp
+	q.optimize()
+
+	start, end := q.GetFilterTimeRange()
+	if start != math.MinInt64 && end != math.MaxInt64 {
+		step := end - start + 1 // 1 is needed in order to include [start ... end] in the step.
+		q.initStatsRateFuncs(step)
+	}
+
 	return q, nil
+}
+
+func (q *Query) initStatsRateFuncs(step int64) {
+	for _, p := range q.pipes {
+		if ps, ok := p.(*pipeStats); ok {
+			ps.initRateFuncs(step)
+		}
+	}
+}
+
+func (q *Query) addByTimeFieldToStatsPipes(step int64) {
+	for _, p := range q.pipes {
+		if ps, ok := p.(*pipeStats); ok {
+			ps.addByTimeField(step)
+		}
+	}
+}
+
+func (q *Query) addPartitionByTime(step int64) {
+	for _, p := range q.pipes {
+		switch t := p.(type) {
+		case *pipeFirst:
+			t.addPartitionByTime(step)
+		case *pipeLast:
+			t.addPartitionByTime(step)
+		case *pipeSort:
+			t.addPartitionByTime(step)
+		}
+	}
 }
 
 // GetTimestamp returns timestamp context for the given q, which was passed to ParseQueryAtTimestamp().
@@ -944,13 +1207,41 @@ func (q *Query) GetTimestamp() int64 {
 	return q.timestamp
 }
 
+func parseQueryInParens(lex *lexer) (*Query, error) {
+	if !lex.isKeyword("(") {
+		return nil, fmt.Errorf("missing '('")
+	}
+	lex.nextToken()
+
+	q, err := parseQuery(lex)
+	if err != nil {
+		return nil, err
+	}
+
+	if !lex.isKeyword(")") {
+		return nil, fmt.Errorf("missing ')' after '(%s'", q)
+	}
+	lex.nextToken()
+
+	return q, nil
+}
+
 func parseQuery(lex *lexer) (*Query, error) {
+	opts, err := parseQueryOptions(lex)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse query options: %w; context: [%s]; see https://docs.victoriametrics.com/victorialogs/logsql/#query-options", err, lex.context())
+	}
+	lex.pushQueryOptions(opts)
+	defer lex.popQueryOptions()
+
 	f, err := parseFilter(lex)
 	if err != nil {
 		return nil, fmt.Errorf("%w; context: [%s]", err, lex.context())
 	}
 	q := &Query{
-		f: f,
+		opts:      opts,
+		f:         f,
+		timestamp: lex.currentTimestamp,
 	}
 
 	if lex.isKeyword("|") {
@@ -963,6 +1254,121 @@ func parseQuery(lex *lexer) (*Query, error) {
 	}
 
 	return q, nil
+}
+
+// Filter represents LogsQL filter
+//
+// See https://docs.victoriametrics.com/victorialogs/logsql/#filters
+type Filter struct {
+	f filter
+}
+
+// String returns string representation of f.
+func (f *Filter) String() string {
+	if f == nil || f.f == nil {
+		return ""
+	}
+	return f.f.String()
+}
+
+// ParseFilter parses LogsQL filter
+//
+// See https://docs.victoriametrics.com/victorialogs/logsql/#filters
+func ParseFilter(s string) (*Filter, error) {
+	q, err := ParseQuery(s)
+	if err != nil {
+		return nil, err
+	}
+	if len(q.pipes) > 0 {
+		return nil, fmt.Errorf("unexpected pipes after the filter [%s]; pipes: %s", q.f, q.pipes)
+	}
+	f := &Filter{
+		f: q.f,
+	}
+	return f, nil
+}
+
+func parseQueryOptions(lex *lexer) (*queryOptions, error) {
+	var opts queryOptions
+	defaultOpts := lex.getQueryOptions()
+	if defaultOpts != nil {
+		opts = *defaultOpts
+	}
+
+	if !lex.isKeyword("options") {
+		return &opts, nil
+	}
+	lex.nextToken()
+
+	if !lex.isKeyword("(") {
+		return nil, fmt.Errorf("missing '(' after 'options' keyword; wrap 'options' into quotes if you are searching for this word in the log message")
+	}
+	lex.nextToken()
+
+	for {
+		if lex.isKeyword(")") {
+			lex.nextToken()
+			return &opts, nil
+		}
+
+		k, v, err := parseKeyValuePair(lex)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse 'options': %w", err)
+		}
+		switch k {
+		case "concurrency":
+			n, ok := tryParseUint64(v)
+			if !ok {
+				return nil, fmt.Errorf("cannot parse 'concurrency=%q' option as unsigned integer", v)
+			}
+			if n > 1024 {
+				// There is zero sense in running too many workers.
+				n = 1024
+			}
+			opts.concurrency = uint(n)
+		case "ignore_global_time_filter":
+			ignoreGlobalTimeFilter, err := strconv.ParseBool(v)
+			if err != nil {
+				return nil, fmt.Errorf("cannot parse 'ignore_global_time_filter=%q' option as boolean: %w", v, err)
+			}
+			opts.ignoreGlobalTimeFilter = &ignoreGlobalTimeFilter
+		default:
+			return nil, fmt.Errorf("unexpected option %q with value %q", k, v)
+		}
+
+		if lex.isKeyword(")") {
+			lex.nextToken()
+			return &opts, nil
+		}
+		if !lex.isKeyword(",") {
+			return nil, fmt.Errorf("unexpected token inside the 'options(...)': %q; want ',' or ')'", lex.token)
+		}
+		lex.nextToken()
+	}
+}
+
+func parseKeyValuePair(lex *lexer) (string, string, error) {
+	k, err := getKeyValueToken(lex)
+	if err != nil {
+		return "", "", fmt.Errorf("cannot read key in the 'key=value' pair: %w", err)
+	}
+
+	if !lex.isKeyword("=") {
+		return "", "", fmt.Errorf("missing '=' after %q key; got %q instead", k, lex.token)
+	}
+	lex.nextToken()
+
+	v, err := getKeyValueToken(lex)
+	if err != nil {
+		return "", "", fmt.Errorf("cannot read value after '%q=': %w", k, err)
+	}
+
+	return k, v, nil
+}
+
+func getKeyValueToken(lex *lexer) (string, error) {
+	stopTokens := []string{"=", ",", "(", ")", "[", "]", "|", ""}
+	return getCompoundTokenExt(lex, stopTokens)
 }
 
 func parseFilter(lex *lexer) (filter, error) {
@@ -1073,6 +1479,12 @@ func parseGenericFilter(lex *lexer, fieldName string) (filter, error) {
 		return parseFilterNotTilda(lex, fieldName)
 	case lex.isKeyword("not", "!", "-"):
 		return parseFilterNot(lex, fieldName)
+	case lex.isKeyword("contains_all"):
+		return parseFilterContainsAll(lex, fieldName)
+	case lex.isKeyword("contains_any"):
+		return parseFilterContainsAny(lex, fieldName)
+	case lex.isKeyword("eq_field"):
+		return parseFilterEqField(lex, fieldName)
 	case lex.isKeyword("exact"):
 		return parseFilterExact(lex, fieldName)
 	case lex.isKeyword("i"):
@@ -1081,8 +1493,12 @@ func parseGenericFilter(lex *lexer, fieldName string) (filter, error) {
 		return parseFilterIn(lex, fieldName)
 	case lex.isKeyword("ipv4_range"):
 		return parseFilterIPv4Range(lex, fieldName)
+	case lex.isKeyword("le_field"):
+		return parseFilterLeField(lex, fieldName)
 	case lex.isKeyword("len_range"):
 		return parseFilterLenRange(lex, fieldName)
+	case lex.isKeyword("lt_field"):
+		return parseFilterLtField(lex, fieldName)
 	case lex.isKeyword("range"):
 		return parseFilterRange(lex, fieldName)
 	case lex.isKeyword("re"):
@@ -1091,6 +1507,8 @@ func parseGenericFilter(lex *lexer, fieldName string) (filter, error) {
 		return parseFilterSequence(lex, fieldName)
 	case lex.isKeyword("string_range"):
 		return parseFilterStringRange(lex, fieldName)
+	case lex.isKeyword("value_type"):
+		return parseFilterValueType(lex, fieldName)
 	case lex.isKeyword(`"`, "'", "`"):
 		return nil, fmt.Errorf("improperly quoted string")
 	case lex.isKeyword(",", ")", "[", "]"):
@@ -1104,6 +1522,10 @@ func parseGenericFilter(lex *lexer, fieldName string) (filter, error) {
 }
 
 func getCompoundPhrase(lex *lexer, allowColon bool) (string, error) {
+	if err := lex.isInvalidQuotedString(); err != nil {
+		return "", err
+	}
+
 	stopTokens := []string{"*", ",", "(", ")", "[", "]", "|", ""}
 	if lex.isKeyword(stopTokens...) {
 		return "", fmt.Errorf("compound phrase cannot start with '%s'", lex.token)
@@ -1137,7 +1559,33 @@ func getCompoundToken(lex *lexer) (string, error) {
 	return getCompoundTokenExt(lex, stopTokens)
 }
 
+func (lex *lexer) isInvalidQuotedString() error {
+	if lex.token != `"` && lex.token != "`" && lex.token != `'` {
+		return nil
+	}
+
+	n := strings.Index(lex.s, lex.token)
+	if n < 0 {
+		return fmt.Errorf("missing closing quote for [%s]", lex.token+lex.s)
+	}
+
+	quotedStr := lex.token + lex.s[:n+1]
+	if _, err := strconv.Unquote(quotedStr); err != nil {
+		err = fmt.Errorf("cannot parse %s: %w", quotedStr, err)
+		if !strings.HasPrefix(quotedStr, "`") && strings.Contains(quotedStr, `\`) {
+			err = fmt.Errorf(`%w; make sure that '\' chars are properly escaped (e.g. use '\\' instead of '\'); alternatively put the string in backquotes `+"`...`", err)
+		}
+		return err
+	}
+
+	logger.Panicf("BUG: unexpected successful parsing of %s", quotedStr)
+	return nil
+}
+
 func getCompoundTokenExt(lex *lexer, stopTokens []string) (string, error) {
+	if err := lex.isInvalidQuotedString(); err != nil {
+		return "", err
+	}
 	if lex.isKeyword(stopTokens...) {
 		return "", fmt.Errorf("compound token cannot start with '%s'", lex.token)
 	}
@@ -1327,9 +1775,19 @@ func parseFilterStringRange(lex *lexer, fieldName string) (filter, error) {
 			minValue:  args[0],
 			maxValue:  args[1],
 
-			stringRepr: fmt.Sprintf("string_range(%s, %s)", quoteTokenIfNeeded(args[0]), quoteTokenIfNeeded(args[1])),
+			stringRepr: fmt.Sprintf("%s(%s, %s)", funcName, quoteTokenIfNeeded(args[0]), quoteTokenIfNeeded(args[1])),
 		}
 		return fr, nil
+	})
+}
+
+func parseFilterValueType(lex *lexer, fieldName string) (filter, error) {
+	return parseFuncArg(lex, fieldName, func(arg string) (filter, error) {
+		fv := &filterValueType{
+			fieldName: fieldName,
+			valueType: arg,
+		}
+		return fv, nil
 	})
 }
 
@@ -1388,19 +1846,48 @@ func tryParseIPv4CIDR(s string) (uint32, uint32, bool) {
 	return minValue, maxValue, true
 }
 
+func parseFilterContainsAll(lex *lexer, fieldName string) (filter, error) {
+	if !lex.isKeyword("contains_all") {
+		return nil, fmt.Errorf("expecting 'contains_all' keyword")
+	}
+
+	fi := &filterContainsAll{
+		fieldName: fieldName,
+	}
+	return parseInValues(lex, fieldName, fi, &fi.values)
+}
+
+func parseFilterContainsAny(lex *lexer, fieldName string) (filter, error) {
+	if !lex.isKeyword("contains_any") {
+		return nil, fmt.Errorf("expecting 'contains_any' keyword")
+	}
+
+	fi := &filterContainsAny{
+		fieldName: fieldName,
+	}
+	return parseInValues(lex, fieldName, fi, &fi.values)
+}
+
 func parseFilterIn(lex *lexer, fieldName string) (filter, error) {
 	if !lex.isKeyword("in") {
 		return nil, fmt.Errorf("expecting 'in' keyword")
 	}
 
-	// Try parsing in(arg1, ..., argN) at first
+	fi := &filterIn{
+		fieldName: fieldName,
+	}
+	return parseInValues(lex, fieldName, fi, &fi.values)
+}
+
+func parseInValues(lex *lexer, fieldName string, f filter, iv *inValues) (filter, error) {
+	// Try parsing (arg1, ..., argN) at first
 	lexState := lex.backupState()
 	fi, err := parseFuncArgs(lex, fieldName, func(args []string) (filter, error) {
-		fi := &filterIn{
-			fieldName: fieldName,
-			values:    args,
+		if len(args) == 1 && args[0] == "*" {
+			return &filterNoop{}, nil
 		}
-		return fi, nil
+		iv.values = args
+		return f, nil
 	})
 	if err == nil {
 		return fi, nil
@@ -1409,52 +1896,18 @@ func parseFilterIn(lex *lexer, fieldName string) (filter, error) {
 	// Parse in(query | fields someField) then
 	lex.restoreState(lexState)
 	lex.nextToken()
-	if !lex.isKeyword("(") {
-		return nil, fmt.Errorf("missing '(' after 'in'")
-	}
-	lex.nextToken()
 
-	q, err := parseQuery(lex)
+	q, qFieldName, err := parseInQuery(lex)
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse query inside 'in(...)': %w", err)
+		return nil, err
+	}
+	if q == nil {
+		return &filterNoop{}, nil
 	}
 
-	if !lex.isKeyword(")") {
-		return nil, fmt.Errorf("missing ')' after 'in(%s)'", q)
-	}
-	lex.nextToken()
-
-	qFieldName, err := getFieldNameFromPipes(q.pipes)
-	if err != nil {
-		return nil, fmt.Errorf("cannot determine field name for values in 'in(%s)': %w", q, err)
-	}
-	fi = &filterIn{
-		fieldName:        fieldName,
-		needExecuteQuery: true,
-		q:                q,
-		qFieldName:       qFieldName,
-	}
-	return fi, nil
-}
-
-func getFieldNameFromPipes(pipes []pipe) (string, error) {
-	if len(pipes) == 0 {
-		return "", fmt.Errorf("missing 'fields' or 'uniq' pipes at the end of query")
-	}
-	switch t := pipes[len(pipes)-1].(type) {
-	case *pipeFields:
-		if t.containsStar || len(t.fields) != 1 {
-			return "", fmt.Errorf("'%s' pipe must contain only a single non-star field name", t)
-		}
-		return t.fields[0], nil
-	case *pipeUniq:
-		if len(t.byFields) != 1 {
-			return "", fmt.Errorf("'%s' pipe must contain only a single non-star field name", t)
-		}
-		return t.byFields[0], nil
-	default:
-		return "", fmt.Errorf("missing 'fields' or 'uniq' pipe at the end of query")
-	}
+	iv.q = q
+	iv.qFieldName = qFieldName
+	return f, nil
 }
 
 func parseFilterSequence(lex *lexer, fieldName string) (filter, error) {
@@ -1464,6 +1917,38 @@ func parseFilterSequence(lex *lexer, fieldName string) (filter, error) {
 			phrases:   args,
 		}
 		return fs, nil
+	})
+}
+
+func parseFilterEqField(lex *lexer, fieldName string) (filter, error) {
+	return parseFuncArg(lex, fieldName, func(arg string) (filter, error) {
+		fe := &filterEqField{
+			fieldName:      fieldName,
+			otherFieldName: arg,
+		}
+		return fe, nil
+	})
+}
+
+func parseFilterLeField(lex *lexer, fieldName string) (filter, error) {
+	return parseFuncArg(lex, fieldName, func(arg string) (filter, error) {
+		fe := &filterLeField{
+			fieldName:      fieldName,
+			otherFieldName: arg,
+		}
+		return fe, nil
+	})
+}
+
+func parseFilterLtField(lex *lexer, fieldName string) (filter, error) {
+	return parseFuncArg(lex, fieldName, func(arg string) (filter, error) {
+		fe := &filterLeField{
+			fieldName:      fieldName,
+			otherFieldName: arg,
+
+			excludeEqualValues: true,
+		}
+		return fe, nil
 	})
 }
 
@@ -1485,23 +1970,23 @@ func parseFilterExact(lex *lexer, fieldName string) (filter, error) {
 }
 
 func parseFilterRegexp(lex *lexer, fieldName string) (filter, error) {
-	funcName := lex.token
 	return parseFuncArg(lex, fieldName, func(arg string) (filter, error) {
-		re, err := regexutil.NewRegex(arg)
-		if err != nil {
-			return nil, fmt.Errorf("invalid regexp %q for %s(): %w", arg, funcName, err)
-		}
-		fr := &filterRegexp{
-			fieldName: fieldName,
-			re:        re,
-		}
-		return fr, nil
+		return newFilterRegexp(fieldName, arg)
 	})
 }
 
-func parseFilterTilda(lex *lexer, fieldName string) (filter, error) {
-	lex.nextToken()
-	arg := getCompoundFuncArg(lex)
+func newFilterRegexp(fieldName, arg string) (filter, error) {
+	// Optimizations for typical regexps generated by Grafana
+	if arg == "" || arg == ".*" {
+		return &filterNoop{}, nil
+	}
+	if arg == ".+" {
+		fp := &filterPrefix{
+			fieldName: fieldName,
+		}
+		return fp, nil
+	}
+
 	re, err := regexutil.NewRegex(arg)
 	if err != nil {
 		return nil, fmt.Errorf("invalid regexp %q: %w", arg, err)
@@ -1511,6 +1996,12 @@ func parseFilterTilda(lex *lexer, fieldName string) (filter, error) {
 		re:        re,
 	}
 	return fr, nil
+}
+
+func parseFilterTilda(lex *lexer, fieldName string) (filter, error) {
+	lex.nextToken()
+	arg := getCompoundFuncArg(lex)
+	return newFilterRegexp(fieldName, arg)
 }
 
 func parseFilterNotTilda(lex *lexer, fieldName string) (filter, error) {
@@ -1608,10 +2099,6 @@ func parseFilterLT(lex *lexer, fieldName string) (filter, error) {
 			return nil, fmt.Errorf("cannot parse [%s] as number: %w", fStr, err)
 		}
 		return fr, nil
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("cannot parse number after '%s': %w", op, err)
 	}
 
 	if !includeMaxValue {
@@ -1767,35 +2254,48 @@ func parseFuncArgs(lex *lexer, fieldName string, callback func(args []string) (f
 		phrase := funcName + getCompoundSuffix(lex, fieldName != "")
 		return parseFilterForPhrase(lex, phrase, fieldName)
 	}
-	if !lex.mustNextToken() {
-		return nil, fmt.Errorf("missing args for %s()", funcName)
+	args, err := parseArgsInParens(lex)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse %s(): %w", funcName, err)
 	}
+	return callback(args)
+}
+
+func parseArgsInParens(lex *lexer) ([]string, error) {
+	if !lex.isKeyword("(") {
+		return nil, fmt.Errorf("missing '('")
+	}
+	lex.nextToken()
+
 	var args []string
 	for !lex.isKeyword(")") {
 		if lex.isKeyword(",") {
-			return nil, fmt.Errorf("unexpected ',' - missing arg in %s()", funcName)
+			return nil, fmt.Errorf("unexpected ',' inside ()")
 		}
 		if lex.isKeyword("(") {
-			return nil, fmt.Errorf("unexpected '(' - missing arg in %s()", funcName)
+			return nil, fmt.Errorf("unexpected '(' inside ()")
 		}
 		arg := getCompoundFuncArg(lex)
+		if arg == "" && lex.isKeyword("*") {
+			lex.nextToken()
+			arg = "*"
+		}
 		args = append(args, arg)
 		if lex.isKeyword(")") {
 			break
 		}
 		if !lex.isKeyword(",") {
-			return nil, fmt.Errorf("missing ',' after %q in %s()", arg, funcName)
+			return nil, fmt.Errorf("missing ',' after %q inside ()", arg)
 		}
 		if !lex.mustNextToken() {
-			return nil, fmt.Errorf("missing the next arg after %q in %s()", arg, funcName)
+			return nil, fmt.Errorf("missing the next arg after %q inside ()", arg)
 		}
 	}
 	lex.nextToken()
-
-	return callback(args)
+	return args, nil
 }
 
-// startsWithYear returns true if s starts from YYYY
+// startsWithYear returns true if s starts with YYYY
 func startsWithYear(s string) bool {
 	if len(s) < 4 {
 		return false
@@ -1872,15 +2372,11 @@ func parseFilterDayRange(lex *lexer) (*filterDayRange, error) {
 	offsetStr := ""
 	if lex.isKeyword("offset") {
 		lex.nextToken()
-		s, err := getCompoundToken(lex)
+		d, s, err := parseDuration(lex)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse offset in day_range filter: %w", err)
 		}
-		d, ok := tryParseDuration(s)
-		if !ok {
-			return nil, fmt.Errorf("cannot parse offset %q for day_range filter", s)
-		}
-		offset = int64(d)
+		offset = d
 		offsetStr = " offset " + s
 	}
 
@@ -1948,15 +2444,11 @@ func parseFilterWeekRange(lex *lexer) (*filterWeekRange, error) {
 	offsetStr := ""
 	if lex.isKeyword("offset") {
 		lex.nextToken()
-		s, err := getCompoundToken(lex)
+		d, s, err := parseDuration(lex)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse offset in week_range filter: %w", err)
 		}
-		d, ok := tryParseDuration(s)
-		if !ok {
-			return nil, fmt.Errorf("cannot parse offset %q for week_range filter", s)
-		}
-		offset = int64(d)
+		offset = d
 		offsetStr = " offset " + s
 	}
 
@@ -1982,25 +2474,9 @@ func getDayRangeArg(lex *lexer) (int64, string, error) {
 	if err != nil {
 		return 0, "", err
 	}
-	n := strings.IndexByte(argStr, ':')
-	if n < 0 {
-		return 0, "", fmt.Errorf("invalid format for day_range arg; want 'hh:mm'; got %q", argStr)
-	}
-	hoursStr := argStr[:n]
-	minutesStr := argStr[n+1:]
-
-	hours, ok := tryParseUint64(hoursStr)
+	offset, ok := tryParseHHMM(argStr)
 	if !ok {
-		return 0, "", fmt.Errorf("cannot parse hh from %q; expected format: 'hh:mm'", hoursStr)
-	}
-	minutes, ok := tryParseUint64(minutesStr)
-	if !ok {
-		return 0, "", fmt.Errorf("cannot parse mm from %q; expected format: 'hh:mm'", minutesStr)
-	}
-
-	offset := int64(hours*nsecsPerHour + minutes*nsecsPerMinute)
-	if offset < 0 {
-		offset = 0
+		return 0, "", fmt.Errorf("cannot parse %q as 'hh:mm'", argStr)
 	}
 	if offset >= nsecsPerDay {
 		offset = nsecsPerDay - 1
@@ -2036,6 +2512,20 @@ func getWeekRangeArg(lex *lexer) (time.Weekday, string, error) {
 }
 
 func parseFilterTimeRange(lex *lexer) (*filterTime, error) {
+	if lex.isKeyword("offset") {
+		ft := &filterTime{
+			minTimestamp: math.MinInt64,
+			maxTimestamp: lex.currentTimestamp,
+		}
+		offset, offsetStr, err := parseTimeOffset(lex)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse offset for _time filter []: %w", err)
+		}
+		ft.maxTimestamp -= offset
+		ft.stringRepr = offsetStr
+		return ft, nil
+	}
+
 	ft, err := parseFilterTime(lex)
 	if err != nil {
 		return nil, err
@@ -2043,70 +2533,46 @@ func parseFilterTimeRange(lex *lexer) (*filterTime, error) {
 	if !lex.isKeyword("offset") {
 		return ft, nil
 	}
-	lex.nextToken()
-	s, err := getCompoundToken(lex)
+
+	offset, offsetStr, err := parseTimeOffset(lex)
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse offset in _time filter: %w", err)
+		return nil, fmt.Errorf("cannot parse offset for _time filter [%s]: %w", ft, err)
 	}
-	d, ok := tryParseDuration(s)
-	if !ok {
-		return nil, fmt.Errorf("cannot parse offset %q for _time filter %s", s, ft)
-	}
-	offset := int64(d)
 	ft.minTimestamp -= offset
 	ft.maxTimestamp -= offset
-	ft.stringRepr += " offset " + s
+	ft.stringRepr += " " + offsetStr
 	return ft, nil
+}
+
+func parseTimeOffset(lex *lexer) (int64, string, error) {
+	if !lex.isKeyword("offset") {
+		return 0, "", fmt.Errorf("unexpected token %q; want 'offset'", lex.token)
+	}
+	lex.nextToken()
+
+	d, s, err := parseDuration(lex)
+	if err != nil {
+		return 0, "", fmt.Errorf("cannot parse duration: %w", err)
+	}
+	offset := d
+	return offset, "offset " + s, nil
 }
 
 func parseFilterTime(lex *lexer) (*filterTime, error) {
 	startTimeInclude := false
 	switch {
+	case lex.isKeyword(">"):
+		return parseFilterTimeGt(lex)
+	case lex.isKeyword("<"):
+		return parseFilterTimeLt(lex)
 	case lex.isKeyword("["):
+		lex.nextToken()
 		startTimeInclude = true
 	case lex.isKeyword("("):
+		lex.nextToken()
 		startTimeInclude = false
 	default:
-		s, err := getCompoundToken(lex)
-		if err != nil {
-			return nil, fmt.Errorf("cannot parse _time filter: %w", err)
-		}
-		sLower := strings.ToLower(s)
-		if sLower == "now" || startsWithYear(s) {
-			// Parse '_time:YYYY-MM-DD', which transforms to '_time:[YYYY-MM-DD, YYYY-MM-DD+1)'
-			nsecs, err := promutils.ParseTimeAt(s, lex.currentTimestamp)
-			if err != nil {
-				return nil, fmt.Errorf("cannot parse _time filter: %w", err)
-			}
-			// Round to milliseconds
-			startTime := nsecs
-			endTime := getMatchingEndTime(startTime, s)
-			ft := &filterTime{
-				minTimestamp: startTime,
-				maxTimestamp: endTime,
-
-				stringRepr: s,
-			}
-			return ft, nil
-		}
-		// Parse _time:duration, which transforms to '_time:(now-duration, now]'
-		d, ok := tryParseDuration(s)
-		if !ok {
-			return nil, fmt.Errorf("cannot parse duration %q in _time filter", s)
-		}
-		if d < 0 {
-			d = -d
-		}
-		ft := &filterTime{
-			minTimestamp: lex.currentTimestamp - int64(d),
-			maxTimestamp: lex.currentTimestamp,
-
-			stringRepr: s,
-		}
-		return ft, nil
-	}
-	if !lex.mustNextToken() {
-		return nil, fmt.Errorf("missing start time in _time filter")
+		return parseFilterTimeEq(lex)
 	}
 
 	// Parse start time
@@ -2161,6 +2627,151 @@ func parseFilterTime(lex *lexer) (*filterTime, error) {
 		stringRepr: stringRepr,
 	}
 	return ft, nil
+}
+
+func parseFilterTimeGt(lex *lexer) (*filterTime, error) {
+	if !lex.isKeyword(">") {
+		return nil, fmt.Errorf("missing '>' in _time filter; got %q instead", lex.token)
+	}
+	lex.nextToken()
+
+	prefix := ">"
+	if lex.isKeyword("=") {
+		lex.nextToken()
+		prefix = ">="
+	}
+
+	if isLikelyTimestamp(lex) {
+		startTime, startTimeString, err := parseTime(lex)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse start time in _time filter: %w", err)
+		}
+
+		if prefix == ">" {
+			startTime++
+		}
+		ft := &filterTime{
+			minTimestamp: startTime,
+			maxTimestamp: math.MaxInt64,
+
+			stringRepr: prefix + startTimeString,
+		}
+		return ft, nil
+	}
+
+	d, s, err := parseDuration(lex)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse duration at _time filter: %w", err)
+	}
+	if d < 0 {
+		d = -d
+	}
+	if prefix == ">" {
+		d++
+	}
+	ft := &filterTime{
+		minTimestamp: math.MinInt64,
+		maxTimestamp: lex.currentTimestamp - d,
+
+		stringRepr: prefix + s,
+	}
+	return ft, nil
+}
+
+func parseFilterTimeLt(lex *lexer) (*filterTime, error) {
+	if !lex.isKeyword("<") {
+		return nil, fmt.Errorf("missing '<' in _time filter; got %q instead", lex.token)
+	}
+	lex.nextToken()
+
+	prefix := "<"
+	if lex.isKeyword("=") {
+		lex.nextToken()
+		prefix = "<="
+	}
+
+	if isLikelyTimestamp(lex) {
+		endTime, endTimeString, err := parseTime(lex)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse end time in _time filter: %w", err)
+		}
+		if prefix == "<" {
+			endTime--
+		} else {
+			endTime = getMatchingEndTime(endTime, endTimeString)
+		}
+		ft := &filterTime{
+			minTimestamp: math.MinInt64,
+			maxTimestamp: endTime,
+
+			stringRepr: prefix + endTimeString,
+		}
+		return ft, nil
+	}
+
+	d, s, err := parseDuration(lex)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse duration at _time filter: %w", err)
+	}
+	if d < 0 {
+		d = -d
+	}
+	if prefix == "<" {
+		d--
+	}
+	ft := &filterTime{
+		minTimestamp: lex.currentTimestamp - d,
+		maxTimestamp: lex.currentTimestamp,
+
+		stringRepr: prefix + s,
+	}
+	return ft, nil
+}
+
+func parseFilterTimeEq(lex *lexer) (*filterTime, error) {
+	prefix := ""
+	if lex.isKeyword("=") {
+		lex.nextToken()
+		prefix = "="
+	}
+
+	if isLikelyTimestamp(lex) {
+		// Parse '_time:YYYY-MM-DD', which transforms to '_time:[YYYY-MM-DD, YYYY-MM-DD+1)'
+		nsecs, s, err := parseTime(lex)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse _time filter: %w", err)
+		}
+		// Round to milliseconds
+		startTime := nsecs
+		endTime := getMatchingEndTime(startTime, s)
+		ft := &filterTime{
+			minTimestamp: startTime,
+			maxTimestamp: endTime,
+
+			stringRepr: prefix + s,
+		}
+		return ft, nil
+	}
+
+	// Parse _time:duration, which transforms to '_time:(now-duration, now]'
+	d, s, err := parseDuration(lex)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse duration at _time filter: %w", err)
+	}
+	if d < 0 {
+		d = -d
+	}
+	ft := &filterTime{
+		minTimestamp: lex.currentTimestamp - d,
+		maxTimestamp: lex.currentTimestamp,
+
+		stringRepr: prefix + s,
+	}
+	return ft, nil
+}
+
+func isLikelyTimestamp(lex *lexer) bool {
+	return lex.isKeyword("now") || startsWithYear(lex.token)
 }
 
 func getMatchingEndTime(startTime int64, stringRepr string) int64 {
@@ -2254,32 +2865,69 @@ func parseFilterStreamIDIn(lex *lexer) (filter, error) {
 	// Try parsing in(query)
 	lex.restoreState(lexState)
 	lex.nextToken()
-	if !lex.isKeyword("(") {
-		return nil, fmt.Errorf("missing '(' after 'in'")
-	}
-	lex.nextToken()
 
-	q, err := parseQuery(lex)
+	q, qFieldName, err := parseInQuery(lex)
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse query inside 'in(...)': %w", err)
+		return nil, err
 	}
-
-	if !lex.isKeyword(")") {
-		return nil, fmt.Errorf("missing ')' after 'in(%s)'", q)
-	}
-	lex.nextToken()
-
-	qFieldName, err := getFieldNameFromPipes(q.pipes)
-	if err != nil {
-		return nil, fmt.Errorf("cannot determine field name for values in 'in(%s)': %w", q, err)
+	if q == nil {
+		return &filterNoop{}, nil
 	}
 
 	fs = &filterStreamID{
-		needExecuteQuery: true,
-		q:                q,
-		qFieldName:       qFieldName,
+		q:          q,
+		qFieldName: qFieldName,
 	}
 	return fs, nil
+}
+
+func parseInQuery(lex *lexer) (*Query, string, error) {
+	q, err := parseQueryInParens(lex)
+	if err != nil {
+		return nil, "", fmt.Errorf("cannot parse in(...) query: %w", err)
+	}
+	if q.isStarQuery() {
+		return nil, "", nil
+	}
+	qFieldName, err := getFieldNameFromPipes(q.pipes)
+	if err != nil {
+		return nil, "", fmt.Errorf("cannot determine field name for values in 'in(%s)': %w", q, err)
+	}
+	return q, qFieldName, nil
+}
+
+func (q *Query) isStarQuery() bool {
+	if len(q.pipes) > 0 {
+		return false
+	}
+	switch t := q.f.(type) {
+	case *filterNoop:
+		return true
+	case *filterPrefix:
+		return len(t.prefix) == 0
+	default:
+		return false
+	}
+}
+
+func getFieldNameFromPipes(pipes []pipe) (string, error) {
+	if len(pipes) == 0 {
+		return "", fmt.Errorf("missing 'fields' or 'uniq' pipes at the end of query")
+	}
+	switch t := pipes[len(pipes)-1].(type) {
+	case *pipeFields:
+		if t.containsStar || len(t.fields) != 1 {
+			return "", fmt.Errorf("'%s' pipe must contain only a single non-star field name", t)
+		}
+		return t.fields[0], nil
+	case *pipeUniq:
+		if len(t.byFields) != 1 {
+			return "", fmt.Errorf("'%s' pipe must contain only a single non-star field name", t)
+		}
+		return t.byFields[0], nil
+	default:
+		return "", fmt.Errorf("missing 'fields' or 'uniq' pipe at the end of query")
+	}
 }
 
 func parseStreamID(lex *lexer) (streamID, error) {
@@ -2312,11 +2960,23 @@ func parseTime(lex *lexer) (int64, string, error) {
 	if err != nil {
 		return 0, "", err
 	}
-	nsecs, err := promutils.ParseTimeAt(s, lex.currentTimestamp)
+	nsecs, err := timeutil.ParseTimeAt(s, lex.currentTimestamp)
 	if err != nil {
 		return 0, "", err
 	}
 	return nsecs, s, nil
+}
+
+func parseDuration(lex *lexer) (int64, string, error) {
+	s, err := getCompoundToken(lex)
+	if err != nil {
+		return 0, "", err
+	}
+	d, ok := tryParseDuration(s)
+	if !ok {
+		return 0, s, fmt.Errorf("cannot parse duration %q", s)
+	}
+	return d, s, nil
 }
 
 func quoteStringTokenIfNeeded(s string) string {
@@ -2417,15 +3077,24 @@ var reservedKeywords = func() map[string]struct{} {
 		"-",
 
 		// functions
+		"contains_all",
+		"contains_any",
+		"eq_field",
 		"exact",
 		"i",
 		"in",
 		"ipv4_range",
+		"le_field",
 		"len_range",
+		"lt_field",
 		"range",
 		"re",
 		"seq",
 		"string_range",
+		"value_type",
+
+		// queryOptions start with this keyword
+		"options",
 	}
 	m := make(map[string]struct{}, len(kws))
 	for _, kw := range kws {
@@ -2462,3 +3131,22 @@ func nextafter(f, xInf float64) float64 {
 	}
 	return math.Nextafter(f, xInf)
 }
+
+func toFieldsFilters(neededColumnNames, unneededColumnNames []string) string {
+	qStr := ""
+	if slices.Contains(neededColumnNames, "*") {
+		if len(unneededColumnNames) > 0 {
+			qStr += " | delete " + fieldNamesString(unneededColumnNames)
+		}
+	} else {
+		if len(neededColumnNames) > 0 {
+			qStr += " | fields " + fieldNamesString(neededColumnNames)
+		} else {
+			// Select at least non-existing field in order to do not select other fields.
+			qStr += " | fields " + nonExistingFieldName
+		}
+	}
+	return qStr
+}
+
+const nonExistingFieldName = "__non_existing_field__"

@@ -4,21 +4,19 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/insertutils"
+	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/insertutil"
 )
 
-func TestProcessStreamInternal_Success(t *testing.T) {
-	f := func(data, timeField, msgField string, rowsExpected int, timestampsExpected []int64, resultExpected string) {
+func TestProcessStreamInternal(t *testing.T) {
+	f := func(data, timeField, msgField string, timestampsExpected []int64, resultExpected string) {
 		t.Helper()
 
 		msgFields := []string{msgField}
-		tlp := &insertutils.TestLogMessageProcessor{}
+		tlp := &insertutil.TestLogMessageProcessor{}
 		r := bytes.NewBufferString(data)
-		if err := processStreamInternal(r, timeField, msgFields, tlp); err != nil {
-			t.Fatalf("unexpected error: %s", err)
-		}
+		processStreamInternal("test", r, timeField, msgFields, tlp)
 
-		if err := tlp.Verify(rowsExpected, timestampsExpected, resultExpected); err != nil {
+		if err := tlp.Verify(timestampsExpected, resultExpected); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -29,12 +27,11 @@ func TestProcessStreamInternal_Success(t *testing.T) {
 `
 	timeField := "@timestamp"
 	msgField := "message"
-	rowsExpected := 3
 	timestampsExpected := []int64{1686026891735000000, 1686023292735000000, 1686026893735000000}
 	resultExpected := `{"log.offset":"71770","log.file.path":"/var/log/auth.log","_msg":"foobar"}
 {"_msg":"baz"}
 {"_msg":"xyz","x":"y"}`
-	f(data, timeField, msgField, rowsExpected, timestampsExpected, resultExpected)
+	f(data, timeField, msgField, timestampsExpected, resultExpected)
 
 	// Non-existing msgField
 	data = `{"@timestamp":"2023-06-06T04:48:11.735Z","log":{"offset":71770,"file":{"path":"/var/log/auth.log"}},"message":"foobar"}
@@ -42,27 +39,41 @@ func TestProcessStreamInternal_Success(t *testing.T) {
 `
 	timeField = "@timestamp"
 	msgField = "foobar"
-	rowsExpected = 2
 	timestampsExpected = []int64{1686026891735000000, 1686023292735000000}
 	resultExpected = `{"log.offset":"71770","log.file.path":"/var/log/auth.log","message":"foobar"}
 {"message":"baz"}`
-	f(data, timeField, msgField, rowsExpected, timestampsExpected, resultExpected)
-}
-
-func TestProcessStreamInternal_Failure(t *testing.T) {
-	f := func(data string) {
-		t.Helper()
-
-		tlp := &insertutils.TestLogMessageProcessor{}
-		r := bytes.NewBufferString(data)
-		if err := processStreamInternal(r, "time", nil, tlp); err == nil {
-			t.Fatalf("expecting non-nil error")
-		}
-	}
+	f(data, timeField, msgField, timestampsExpected, resultExpected)
 
 	// invalid json
-	f("foobar")
+	data = "foobar"
+	timeField = "@timestamp"
+	msgField = "aaa"
+	timestampsExpected = nil
+	resultExpected = ``
+	f(data, timeField, msgField, timestampsExpected, resultExpected)
 
 	// invalid timestamp field
-	f(`{"time":"foobar"}`)
+	data = `{"time":"foobar"}`
+	timeField = "time"
+	msgField = "abc"
+	timestampsExpected = nil
+	resultExpected = ``
+	f(data, timeField, msgField, timestampsExpected, resultExpected)
+
+	// invalid lines among valid lines
+	data = `
+dsfodmasd
+
+{"time":"2023-06-06T04:48:11.735Z","log":{"offset":71770,"file":{"path":"/var/log/auth.log"}},"message":"foobar"}
+invalid line
+{"time":"2023-06-06T04:48:12.735+01:00","message":"baz"}
+asbsdf
+
+`
+	timeField = "time"
+	msgField = "message"
+	timestampsExpected = []int64{1686026891735000000, 1686023292735000000}
+	resultExpected = `{"log.offset":"71770","log.file.path":"/var/log/auth.log","_msg":"foobar"}
+{"_msg":"baz"}`
+	f(data, timeField, msgField, timestampsExpected, resultExpected)
 }

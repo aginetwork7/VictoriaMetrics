@@ -144,9 +144,9 @@ func timeFilter(start, end string) string {
 // by checking available (non-empty) tags, fields and measurements
 // which unique combination represents all possible
 // time series existing in database.
-// The explore required to reduce the load on influx
+// Explore is required to reduce the load on influx
 // by querying field of the exact time series at once,
-// instead of fetching all of the values over and over.
+// instead of fetching all the values over and over.
 //
 // May contain non-existing time series.
 func (c *Client) Explore() ([]*Series, error) {
@@ -180,11 +180,7 @@ func (c *Client) Explore() ([]*Series, error) {
 			log.Printf("skip measurement %q since it has no fields", s.Measurement)
 			continue
 		}
-		tags, ok := measurementTags[s.Measurement]
-		if !ok {
-			return nil, fmt.Errorf("failed to find tags of measurement %s", s.Measurement)
-		}
-		emptyTags := getEmptyTags(tags, s.LabelPairs)
+		emptyTags := getEmptyTags(measurementTags[s.Measurement], s.LabelPairs)
 		for _, field := range fields {
 			is := &Series{
 				Measurement: s.Measurement,
@@ -201,11 +197,16 @@ func (c *Client) Explore() ([]*Series, error) {
 // getEmptyTags returns tags of a measurement that are missing in a specific series.
 // Tags represent all tags of a measurement. LabelPairs represent tags of a specific series.
 func getEmptyTags(tags map[string]struct{}, LabelPairs []LabelPair) []string {
+	if len(tags) == 0 {
+		// fast path: the measurement does not contain any tag
+		return nil
+	}
+
 	labelMap := make(map[string]struct{})
 	for _, pair := range LabelPairs {
 		labelMap[pair.Name] = struct{}{}
 	}
-	result := make([]string, 0, len(labelMap)-len(LabelPairs))
+	var result []string
 	for tag := range tags {
 		if _, ok := labelMap[tag]; !ok {
 			result = append(result, tag)
@@ -339,10 +340,7 @@ func (c *Client) fieldsByMeasurement() (map[string][]string, error) {
 }
 
 func (c *Client) getSeries() ([]*Series, error) {
-	com := "show series"
-	if c.filterSeries != "" {
-		com = fmt.Sprintf("%s %s", com, c.filterSeries)
-	}
+	com := c.getSeriesCommand()
 	q := influx.Query{
 		Command:         com,
 		Database:        c.database,
@@ -386,6 +384,21 @@ func (c *Client) getSeries() ([]*Series, error) {
 	}
 	log.Printf("found %d series", len(result))
 	return result, nil
+}
+
+func (c *Client) getSeriesCommand() string {
+	com := "show series"
+	if c.filterSeries != "" {
+		com = fmt.Sprintf("%s %s", com, c.filterSeries)
+	}
+	if c.filterTime != "" {
+		joinStatement := " where "
+		if strings.Contains(strings.ToLower(com), joinStatement) {
+			joinStatement = " AND "
+		}
+		com = fmt.Sprintf("%s%s%s", com, joinStatement, c.filterTime)
+	}
+	return com
 }
 
 // getMeasurementTags get the tags for each measurement.

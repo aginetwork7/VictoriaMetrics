@@ -14,6 +14,9 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/VictoriaMetrics/fastcache"
+	"github.com/cespare/xxhash/v2"
+
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
@@ -25,23 +28,24 @@ import (
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/uint64set"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/workingsetcache"
-	"github.com/VictoriaMetrics/fastcache"
-	"github.com/cespare/xxhash/v2"
 )
 
 const (
 	// Prefix for MetricName->TSID entries.
 	//
-	// This index was substituted with nsPrefixDateMetricNameToTSID,
-	// since the MetricName->TSID index may require big amounts of memory for indexdb/dataBlocks cache
-	// when it grows big on the configured retention under high churn rate
-	// (e.g. when new time series are constantly registered).
+	// This index is used only when -disablePerDayIndex flag is set.
+	//
+	// Otherwise, this index is substituted with nsPrefixDateMetricNameToTSID,
+	// since the MetricName->TSID index may require big amounts of memory for
+	// indexdb/dataBlocks cache when it grows big on the configured retention
+	// under high churn rate (e.g. when new time series are constantly
+	// registered).
 	//
 	// It is much more efficient from memory usage PoV to query per-day MetricName->TSID index
 	// (aka nsPrefixDateMetricNameToTSID) when the TSID must be obtained for the given MetricName
 	// during data ingestion under high churn rate and big retention.
 	//
-	// nsPrefixMetricNameToTSID = 0
+	nsPrefixMetricNameToTSID = 0
 
 	// Prefix for Tag->MetricID entries.
 	nsPrefixTagToMetricIDs = 1
@@ -91,13 +95,17 @@ type indexDB struct {
 	// The db must be automatically recovered after that.
 	missingMetricNamesForMetricID atomic.Uint64
 
-	// minMissingTimestamp is the minimum timestamp, which is missing in the given indexDB.
+	// minMissingTimestampByKey holds the minimum timestamps by index search key,
+	// which is missing in the given indexDB.
+	// Key must be formed with marshalCommonPrefix function.
 	//
 	// This field is used at containsTimeRange() function only for the previous indexDB,
 	// since this indexDB is readonly.
 	// This field cannot be used for the current indexDB, since it may receive data
 	// with bigger timestamps at any time.
-	minMissingTimestamp atomic.Int64
+	minMissingTimestampByKey map[string]int64
+	// protects minMissingTimestampByKey
+	minMissingTimestampByKeyLock sync.RWMutex
 
 	// generation identifies the index generation ID
 	// and is used for syncing items from different indexDBs
@@ -142,7 +150,7 @@ func getTagFiltersCacheSize() int {
 // will be then used as indexDB.generation
 func mustOpenIndexDB(path string, s *Storage, isReadOnly *atomic.Bool) *indexDB {
 	if s == nil {
-		logger.Panicf("BUG: Storage must be nin-nil")
+		logger.Panicf("BUG: Storage must be non-nil")
 	}
 
 	name := filepath.Base(path)
@@ -151,7 +159,7 @@ func mustOpenIndexDB(path string, s *Storage, isReadOnly *atomic.Bool) *indexDB 
 		logger.Panicf("FATAL: cannot parse indexdb path %q: %s", path, err)
 	}
 
-	tb := mergeset.MustOpenTable(path, invalidateTagFiltersCache, mergeTagToMetricIDsRows, isReadOnly)
+	tb := mergeset.MustOpenTable(path, dataFlushInterval, invalidateTagFiltersCache, mergeTagToMetricIDsRows, isReadOnly)
 
 	// Do not persist tagFiltersToMetricIDsCache in files, since it is very volatile because of tagFiltersKeyGen.
 	mem := memory.Allowed()
@@ -162,6 +170,7 @@ func mustOpenIndexDB(path string, s *Storage, isReadOnly *atomic.Bool) *indexDB 
 		tb:         tb,
 		name:       name,
 
+		minMissingTimestampByKey:   make(map[string]int64),
 		tagFiltersToMetricIDsCache: workingsetcache.New(tagFiltersCacheSize),
 		s:                          s,
 		loopsPerDateTagFilterCache: workingsetcache.New(mem / 128),
@@ -316,7 +325,7 @@ func (db *indexDB) incRef() {
 func (db *indexDB) decRef() {
 	n := db.refCount.Add(-1)
 	if n < 0 {
-		logger.Panicf("BUG: negative refCount: %d", n)
+		logger.Panicf("BUG: %q negative refCount: %d", db.name, n)
 	}
 	if n > 0 {
 		return
@@ -324,6 +333,7 @@ func (db *indexDB) decRef() {
 
 	tbPath := db.tb.Path()
 	db.tb.MustClose()
+	db.tb = nil
 	db.SetExtDB(nil)
 
 	// Free space occupied by caches owned by db.
@@ -414,8 +424,7 @@ func marshalTagFiltersKey(dst []byte, tfss []*TagFilters, tr TimeRange, versione
 		prefix = tagFiltersKeyGen.Load()
 	}
 	// Round start and end times to per-day granularity according to per-day inverted index.
-	startDate := uint64(tr.MinTimestamp) / msecPerDay
-	endDate := uint64(tr.MaxTimestamp-1) / msecPerDay
+	startDate, endDate := tr.DateRange()
 	dst = encoding.MarshalUint64(dst, prefix)
 	dst = encoding.MarshalUint64(dst, startDate)
 	dst = encoding.MarshalUint64(dst, endDate)
@@ -520,7 +529,12 @@ type indexSearch struct {
 	deadline uint64
 }
 
+// getIndexSearch returns an indexSearch with default configuration
 func (db *indexDB) getIndexSearch(deadline uint64) *indexSearch {
+	return db.getIndexSearchInternal(deadline, false)
+}
+
+func (db *indexDB) getIndexSearchInternal(deadline uint64, sparse bool) *indexSearch {
 	v := db.indexSearchPool.Get()
 	if v == nil {
 		v = &indexSearch{
@@ -528,7 +542,7 @@ func (db *indexDB) getIndexSearch(deadline uint64) *indexSearch {
 		}
 	}
 	is := v.(*indexSearch)
-	is.ts.Init(db.tb)
+	is.ts.Init(db.tb, sparse)
 	is.deadline = deadline
 	return is
 }
@@ -561,6 +575,18 @@ func generateTSID(dst *TSID, mn *MetricName) {
 func (is *indexSearch) createGlobalIndexes(tsid *TSID, mn *MetricName) {
 	ii := getIndexItems()
 	defer putIndexItems(ii)
+
+	if is.db.s.disablePerDayIndex {
+		// Create metricName -> TSID entry.
+		// This index is used for searching a TSID by metric name during data
+		// ingestion or metric name registration when -disablePerDayIndex flag
+		// is set.
+		ii.B = marshalCommonPrefix(ii.B, nsPrefixMetricNameToTSID)
+		ii.B = mn.Marshal(ii.B)
+		ii.B = append(ii.B, kvSeparatorChar)
+		ii.B = tsid.Marshal(ii.B)
+		ii.Next()
+	}
 
 	// Create metricID -> metricName entry.
 	ii.B = marshalCommonPrefix(ii.B, nsPrefixMetricIDToMetricName)
@@ -616,8 +642,9 @@ func putIndexItems(ii *indexItems) {
 
 var indexItemsPool sync.Pool
 
-// SearchLabelNamesWithFiltersOnTimeRange returns all the label names, which match the given tfss on the given tr.
-func (db *indexDB) SearchLabelNamesWithFiltersOnTimeRange(qt *querytracer.Tracer, tfss []*TagFilters, tr TimeRange, maxLabelNames, maxMetrics int, deadline uint64) ([]string, error) {
+// SearchLabelNames returns all the label names, which match the given tfss on
+// the given tr.
+func (db *indexDB) SearchLabelNames(qt *querytracer.Tracer, tfss []*TagFilters, tr TimeRange, maxLabelNames, maxMetrics int, deadline uint64) ([]string, error) {
 	qt = qt.NewChild("search for label names: filters=%s, timeRange=%s, maxLabelNames=%d, maxMetrics=%d", tfss, &tr, maxLabelNames, maxMetrics)
 	defer qt.Done()
 
@@ -653,14 +680,14 @@ func (db *indexDB) SearchLabelNamesWithFiltersOnTimeRange(qt *querytracer.Tracer
 }
 
 func (is *indexSearch) searchLabelNamesWithFiltersOnTimeRange(qt *querytracer.Tracer, lns map[string]struct{}, tfss []*TagFilters, tr TimeRange, maxLabelNames, maxMetrics int) error {
-	minDate := uint64(tr.MinTimestamp) / msecPerDay
-	maxDate := uint64(tr.MaxTimestamp-1) / msecPerDay
-	if maxDate == 0 || minDate > maxDate || maxDate-minDate > maxDaysForPerDaySearch {
+	if tr == globalIndexTimeRange {
 		qtChild := qt.NewChild("search for label names in global index: filters=%s", tfss)
-		err := is.searchLabelNamesWithFiltersOnDate(qtChild, lns, tfss, 0, maxLabelNames, maxMetrics)
+		err := is.searchLabelNamesWithFiltersOnDate(qtChild, lns, tfss, globalIndexDate, maxLabelNames, maxMetrics)
 		qtChild.Done()
 		return err
 	}
+
+	minDate, maxDate := tr.DateRange()
 	var mu sync.Mutex
 	wg := getWaitGroup()
 	var errGlobal error
@@ -723,7 +750,7 @@ func (is *indexSearch) searchLabelNamesWithFiltersOnDate(qt *querytracer.Tracer,
 	loopsPaceLimiter := 0
 	underscoreNameSeen := false
 	nsPrefixExpected := byte(nsPrefixDateTagToMetricIDs)
-	if date == 0 {
+	if date == globalIndexDate {
 		nsPrefixExpected = nsPrefixTagToMetricIDs
 	}
 
@@ -834,8 +861,8 @@ func (is *indexSearch) getLabelNamesForMetricIDs(qt *querytracer.Tracer, metricI
 	qt.Printf("get %d distinct label names from %d metricIDs", foundLabelNames, len(metricIDs))
 }
 
-// SearchLabelValuesWithFiltersOnTimeRange returns label values for the given labelName, tfss and tr.
-func (db *indexDB) SearchLabelValuesWithFiltersOnTimeRange(qt *querytracer.Tracer, labelName string, tfss []*TagFilters, tr TimeRange,
+// SearchLabelValues returns label values for the given labelName, tfss and tr.
+func (db *indexDB) SearchLabelValues(qt *querytracer.Tracer, labelName string, tfss []*TagFilters, tr TimeRange,
 	maxLabelValues, maxMetrics int, deadline uint64) ([]string, error) {
 	qt = qt.NewChild("search for label values: labelName=%q, filters=%s, timeRange=%s, maxLabelNames=%d, maxMetrics=%d", labelName, tfss, &tr, maxLabelValues, maxMetrics)
 	defer qt.Done()
@@ -877,21 +904,21 @@ func (db *indexDB) SearchLabelValuesWithFiltersOnTimeRange(qt *querytracer.Trace
 
 func (is *indexSearch) searchLabelValuesWithFiltersOnTimeRange(qt *querytracer.Tracer, lvs map[string]struct{}, labelName string, tfss []*TagFilters,
 	tr TimeRange, maxLabelValues, maxMetrics int) error {
-	minDate := uint64(tr.MinTimestamp) / msecPerDay
-	maxDate := uint64(tr.MaxTimestamp-1) / msecPerDay
-	if maxDate == 0 || minDate > maxDate || maxDate-minDate > maxDaysForPerDaySearch {
+	if tr == globalIndexTimeRange {
 		qtChild := qt.NewChild("search for label values in global index: labelName=%q, filters=%s", labelName, tfss)
-		err := is.searchLabelValuesWithFiltersOnDate(qtChild, lvs, labelName, tfss, 0, maxLabelValues, maxMetrics)
+		err := is.searchLabelValuesWithFiltersOnDate(qtChild, lvs, labelName, tfss, globalIndexDate, maxLabelValues, maxMetrics)
 		qtChild.Done()
 		return err
 	}
+
+	minDate, maxDate := tr.DateRange()
 	var mu sync.Mutex
 	wg := getWaitGroup()
 	var errGlobal error
 	qt = qt.NewChild("parallel search for label values: labelName=%q, filters=%s, timeRange=%s", labelName, tfss, &tr)
 	for date := minDate; date <= maxDate; date++ {
 		wg.Add(1)
-		qtChild := qt.NewChild("search for label names: filters=%s, date=%s", tfss, dateToString(date))
+		qtChild := qt.NewChild("search for label values: filters=%s, date=%s", tfss, dateToString(date))
 		go func(date uint64) {
 			defer func() {
 				qtChild.Done()
@@ -956,7 +983,7 @@ func (is *indexSearch) searchLabelValuesWithFiltersOnDate(qt *querytracer.Tracer
 	dmis := is.db.s.getDeletedMetricIDs()
 	loopsPaceLimiter := 0
 	nsPrefixExpected := byte(nsPrefixDateTagToMetricIDs)
-	if date == 0 {
+	if date == globalIndexDate {
 		nsPrefixExpected = nsPrefixTagToMetricIDs
 	}
 	kb.B = is.marshalCommonPrefixForDate(kb.B[:0], date)
@@ -1085,11 +1112,11 @@ func (db *indexDB) SearchTagValueSuffixes(qt *querytracer.Tracer, tr TimeRange, 
 }
 
 func (is *indexSearch) searchTagValueSuffixesForTimeRange(tvss map[string]struct{}, tr TimeRange, tagKey, tagValuePrefix string, delimiter byte, maxTagValueSuffixes int) error {
-	minDate := uint64(tr.MinTimestamp) / msecPerDay
-	maxDate := uint64(tr.MaxTimestamp-1) / msecPerDay
-	if minDate > maxDate || maxDate-minDate > maxDaysForPerDaySearch {
+	if tr == globalIndexTimeRange {
 		return is.searchTagValueSuffixesAll(tvss, tagKey, tagValuePrefix, delimiter, maxTagValueSuffixes)
 	}
+
+	minDate, maxDate := tr.DateRange()
 	// Query over multiple days in parallel.
 	wg := getWaitGroup()
 	var errGlobal error
@@ -1194,7 +1221,7 @@ func (is *indexSearch) searchTagValueSuffixesForPrefix(tvss map[string]struct{},
 		ts.Seek(kb.B)
 	}
 	if err := ts.Error(); err != nil {
-		return fmt.Errorf("error when searching for tag value sufixes for prefix %q: %w", prefix, err)
+		return fmt.Errorf("error when searching for tag value suffixes for prefix %q: %w", prefix, err)
 	}
 	return nil
 }
@@ -1318,7 +1345,7 @@ func (is *indexSearch) getTSDBStatus(qt *querytracer.Tracer, tfss []*TagFilters,
 
 	loopsPaceLimiter := 0
 	nsPrefixExpected := byte(nsPrefixDateTagToMetricIDs)
-	if date == 0 {
+	if date == globalIndexDate {
 		nsPrefixExpected = nsPrefixTagToMetricIDs
 	}
 	kb.B = is.marshalCommonPrefixForDate(kb.B[:0], date)
@@ -1517,31 +1544,35 @@ func (th *topHeap) Pop() any {
 	panic(fmt.Errorf("BUG: Pop shouldn't be called"))
 }
 
-// searchMetricNameWithCache appends metric name for the given metricID to dst
+// searchMetricName appends metric name for the given metricID to dst
 // and returns the result.
-func (db *indexDB) searchMetricNameWithCache(dst []byte, metricID uint64) ([]byte, bool) {
-	metricName := db.getMetricNameFromCache(dst, metricID)
-	if len(metricName) > len(dst) {
-		return metricName, true
+func (db *indexDB) searchMetricName(dst []byte, metricID uint64, noCache bool) ([]byte, bool) {
+	if !noCache {
+		metricName := db.getMetricNameFromCache(dst, metricID)
+		if len(metricName) > len(dst) {
+			return metricName, true
+		}
 	}
 
-	is := db.getIndexSearch(noDeadline)
+	is := db.getIndexSearchInternal(noDeadline, noCache)
 	var ok bool
 	dst, ok = is.searchMetricName(dst, metricID)
 	db.putIndexSearch(is)
 	if ok {
 		// There is no need in verifying whether the given metricID is deleted,
 		// since the filtering must be performed before calling this func.
-		db.putMetricNameToCache(metricID, dst)
+		if !noCache {
+			db.putMetricNameToCache(metricID, dst)
+		}
 		return dst, true
 	}
 
 	// Try searching in the external indexDB.
 	db.doExtDB(func(extDB *indexDB) {
-		is := extDB.getIndexSearch(noDeadline)
+		is := extDB.getIndexSearchInternal(noDeadline, noCache)
 		dst, ok = is.searchMetricName(dst, metricID)
 		extDB.putIndexSearch(is)
-		if ok {
+		if ok && !noCache {
 			// There is no need in verifying whether the given metricID is deleted,
 			// since the filtering must be performed before calling this func.
 			extDB.putMetricNameToCache(metricID, dst)
@@ -1569,7 +1600,7 @@ func (db *indexDB) searchMetricNameWithCache(dst []byte, metricID uint64) ([]byt
 // be stored.
 //
 // If the number of the series exceeds maxMetrics, no series will be deleted and
-// an error will be returned. Otherwise, the funciton returns the number of
+// an error will be returned. Otherwise, the function returns the number of
 // series deleted.
 func (db *indexDB) DeleteTSIDs(qt *querytracer.Tracer, tfss []*TagFilters, maxMetrics int) (int, error) {
 	qt = qt.NewChild("deleting series for %s", tfss)
@@ -1579,12 +1610,8 @@ func (db *indexDB) DeleteTSIDs(qt *querytracer.Tracer, tfss []*TagFilters, maxMe
 	}
 
 	// Obtain metricIDs to delete.
-	tr := TimeRange{
-		MinTimestamp: 0,
-		MaxTimestamp: (1 << 63) - 1,
-	}
 	is := db.getIndexSearch(noDeadline)
-	metricIDs, err := is.searchMetricIDs(qt, tfss, tr, maxMetrics)
+	metricIDs, err := is.searchMetricIDs(qt, tfss, globalIndexTimeRange, maxMetrics)
 	db.putIndexSearch(is)
 	if err != nil {
 		return 0, err
@@ -1595,7 +1622,7 @@ func (db *indexDB) DeleteTSIDs(qt *querytracer.Tracer, tfss []*TagFilters, maxMe
 	deletedCount := len(metricIDs)
 	db.doExtDB(func(extDB *indexDB) {
 		var n int
-		qtChild := qt.NewChild("deleting series from the previos indexdb")
+		qtChild := qt.NewChild("deleting series from the previous indexdb")
 		n, err = extDB.DeleteTSIDs(qtChild, tfss, maxMetrics)
 		qtChild.Donef("deleted %d series", n)
 		deletedCount += n
@@ -1691,6 +1718,9 @@ func (db *indexDB) searchMetricIDs(qt *querytracer.Tracer, tfss []*TagFilters, t
 	metricIDs, ok := db.getMetricIDsFromTagFiltersCache(qtChild, tfKeyBuf.B)
 	if ok {
 		// Fast path - metricIDs found in the cache
+		if len(metricIDs) > maxMetrics {
+			return nil, errTooManyTimeseries(maxMetrics)
+		}
 		qtChild.Done()
 		return metricIDs, nil
 	}
@@ -1722,7 +1752,9 @@ func (db *indexDB) searchMetricIDs(qt *querytracer.Tracer, tfss []*TagFilters, t
 		is := extDB.getIndexSearch(deadline)
 		extMetricIDs, err = is.searchMetricIDs(qtChild, tfss, tr, maxMetrics)
 		extDB.putIndexSearch(is)
-		extDB.putMetricIDsToTagFiltersCache(qtChild, extMetricIDs, tfKeyExtBuf.B)
+		if err == nil {
+			extDB.putMetricIDsToTagFiltersCache(qtChild, extMetricIDs, tfKeyExtBuf.B)
+		}
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error when searching for metricIDs in the previous indexdb: %w", err)
@@ -1873,8 +1905,13 @@ func (is *indexSearch) getTSIDByMetricNameNoExtDB(dst *TSID, metricName []byte, 
 	dmis := is.db.s.getDeletedMetricIDs()
 	ts := &is.ts
 	kb := &is.kb
-	kb.B = marshalCommonPrefix(kb.B[:0], nsPrefixDateMetricNameToTSID)
-	kb.B = encoding.MarshalUint64(kb.B, date)
+
+	if is.db.s.disablePerDayIndex {
+		kb.B = marshalCommonPrefix(kb.B[:0], nsPrefixMetricNameToTSID)
+	} else {
+		kb.B = marshalCommonPrefix(kb.B[:0], nsPrefixDateMetricNameToTSID)
+		kb.B = encoding.MarshalUint64(kb.B, date)
+	}
 	kb.B = append(kb.B, metricName...)
 	kb.B = append(kb.B, kvSeparatorChar)
 	ts.Seek(kb.B)
@@ -1938,32 +1975,46 @@ func (is *indexSearch) searchMetricName(dst []byte, metricID uint64) ([]byte, bo
 }
 
 func (is *indexSearch) containsTimeRange(tr TimeRange) bool {
-	db := is.db
+	if tr == globalIndexTimeRange {
+		return true
+	}
 
+	db := is.db
 	if db.hasExtDB() {
 		// The db corresponds to the current indexDB, which is used for storing index data for newly registered time series.
 		// This means that it may contain data for the given tr with probability close to 100%.
 		return true
 	}
-
 	// The db corresponds to the previous indexDB, which is readonly.
 	// So it is safe caching the minimum timestamp, which isn't covered by the db.
-	minMissingTimestamp := db.minMissingTimestamp.Load()
-	if minMissingTimestamp != 0 && tr.MinTimestamp >= minMissingTimestamp {
+
+	// use common prefix as a key for minMissingTimestamp
+	// it's needed to properly track timestamps for cluster version
+	// which uses tenant labels for the index search
+	kb := &is.kb
+	kb.B = is.marshalCommonPrefix(kb.B[:0], nsPrefixDateToMetricID)
+	key := kb.B
+
+	db.minMissingTimestampByKeyLock.RLock()
+	minMissingTimestamp, ok := db.minMissingTimestampByKey[string(key)]
+	db.minMissingTimestampByKeyLock.RUnlock()
+
+	if ok && tr.MinTimestamp >= minMissingTimestamp {
 		return false
 	}
-
-	if is.containsTimeRangeSlow(tr) {
+	if is.containsTimeRangeSlowForPrefixBuf(kb, tr) {
 		return true
 	}
 
-	db.minMissingTimestamp.CompareAndSwap(minMissingTimestamp, tr.MinTimestamp)
+	db.minMissingTimestampByKeyLock.Lock()
+	db.minMissingTimestampByKey[string(key)] = tr.MinTimestamp
+	db.minMissingTimestampByKeyLock.Unlock()
+
 	return false
 }
 
-func (is *indexSearch) containsTimeRangeSlow(tr TimeRange) bool {
+func (is *indexSearch) containsTimeRangeSlowForPrefixBuf(prefixBuf *bytesutil.ByteBuffer, tr TimeRange) bool {
 	ts := &is.ts
-	kb := &is.kb
 
 	// Verify whether the tr.MinTimestamp is included into `ts` or is smaller than the minimum date stored in `ts`.
 	// Do not check whether tr.MaxTimestamp is included into `ts` or is bigger than the max date stored in `ts` for performance reasons.
@@ -1972,13 +2023,12 @@ func (is *indexSearch) containsTimeRangeSlow(tr TimeRange) bool {
 	// The main practical case allows skipping searching in prev indexdb (`ts`) when `tr`
 	// is located above the max date stored there.
 	minDate := uint64(tr.MinTimestamp) / msecPerDay
-	kb.B = is.marshalCommonPrefix(kb.B[:0], nsPrefixDateToMetricID)
-	prefix := kb.B
-	kb.B = encoding.MarshalUint64(kb.B, minDate)
-	ts.Seek(kb.B)
+	prefix := prefixBuf.B
+	prefixBuf.B = encoding.MarshalUint64(prefixBuf.B, minDate)
+	ts.Seek(prefixBuf.B)
 	if !ts.NextItem() {
 		if err := ts.Error(); err != nil {
-			logger.Panicf("FATAL: error when searching for minDate=%d, prefix %q: %w", minDate, kb.B, err)
+			logger.Panicf("FATAL: error when searching for minDate=%d, prefix %q: %w", minDate, prefixBuf.B, err)
 		}
 		return false
 	}
@@ -2222,14 +2272,17 @@ func (is *indexSearch) searchMetricIDsWithFiltersOnDate(qt *querytracer.Tracer, 
 	if len(tfss) == 0 {
 		return nil, nil
 	}
-	tr := TimeRange{
-		MinTimestamp: int64(date) * msecPerDay,
-		MaxTimestamp: int64(date+1)*msecPerDay - 1,
+
+	var tr TimeRange
+	if date == globalIndexDate {
+		tr = globalIndexTimeRange
+	} else {
+		tr = TimeRange{
+			MinTimestamp: int64(date) * msecPerDay,
+			MaxTimestamp: int64(date+1)*msecPerDay - 1,
+		}
 	}
-	if date == 0 {
-		// Search for metricIDs on the whole time range.
-		tr.MaxTimestamp = timestampFromTime(time.Now())
-	}
+
 	metricIDs, err := is.searchMetricIDsInternal(qt, tfss, tr, maxMetrics)
 	if err != nil {
 		return nil, err
@@ -2282,6 +2335,8 @@ func (is *indexSearch) searchMetricIDsInternal(qt *querytracer.Tracer, tfss []*T
 
 	metricIDs := &uint64set.Set{}
 
+	// Always returns (true, nil) for zero time range used to indicate global
+	// index search.
 	if !is.containsTimeRange(tr) {
 		qt.Printf("indexdb doesn't contain data for the given timeRange=%s", &tr)
 		return metricIDs, nil
@@ -2314,23 +2369,20 @@ func (is *indexSearch) searchMetricIDsInternal(qt *querytracer.Tracer, tfss []*T
 	return metricIDs, nil
 }
 
-const maxDaysForPerDaySearch = 40
-
 func (is *indexSearch) updateMetricIDsForTagFilters(qt *querytracer.Tracer, metricIDs *uint64set.Set, tfs *TagFilters, tr TimeRange, maxMetrics int) error {
-	minDate := uint64(tr.MinTimestamp) / msecPerDay
-	maxDate := uint64(tr.MaxTimestamp-1) / msecPerDay
-	if minDate <= maxDate && maxDate-minDate <= maxDaysForPerDaySearch {
+	if tr != globalIndexTimeRange {
 		// Fast path - search metricIDs by date range in the per-day inverted
 		// index.
-		is.db.dateRangeSearchCalls.Add(1)
 		qt.Printf("search metric ids in the per-day index")
+		is.db.dateRangeSearchCalls.Add(1)
+		minDate, maxDate := tr.DateRange()
 		return is.updateMetricIDsForDateRange(qt, metricIDs, tfs, minDate, maxDate, maxMetrics)
 	}
 
 	// Slow path - search metricIDs in the global inverted index.
 	qt.Printf("search metric ids in the global index")
 	is.db.globalSearchCalls.Add(1)
-	m, err := is.getMetricIDsForDateAndFilters(qt, 0, tfs, maxMetrics)
+	m, err := is.getMetricIDsForDateAndFilters(qt, globalIndexDate, tfs, maxMetrics)
 	if err != nil {
 		return err
 	}
@@ -2569,6 +2621,7 @@ func (is *indexSearch) getMetricIDsForDateAndFilters(qt *querytracer.Tracer, dat
 		qt = qt.NewChild("search for metric ids on a particular day: filters=%s, date=%s, maxMetrics=%d", tfs, dateToString(date), maxMetrics)
 		defer qt.Done()
 	}
+
 	// Sort tfs by loopsCount needed for performing each filter.
 	// This stats is usually collected from the previous queries.
 	// This way we limit the amount of work below by applying fast filters at first.
@@ -2776,6 +2829,9 @@ const (
 )
 
 func (is *indexSearch) createPerDayIndexes(date uint64, tsid *TSID, mn *MetricName) {
+	if is.db.s.disablePerDayIndex {
+		return
+	}
 	ii := getIndexItems()
 	defer putIndexItems(ii)
 
@@ -2911,6 +2967,10 @@ func reverseBytes(dst, src []byte) []byte {
 }
 
 func (is *indexSearch) hasDateMetricIDNoExtDB(date, metricID uint64) bool {
+	if date == globalIndexDate {
+		return is.hasMetricIDNoExtDB(metricID)
+	}
+
 	ts := &is.ts
 	kb := &is.kb
 	kb.B = marshalCommonPrefix(kb.B[:0], nsPrefixDateToMetricID)
@@ -2930,12 +2990,27 @@ func (is *indexSearch) hasDateMetricIDNoExtDB(date, metricID uint64) bool {
 	return false
 }
 
+func (is *indexSearch) hasMetricIDNoExtDB(metricID uint64) bool {
+	ts := &is.ts
+	kb := &is.kb
+	kb.B = marshalCommonPrefix(kb.B[:0], nsPrefixMetricIDToTSID)
+	kb.B = encoding.MarshalUint64(kb.B, metricID)
+	if err := ts.FirstItemWithPrefix(kb.B); err != nil {
+		if err == io.EOF {
+			return false
+		}
+		logger.Panicf("FATAL: error when for metricID=%d; searchPrefix %q: %s", metricID, kb.B, err)
+	}
+	return true
+}
+
 func (is *indexSearch) getMetricIDsForDateTagFilter(qt *querytracer.Tracer, tf *tagFilter, date uint64, commonPrefix []byte,
 	maxMetrics int, maxLoopsCount int64) (*uint64set.Set, int64, error) {
 	if qt.Enabled() {
 		qt = qt.NewChild("get metric ids for filter and date: filter={%s}, date=%s, maxMetrics=%d, maxLoopsCount=%d", tf, dateToString(date), maxMetrics, maxLoopsCount)
 		defer qt.Done()
 	}
+
 	if !bytes.HasPrefix(tf.prefix, commonPrefix) {
 		logger.Panicf("BUG: unexpected tf.prefix %q; must start with commonPrefix %q", tf.prefix, commonPrefix)
 	}
@@ -3090,7 +3165,7 @@ func (is *indexSearch) marshalCommonPrefix(dst []byte, nsPrefix byte) []byte {
 }
 
 func (is *indexSearch) marshalCommonPrefixForDate(dst []byte, date uint64) []byte {
-	if date == 0 {
+	if date == globalIndexDate {
 		// Global index
 		return is.marshalCommonPrefix(dst, nsPrefixTagToMetricIDs)
 	}
@@ -3142,7 +3217,7 @@ func (mp *tagToMetricIDsRowParser) Reset() {
 
 // Init initializes mp from b, which should contain encoded tag->metricIDs row.
 //
-// b cannot be re-used until Reset call.
+// b cannot be reused until Reset call.
 func (mp *tagToMetricIDsRowParser) Init(b []byte, nsPrefixExpected byte) error {
 	tail, nsPrefix, err := unmarshalCommonPrefix(b)
 	if err != nil {
@@ -3180,7 +3255,7 @@ func (mp *tagToMetricIDsRowParser) MarshalPrefix(dst []byte) []byte {
 // InitOnlyTail initializes mp.tail from tail.
 //
 // b must contain tag->metricIDs row.
-// b cannot be re-used until Reset call.
+// b cannot be reused until Reset call.
 func (mp *tagToMetricIDsRowParser) InitOnlyTail(b, tail []byte) error {
 	if len(tail) == 0 {
 		return fmt.Errorf("missing metricID in the tag->metricIDs row %q", b)

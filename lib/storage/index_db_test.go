@@ -71,10 +71,12 @@ func TestTagFiltersToMetricIDsCache(t *testing.T) {
 		path := t.Name()
 		defer fs.MustRemoveAll(path)
 
-		s := MustOpenStorage(path, 0, 0, 0)
+		s := MustOpenStorage(path, OpenOptions{})
 		defer s.MustClose()
 
-		idb := s.idb()
+		idb, putIndexDB := s.getCurrIndexDB()
+		defer putIndexDB()
+
 		key := []byte("key")
 		idb.putMetricIDsToTagFiltersCache(nil, want, key)
 		got, ok := idb.getMetricIDsFromTagFiltersCache(nil, key)
@@ -95,9 +97,10 @@ func TestTagFiltersToMetricIDsCache(t *testing.T) {
 func TestTagFiltersToMetricIDsCache_EmptyMetricIDList(t *testing.T) {
 	path := t.Name()
 	defer fs.MustRemoveAll(path)
-	s := MustOpenStorage(path, 0, 0, 0)
+	s := MustOpenStorage(path, OpenOptions{})
 	defer s.MustClose()
-	idb := s.idb()
+	idb, putIndexDB := s.getCurrIndexDB()
+	defer putIndexDB()
 
 	key := []byte("key")
 	emptyMetricIDs := []uint64(nil)
@@ -581,9 +584,9 @@ func TestIndexDB(t *testing.T) {
 
 	t.Run("serial", func(t *testing.T) {
 		const path = "TestIndexDB-serial"
-		s := MustOpenStorage(path, retentionMax, 0, 0)
+		s := MustOpenStorage(path, OpenOptions{})
 
-		db := s.idb()
+		db, putIndexDB := s.getCurrIndexDB()
 		mns, tsids, err := testIndexDBGetOrCreateTSIDByName(db, metricGroups)
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
@@ -593,22 +596,24 @@ func TestIndexDB(t *testing.T) {
 		}
 
 		// Re-open the storage and verify it works as expected.
+		putIndexDB()
 		s.MustClose()
-		s = MustOpenStorage(path, retentionMax, 0, 0)
+		s = MustOpenStorage(path, OpenOptions{})
 
-		db = s.idb()
+		db, putIndexDB = s.getCurrIndexDB()
 		if err := testIndexDBCheckTSIDByName(db, mns, tsids, false); err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
 
+		putIndexDB()
 		s.MustClose()
 		fs.MustRemoveAll(path)
 	})
 
 	t.Run("concurrent", func(t *testing.T) {
 		const path = "TestIndexDB-concurrent"
-		s := MustOpenStorage(path, retentionMax, 0, 0)
-		db := s.idb()
+		s := MustOpenStorage(path, OpenOptions{})
+		db, putIndexDB := s.getCurrIndexDB()
 
 		ch := make(chan error, 3)
 		for i := 0; i < cap(ch); i++ {
@@ -637,6 +642,7 @@ func TestIndexDB(t *testing.T) {
 			}
 		}
 
+		putIndexDB()
 		s.MustClose()
 		fs.MustRemoveAll(path)
 	})
@@ -729,7 +735,7 @@ func testIndexDBCheckTSIDByName(db *indexDB, mns []MetricName, tsids []TSID, isC
 
 		// Search for metric name for the given metricID.
 		var ok bool
-		metricNameCopy, ok = db.searchMetricNameWithCache(metricNameCopy[:0], genTSID.TSID.MetricID)
+		metricNameCopy, ok = db.searchMetricName(metricNameCopy[:0], genTSID.TSID.MetricID, false)
 		if !ok {
 			return fmt.Errorf("cannot find metricName for metricID=%d; i=%d", genTSID.TSID.MetricID, i)
 		}
@@ -738,7 +744,7 @@ func testIndexDBCheckTSIDByName(db *indexDB, mns []MetricName, tsids []TSID, isC
 		}
 
 		// Try searching metric name for non-existent MetricID.
-		buf, found := db.searchMetricNameWithCache(nil, 1)
+		buf, found := db.searchMetricName(nil, 1, false)
 		if found {
 			return fmt.Errorf("unexpected metricName found for non-existing metricID; got %X", buf)
 		}
@@ -746,31 +752,31 @@ func testIndexDBCheckTSIDByName(db *indexDB, mns []MetricName, tsids []TSID, isC
 			return fmt.Errorf("expecting empty buf when searching for non-existent metricID; got %X", buf)
 		}
 
-		// Test SearchLabelValuesWithFiltersOnTimeRange
-		lvs, err := db.SearchLabelValuesWithFiltersOnTimeRange(nil, "__name__", nil, TimeRange{}, 1e5, 1e9, noDeadline)
+		// Test SearchLabelValues
+		lvs, err := db.SearchLabelValues(nil, "__name__", nil, TimeRange{}, 1e5, 1e9, noDeadline)
 		if err != nil {
-			return fmt.Errorf("error in SearchLabelValuesWithFiltersOnTimeRange(labelName=%q): %w", "__name__", err)
+			return fmt.Errorf("error in SearchLabelValues(labelName=%q): %w", "__name__", err)
 		}
 		if !hasValue(lvs, mn.MetricGroup) {
-			return fmt.Errorf("SearchLabelValuesWithFiltersOnTimeRange(labelName=%q): couldn't find %q; found %q", "__name__", mn.MetricGroup, lvs)
+			return fmt.Errorf("SearchLabelValues(labelName=%q): couldn't find %q; found %q", "__name__", mn.MetricGroup, lvs)
 		}
 		for i := range mn.Tags {
 			tag := &mn.Tags[i]
-			lvs, err := db.SearchLabelValuesWithFiltersOnTimeRange(nil, string(tag.Key), nil, TimeRange{}, 1e5, 1e9, noDeadline)
+			lvs, err := db.SearchLabelValues(nil, string(tag.Key), nil, TimeRange{}, 1e5, 1e9, noDeadline)
 			if err != nil {
-				return fmt.Errorf("error in SearchLabelValuesWithFiltersOnTimeRange(labelName=%q): %w", tag.Key, err)
+				return fmt.Errorf("error in SearchLabelValues(labelName=%q): %w", tag.Key, err)
 			}
 			if !hasValue(lvs, tag.Value) {
-				return fmt.Errorf("SearchLabelValuesWithFiltersOnTimeRange(labelName=%q): couldn't find %q; found %q", tag.Key, tag.Value, lvs)
+				return fmt.Errorf("SearchLabelValues(labelName=%q): couldn't find %q; found %q", tag.Key, tag.Value, lvs)
 			}
 			allLabelNames[string(tag.Key)] = true
 		}
 	}
 
-	// Test SearchLabelNamesWithFiltersOnTimeRange (empty filters, global time range)
-	lns, err := db.SearchLabelNamesWithFiltersOnTimeRange(nil, nil, TimeRange{}, 1e5, 1e9, noDeadline)
+	// Test SearchLabelNames (empty filters, global time range)
+	lns, err := db.SearchLabelNames(nil, nil, TimeRange{}, 1e5, 1e9, noDeadline)
 	if err != nil {
-		return fmt.Errorf("error in SearchLabelNamesWithFiltersOnTimeRange(empty filter, global time range): %w", err)
+		return fmt.Errorf("error in SearchLabelNames(empty filter, global time range): %w", err)
 	}
 	if !hasValue(lns, []byte("__name__")) {
 		return fmt.Errorf("cannot find __name__ in %q", lns)
@@ -1420,7 +1426,7 @@ func TestMatchTagFilters(t *testing.T) {
 		t.Fatalf("cannot add regexp, no negative filter: %s", err)
 	}
 	if err := tfs.Add([]byte("key 3"), []byte("value 23"), true, false); err != nil {
-		t.Fatalf("cannt add no regexp, negative filter: %s", err)
+		t.Fatalf("cannot add no regexp, negative filter: %s", err)
 	}
 	if err := tfs.Add([]byte("key 2"), []byte("lue.+43"), true, true); err != nil {
 		t.Fatalf("cannot add regexp, negative filter: %s", err)
@@ -1502,9 +1508,14 @@ func TestMatchTagFilters(t *testing.T) {
 func TestIndexDBRepopulateAfterRotation(t *testing.T) {
 	r := rand.New(rand.NewSource(1))
 	path := "TestIndexRepopulateAfterRotation"
-	s := MustOpenStorage(path, retention31Days, 1e5, 1e5)
+	opts := OpenOptions{
+		Retention:       retention31Days,
+		MaxHourlySeries: 1e5,
+		MaxDailySeries:  1e5,
+	}
+	s := MustOpenStorage(path, opts)
 
-	db := s.idb()
+	db, putIndexDB := s.getCurrIndexDB()
 	if db.generation == 0 {
 		t.Fatalf("expected indexDB generation to be not 0")
 	}
@@ -1548,6 +1559,7 @@ func TestIndexDBRepopulateAfterRotation(t *testing.T) {
 		}
 	}
 	prevGeneration := db.generation
+	putIndexDB()
 
 	// force index rotation
 	s.mustRotateIndexDB(time.Now())
@@ -1558,7 +1570,8 @@ func TestIndexDBRepopulateAfterRotation(t *testing.T) {
 	if cs.EntriesCount != metricRowsN {
 		t.Fatalf("expected tsidCache after rotation to contain %d rows; got %d", metricRowsN, cs2.EntriesCount)
 	}
-	dbNew := s.idb()
+
+	dbNew, putIndexDB := s.getCurrIndexDB()
 	if dbNew.generation == 0 {
 		t.Fatalf("expected new indexDB generation to be not 0")
 	}
@@ -1577,6 +1590,7 @@ func TestIndexDBRepopulateAfterRotation(t *testing.T) {
 		}
 	}
 
+	putIndexDB()
 	s.MustClose()
 	if err := os.RemoveAll(path); err != nil {
 		t.Fatalf("cannot remove %q: %s", path, err)
@@ -1585,8 +1599,8 @@ func TestIndexDBRepopulateAfterRotation(t *testing.T) {
 
 func TestSearchTSIDWithTimeRange(t *testing.T) {
 	const path = "TestSearchTSIDWithTimeRange"
-	s := MustOpenStorage(path, retentionMax, 0, 0)
-	db := s.idb()
+	s := MustOpenStorage(path, OpenOptions{})
+	db, putIndexDB := s.getCurrIndexDB()
 
 	is := db.getIndexSearch(noDeadline)
 
@@ -1697,24 +1711,24 @@ func TestSearchTSIDWithTimeRange(t *testing.T) {
 	db.putIndexSearch(is3)
 	s.DebugFlush()
 
-	// Check SearchLabelNamesWithFiltersOnTimeRange with the specified time range.
+	// Check SearchLabelNames with the specified time range.
 	tr := TimeRange{
 		MinTimestamp: int64(now) - msecPerDay,
 		MaxTimestamp: int64(now),
 	}
-	lns, err := db.SearchLabelNamesWithFiltersOnTimeRange(nil, nil, tr, 10000, 1e9, noDeadline)
+	lns, err := db.SearchLabelNames(nil, nil, tr, 10000, 1e9, noDeadline)
 	if err != nil {
-		t.Fatalf("unexpected error in SearchLabelNamesWithFiltersOnTimeRange(timeRange=%s): %s", &tr, err)
+		t.Fatalf("unexpected error in SearchLabelNames(timeRange=%s): %s", &tr, err)
 	}
 	sort.Strings(lns)
 	if !reflect.DeepEqual(lns, labelNames) {
 		t.Fatalf("unexpected labelNames; got\n%s\nwant\n%s", lns, labelNames)
 	}
 
-	// Check SearchLabelValuesWithFiltersOnTimeRange with the specified time range.
-	lvs, err := db.SearchLabelValuesWithFiltersOnTimeRange(nil, "", nil, tr, 10000, 1e9, noDeadline)
+	// Check SearchLabelValues with the specified time range.
+	lvs, err := db.SearchLabelValues(nil, "", nil, tr, 10000, 1e9, noDeadline)
 	if err != nil {
-		t.Fatalf("unexpected error in SearchLabelValuesWithFiltersOnTimeRange(timeRange=%s): %s", &tr, err)
+		t.Fatalf("unexpected error in SearchLabelValues(timeRange=%s): %s", &tr, err)
 	}
 	sort.Strings(lvs)
 	if !reflect.DeepEqual(lvs, labelValues) {
@@ -1748,60 +1762,60 @@ func TestSearchTSIDWithTimeRange(t *testing.T) {
 		t.Fatalf("expected %d time series for current day, got %d time series", metricsPerDay, len(matchedTSIDs))
 	}
 
-	// Check SearchLabelNamesWithFiltersOnTimeRange with the specified filter.
-	lns, err = db.SearchLabelNamesWithFiltersOnTimeRange(nil, []*TagFilters{tfs}, TimeRange{}, 10000, 1e9, noDeadline)
+	// Check SearchLabelNames with the specified filter.
+	lns, err = db.SearchLabelNames(nil, []*TagFilters{tfs}, TimeRange{}, 10000, 1e9, noDeadline)
 	if err != nil {
-		t.Fatalf("unexpected error in SearchLabelNamesWithFiltersOnTimeRange(filters=%s): %s", tfs, err)
+		t.Fatalf("unexpected error in SearchLabelNames(filters=%s): %s", tfs, err)
 	}
 	sort.Strings(lns)
 	if !reflect.DeepEqual(lns, labelNames) {
 		t.Fatalf("unexpected labelNames; got\n%s\nwant\n%s", lns, labelNames)
 	}
 
-	// Check SearchLabelNamesWithFiltersOnTimeRange with the specified filter and time range.
-	lns, err = db.SearchLabelNamesWithFiltersOnTimeRange(nil, []*TagFilters{tfs}, tr, 10000, 1e9, noDeadline)
+	// Check SearchLabelNames with the specified filter and time range.
+	lns, err = db.SearchLabelNames(nil, []*TagFilters{tfs}, tr, 10000, 1e9, noDeadline)
 	if err != nil {
-		t.Fatalf("unexpected error in SearchLabelNamesWithFiltersOnTimeRange(filters=%s, timeRange=%s): %s", tfs, &tr, err)
+		t.Fatalf("unexpected error in SearchLabelNames(filters=%s, timeRange=%s): %s", tfs, &tr, err)
 	}
 	sort.Strings(lns)
 	if !reflect.DeepEqual(lns, labelNames) {
 		t.Fatalf("unexpected labelNames; got\n%s\nwant\n%s", lns, labelNames)
 	}
 
-	// Check SearchLabelNamesWithFiltersOnTimeRange with filters on metric name and time range.
-	lns, err = db.SearchLabelNamesWithFiltersOnTimeRange(nil, []*TagFilters{tfsMetricName}, tr, 10000, 1e9, noDeadline)
+	// Check SearchLabelNames with filters on metric name and time range.
+	lns, err = db.SearchLabelNames(nil, []*TagFilters{tfsMetricName}, tr, 10000, 1e9, noDeadline)
 	if err != nil {
-		t.Fatalf("unexpected error in SearchLabelNamesWithFiltersOnTimeRange(filters=%s, timeRange=%s): %s", tfs, &tr, err)
+		t.Fatalf("unexpected error in SearchLabelNames(filters=%s, timeRange=%s): %s", tfs, &tr, err)
 	}
 	sort.Strings(lns)
 	if !reflect.DeepEqual(lns, labelNames) {
 		t.Fatalf("unexpected labelNames; got\n%s\nwant\n%s", lns, labelNames)
 	}
 
-	// Check SearchLabelValuesWithFiltersOnTimeRange with the specified filter.
-	lvs, err = db.SearchLabelValuesWithFiltersOnTimeRange(nil, "", []*TagFilters{tfs}, TimeRange{}, 10000, 1e9, noDeadline)
+	// Check SearchLabelValues with the specified filter.
+	lvs, err = db.SearchLabelValues(nil, "", []*TagFilters{tfs}, TimeRange{}, 10000, 1e9, noDeadline)
 	if err != nil {
-		t.Fatalf("unexpected error in SearchLabelValuesWithFiltersOnTimeRange(filters=%s): %s", tfs, err)
+		t.Fatalf("unexpected error in SearchLabelValues(filters=%s): %s", tfs, err)
 	}
 	sort.Strings(lvs)
 	if !reflect.DeepEqual(lvs, labelValues) {
 		t.Fatalf("unexpected labelValues; got\n%s\nwant\n%s", lvs, labelValues)
 	}
 
-	// Check SearchLabelValuesWithFiltersOnTimeRange with the specified filter and time range.
-	lvs, err = db.SearchLabelValuesWithFiltersOnTimeRange(nil, "", []*TagFilters{tfs}, tr, 10000, 1e9, noDeadline)
+	// Check SearchLabelValues with the specified filter and time range.
+	lvs, err = db.SearchLabelValues(nil, "", []*TagFilters{tfs}, tr, 10000, 1e9, noDeadline)
 	if err != nil {
-		t.Fatalf("unexpected error in SearchLabelValuesWithFiltersOnTimeRange(filters=%s, timeRange=%s): %s", tfs, &tr, err)
+		t.Fatalf("unexpected error in SearchLabelValues(filters=%s, timeRange=%s): %s", tfs, &tr, err)
 	}
 	sort.Strings(lvs)
 	if !reflect.DeepEqual(lvs, labelValues) {
 		t.Fatalf("unexpected labelValues; got\n%s\nwant\n%s", lvs, labelValues)
 	}
 
-	// Check SearchLabelValuesWithFiltersOnTimeRange with filters on metric name and time range.
-	lvs, err = db.SearchLabelValuesWithFiltersOnTimeRange(nil, "", []*TagFilters{tfsMetricName}, tr, 10000, 1e9, noDeadline)
+	// Check SearchLabelValues with filters on metric name and time range.
+	lvs, err = db.SearchLabelValues(nil, "", []*TagFilters{tfsMetricName}, tr, 10000, 1e9, noDeadline)
 	if err != nil {
-		t.Fatalf("unexpected error in SearchLabelValuesWithFiltersOnTimeRange(filters=%s, timeRange=%s): %s", tfs, &tr, err)
+		t.Fatalf("unexpected error in SearchLabelValues(filters=%s, timeRange=%s): %s", tfs, &tr, err)
 	}
 	sort.Strings(lvs)
 	if !reflect.DeepEqual(lvs, labelValues) {
@@ -2069,6 +2083,7 @@ func TestSearchTSIDWithTimeRange(t *testing.T) {
 		t.Fatalf("unexpected TotalLabelValuePairs; got %d; want %d", status.TotalLabelValuePairs, expectedLabelValuePairs)
 	}
 
+	putIndexDB()
 	s.MustClose()
 	fs.MustRemoveAll(path)
 }
@@ -2100,4 +2115,133 @@ func stopTestStorage(s *Storage) {
 	s.metricNameCache.Stop()
 	s.tsidCache.Stop()
 	fs.MustRemoveDirAtomic(s.cachePath)
+}
+
+func TestSearchContainsTimeRange(t *testing.T) {
+	path := t.Name()
+	os.RemoveAll(path)
+	s := MustOpenStorage(path, OpenOptions{})
+	db, putIndexDB := s.getCurrIndexDB()
+
+	is := db.getIndexSearch(noDeadline)
+
+	// Create a bunch of per-day time series
+	const (
+		days                = 6
+		tenant2IngestionDay = 8
+		metricsPerDay       = 1000
+	)
+	rotationDay := time.Date(2019, time.October, 15, 5, 1, 0, 0, time.UTC)
+	rotationMillis := uint64(rotationDay.UnixMilli())
+	rotationDate := rotationMillis / msecPerDay
+	var metricNameBuf []byte
+	perDayMetricIDs := make(map[uint64]*uint64set.Set)
+	labelNames := []string{
+		"__name__", "constant", "day", "UniqueId", "some_unique_id",
+	}
+
+	sort.Strings(labelNames)
+
+	newMN := func(name string, day, metric int) MetricName {
+		var mn MetricName
+		mn.MetricGroup = []byte(name)
+		mn.AddTag(
+			"constant",
+			"const",
+		)
+		mn.AddTag(
+			"day",
+			fmt.Sprintf("%v", day),
+		)
+		mn.AddTag(
+			"UniqueId",
+			fmt.Sprintf("%v", metric),
+		)
+		mn.AddTag(
+			"some_unique_id",
+			fmt.Sprintf("%v", day),
+		)
+		mn.sortTags()
+		return mn
+	}
+
+	// ingest metrics for tenant 0:0
+	for day := 0; day < days; day++ {
+		date := rotationDate - uint64(day)
+
+		var metricIDs uint64set.Set
+		for metric := range metricsPerDay {
+			mn := newMN("testMetric", day, metric)
+			metricNameBuf = mn.Marshal(metricNameBuf[:0])
+			var genTSID generationTSID
+			if !is.getTSIDByMetricName(&genTSID, metricNameBuf, date) {
+				generateTSID(&genTSID.TSID, &mn)
+				createAllIndexesForMetricName(is, &mn, &genTSID.TSID, date)
+			}
+			metricIDs.Add(genTSID.TSID.MetricID)
+		}
+
+		perDayMetricIDs[date] = &metricIDs
+	}
+	db.putIndexSearch(is)
+
+	// Flush index to disk, so it becomes visible for search
+	s.DebugFlush()
+
+	is2 := db.getIndexSearch(noDeadline)
+
+	// Check that all the metrics are found for all the days.
+	for date := rotationDate - days + 1; date <= rotationDate; date++ {
+
+		metricIDs, err := is2.getMetricIDsForDate(date, metricsPerDay)
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		if !perDayMetricIDs[date].Equal(metricIDs) {
+			t.Fatalf("unexpected metricIDs found;\ngot\n%d\nwant\n%d", metricIDs.AppendTo(nil), perDayMetricIDs[date].AppendTo(nil))
+		}
+	}
+
+	db.putIndexSearch(is2)
+	putIndexDB()
+
+	// rotate indexdb
+	s.mustRotateIndexDB(rotationDay)
+	db, putIndexDB = s.getCurrIndexDB()
+
+	// perform search for 0:0 tenant
+	// results of previous search requests shouldn't affect it
+
+	isExt := db.extDB.getIndexSearch(noDeadline)
+	// search for range that covers prev indexDB for dates before ingestion
+	tr := TimeRange{
+		MinTimestamp: int64(rotationMillis - msecPerDay*(days)),
+		MaxTimestamp: int64(rotationMillis),
+	}
+	if !isExt.containsTimeRange(tr) {
+		t.Fatalf("expected to have given time range at prev IndexDB")
+	}
+
+	// search for range not exist at prev indexDB
+	tr = TimeRange{
+		MinTimestamp: int64(rotationMillis + msecPerDay*(days+4)),
+		MaxTimestamp: int64(rotationMillis + msecPerDay*(days+2)),
+	}
+	if isExt.containsTimeRange(tr) {
+		t.Fatalf("not expected to have given time range at prev IndexDB")
+	}
+	key := isExt.marshalCommonPrefix(nil, nsPrefixDateToMetricID)
+
+	db.extDB.minMissingTimestampByKeyLock.Lock()
+	minMissingTimetamp := db.extDB.minMissingTimestampByKey[string(key)]
+	db.extDB.minMissingTimestampByKeyLock.Unlock()
+
+	if minMissingTimetamp != tr.MinTimestamp {
+		t.Fatalf("unexpected minMissingTimestamp for 0:0 tenant got %d, want %d", minMissingTimetamp, tr.MinTimestamp)
+	}
+
+	db.extDB.putIndexSearch(isExt)
+	putIndexDB()
+	s.MustClose()
+	fs.MustRemoveAll(path)
 }

@@ -1,10 +1,11 @@
 package logstorage
 
 import (
+	"fmt"
 	"slices"
 	"strconv"
-	"unsafe"
 
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 )
 
@@ -20,21 +21,17 @@ func (sc *statsCountEmpty) updateNeededFields(neededFields fieldsSet) {
 	updateNeededFieldsForStatsFunc(neededFields, sc.fields)
 }
 
-func (sc *statsCountEmpty) newStatsProcessor() (statsProcessor, int) {
-	scp := &statsCountEmptyProcessor{
-		sc: sc,
-	}
-	return scp, int(unsafe.Sizeof(*scp))
+func (sc *statsCountEmpty) newStatsProcessor(a *chunkedAllocator) statsProcessor {
+	return a.newStatsCountEmptyProcessor()
 }
 
 type statsCountEmptyProcessor struct {
-	sc *statsCountEmpty
-
 	rowsCount uint64
 }
 
-func (scp *statsCountEmptyProcessor) updateStatsForAllRows(br *blockResult) int {
-	fields := scp.sc.fields
+func (scp *statsCountEmptyProcessor) updateStatsForAllRows(sf statsFunc, br *blockResult) int {
+	sc := sf.(*statsCountEmpty)
+	fields := sc.fields
 	if len(fields) == 0 {
 		bm := getBitmap(br.rowsLen)
 		bm.setBits()
@@ -79,7 +76,8 @@ func (scp *statsCountEmptyProcessor) updateStatsForAllRows(br *blockResult) int 
 				}
 			}
 			return 0
-		case valueTypeUint8, valueTypeUint16, valueTypeUint32, valueTypeUint64, valueTypeFloat64, valueTypeIPv4, valueTypeTimestampISO8601:
+		case valueTypeUint8, valueTypeUint16, valueTypeUint32, valueTypeUint64, valueTypeInt64,
+			valueTypeFloat64, valueTypeIPv4, valueTypeTimestampISO8601:
 			return 0
 		default:
 			logger.Panicf("BUG: unknown valueType=%d", c.valueType)
@@ -118,7 +116,8 @@ func (scp *statsCountEmptyProcessor) updateStatsForAllRows(br *blockResult) int 
 				dictIdx := valuesEncoded[i][0]
 				return c.dictValues[dictIdx] == ""
 			})
-		case valueTypeUint8, valueTypeUint16, valueTypeUint32, valueTypeUint64, valueTypeFloat64, valueTypeIPv4, valueTypeTimestampISO8601:
+		case valueTypeUint8, valueTypeUint16, valueTypeUint32, valueTypeUint64, valueTypeInt64,
+			valueTypeFloat64, valueTypeIPv4, valueTypeTimestampISO8601:
 			return 0
 		default:
 			logger.Panicf("BUG: unknown valueType=%d", c.valueType)
@@ -130,8 +129,9 @@ func (scp *statsCountEmptyProcessor) updateStatsForAllRows(br *blockResult) int 
 	return 0
 }
 
-func (scp *statsCountEmptyProcessor) updateStatsForRow(br *blockResult, rowIdx int) int {
-	fields := scp.sc.fields
+func (scp *statsCountEmptyProcessor) updateStatsForRow(sf statsFunc, br *blockResult, rowIdx int) int {
+	sc := sf.(*statsCountEmpty)
+	fields := sc.fields
 	if len(fields) == 0 {
 		for _, c := range br.getColumns() {
 			if v := c.getValueAtRow(br, rowIdx); v != "" {
@@ -167,7 +167,8 @@ func (scp *statsCountEmptyProcessor) updateStatsForRow(br *blockResult, rowIdx i
 				scp.rowsCount++
 			}
 			return 0
-		case valueTypeUint8, valueTypeUint16, valueTypeUint32, valueTypeUint64, valueTypeFloat64, valueTypeIPv4, valueTypeTimestampISO8601:
+		case valueTypeUint8, valueTypeUint16, valueTypeUint32, valueTypeUint64, valueTypeInt64,
+			valueTypeFloat64, valueTypeIPv4, valueTypeTimestampISO8601:
 			return 0
 		default:
 			logger.Panicf("BUG: unknown valueType=%d", c.valueType)
@@ -186,13 +187,33 @@ func (scp *statsCountEmptyProcessor) updateStatsForRow(br *blockResult, rowIdx i
 	return 0
 }
 
-func (scp *statsCountEmptyProcessor) mergeState(sfp statsProcessor) {
+func (scp *statsCountEmptyProcessor) mergeState(_ *chunkedAllocator, _ statsFunc, sfp statsProcessor) {
 	src := sfp.(*statsCountEmptyProcessor)
 	scp.rowsCount += src.rowsCount
 }
 
-func (scp *statsCountEmptyProcessor) finalizeStats() string {
-	return strconv.FormatUint(scp.rowsCount, 10)
+func (scp *statsCountEmptyProcessor) exportState(dst []byte, _ <-chan struct{}) []byte {
+	return encoding.MarshalVarUint64(dst, scp.rowsCount)
+}
+
+func (scp *statsCountEmptyProcessor) importState(src []byte, _ <-chan struct{}) (int, error) {
+	rowsCount, n := encoding.UnmarshalVarUint64(src)
+	if n <= 0 {
+		return 0, fmt.Errorf("cannot unmarshal rowsCount")
+	}
+	src = src[n:]
+
+	scp.rowsCount = rowsCount
+
+	if len(src) > 0 {
+		return 0, fmt.Errorf("unexpected non-empty tail left; len(tail)=%d", len(src))
+	}
+
+	return 0, nil
+}
+
+func (scp *statsCountEmptyProcessor) finalizeStats(_ statsFunc, dst []byte, _ <-chan struct{}) []byte {
+	return strconv.AppendUint(dst, scp.rowsCount, 10)
 }
 
 func parseStatsCountEmpty(lex *lexer) (*statsCountEmpty, error) {

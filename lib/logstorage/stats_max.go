@@ -1,11 +1,12 @@
 package logstorage
 
 import (
+	"fmt"
 	"math"
 	"strings"
-	"unsafe"
 
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 )
 
@@ -21,30 +22,27 @@ func (sm *statsMax) updateNeededFields(neededFields fieldsSet) {
 	updateNeededFieldsForStatsFunc(neededFields, sm.fields)
 }
 
-func (sm *statsMax) newStatsProcessor() (statsProcessor, int) {
-	smp := &statsMaxProcessor{
-		sm: sm,
-	}
-	return smp, int(unsafe.Sizeof(*smp))
+func (sm *statsMax) newStatsProcessor(a *chunkedAllocator) statsProcessor {
+	return a.newStatsMaxProcessor()
 }
 
 type statsMaxProcessor struct {
-	sm *statsMax
-
-	max string
+	max      string
+	hasItems bool
 }
 
-func (smp *statsMaxProcessor) updateStatsForAllRows(br *blockResult) int {
+func (smp *statsMaxProcessor) updateStatsForAllRows(sf statsFunc, br *blockResult) int {
+	sm := sf.(*statsMax)
 	maxLen := len(smp.max)
 
-	if len(smp.sm.fields) == 0 {
+	if len(sm.fields) == 0 {
 		// Find the minimum value across all the columns
 		for _, c := range br.getColumns() {
 			smp.updateStateForColumn(br, c)
 		}
 	} else {
 		// Find the minimum value across the requested columns
-		for _, field := range smp.sm.fields {
+		for _, field := range sm.fields {
 			c := br.getColumnByName(field)
 			smp.updateStateForColumn(br, c)
 		}
@@ -53,10 +51,11 @@ func (smp *statsMaxProcessor) updateStatsForAllRows(br *blockResult) int {
 	return len(smp.max) - maxLen
 }
 
-func (smp *statsMaxProcessor) updateStatsForRow(br *blockResult, rowIdx int) int {
+func (smp *statsMaxProcessor) updateStatsForRow(sf statsFunc, br *blockResult, rowIdx int) int {
+	sm := sf.(*statsMax)
 	maxLen := len(smp.max)
 
-	if len(smp.sm.fields) == 0 {
+	if len(sm.fields) == 0 {
 		// Find the minimum value across all the fields for the given row
 		for _, c := range br.getColumns() {
 			v := c.getValueAtRow(br, rowIdx)
@@ -64,7 +63,7 @@ func (smp *statsMaxProcessor) updateStatsForRow(br *blockResult, rowIdx int) int
 		}
 	} else {
 		// Find the minimum value across the requested fields for the given row
-		for _, field := range smp.sm.fields {
+		for _, field := range sm.fields {
 			c := br.getColumnByName(field)
 			v := c.getValueAtRow(br, rowIdx)
 			smp.updateStateString(v)
@@ -74,16 +73,50 @@ func (smp *statsMaxProcessor) updateStatsForRow(br *blockResult, rowIdx int) int
 	return maxLen - len(smp.max)
 }
 
-func (smp *statsMaxProcessor) mergeState(sfp statsProcessor) {
+func (smp *statsMaxProcessor) mergeState(_ *chunkedAllocator, _ statsFunc, sfp statsProcessor) {
 	src := sfp.(*statsMaxProcessor)
-	smp.updateStateString(src.max)
+	if src.hasItems {
+		smp.updateStateString(src.max)
+	}
+}
+
+func (smp *statsMaxProcessor) exportState(dst []byte, _ <-chan struct{}) []byte {
+	if !smp.hasItems {
+		dst = append(dst, 0)
+		return dst
+	}
+
+	dst = append(dst, 1)
+	dst = encoding.MarshalBytes(dst, bytesutil.ToUnsafeBytes(smp.max))
+	return dst
+}
+
+func (smp *statsMaxProcessor) importState(src []byte, _ <-chan struct{}) (int, error) {
+	if len(src) == 0 {
+		return 0, fmt.Errorf("missing `hasItems`")
+	}
+	smp.hasItems = (src[0] == 1)
+	src = src[1:]
+
+	if smp.hasItems {
+		maxValue, n := encoding.UnmarshalBytes(src)
+		if n <= 0 {
+			return 0, fmt.Errorf("cannot unmarshal max value")
+		}
+		smp.max = string(maxValue)
+		src = src[n:]
+	} else {
+		smp.max = ""
+	}
+
+	if len(src) > 0 {
+		return 0, fmt.Errorf("unexpected tail left after decoding max value; len(tail)=%d", len(src))
+	}
+
+	return len(smp.max), nil
 }
 
 func (smp *statsMaxProcessor) updateStateForColumn(br *blockResult, c *blockResultColumn) {
-	if br.rowsLen == 0 {
-		return
-	}
-
 	if c.isTime {
 		timestamp, ok := TryParseTimestampRFC3339Nano(smp.max)
 		if !ok {
@@ -114,12 +147,17 @@ func (smp *statsMaxProcessor) updateStateForColumn(br *blockResult, c *blockResu
 			smp.updateStateString(v)
 		}
 	case valueTypeDict:
-		for _, v := range c.dictValues {
+		c.forEachDictValue(br, func(v string) {
 			smp.updateStateString(v)
-		}
+		})
 	case valueTypeUint8, valueTypeUint16, valueTypeUint32, valueTypeUint64:
 		bb := bbPool.Get()
 		bb.B = marshalUint64String(bb.B[:0], c.maxValue)
+		smp.updateStateBytes(bb.B)
+		bbPool.Put(bb)
+	case valueTypeInt64:
+		bb := bbPool.Get()
+		bb.B = marshalInt64String(bb.B[:0], int64(c.maxValue))
 		smp.updateStateBytes(bb.B)
 		bbPool.Put(bb)
 	case valueTypeFloat64:
@@ -149,18 +187,18 @@ func (smp *statsMaxProcessor) updateStateBytes(b []byte) {
 }
 
 func (smp *statsMaxProcessor) updateStateString(v string) {
-	if v == "" {
-		// Skip empty strings
+	if !smp.hasItems {
+		smp.max = strings.Clone(v)
+		smp.hasItems = true
 		return
 	}
-	if smp.max != "" && !lessString(smp.max, v) {
-		return
+	if lessString(smp.max, v) {
+		smp.max = strings.Clone(v)
 	}
-	smp.max = strings.Clone(v)
 }
 
-func (smp *statsMaxProcessor) finalizeStats() string {
-	return smp.max
+func (smp *statsMaxProcessor) finalizeStats(_ statsFunc, dst []byte, _ <-chan struct{}) []byte {
+	return append(dst, smp.max...)
 }
 
 func parseStatsMax(lex *lexer) (*statsMax, error) {
