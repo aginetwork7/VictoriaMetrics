@@ -76,7 +76,7 @@ func NewStorage(l *slog.Logger, reg prometheus.Registerer, stCallback startTimeC
 		deduper:                deduper,
 		localStartTimeCallback: stCallback,
 	}
-	s.rws = NewWriteStorage(s.logger, reg, walDir, flushDeadline, sm)
+	s.rws = NewWriteStorage(s.logger, reg, walDir, flushDeadline, sm, metadataInWAL)
 	return s
 }
 

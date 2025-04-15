@@ -14,7 +14,6 @@
 package remote
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"errors"
@@ -38,6 +37,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/storage/remote/azuread"
@@ -231,6 +231,8 @@ func NewWriteClient(name string, conf *ClientConfig) (WriteClient, error) {
 		Client:           httpClient,
 		retryOnRateLimit: conf.RetryOnRateLimit,
 		timeout:          time.Duration(conf.Timeout),
+		writeProtoMsg:    writeProtoMsg,
+		writeCompression: SnappyBlockCompression,
 	}, nil
 }
 
@@ -259,18 +261,24 @@ type RecoverableError struct {
 
 // Store sends a batch of samples to the HTTP endpoint, the request is the proto marshalled
 // and encoded bytes from codec.go.
-func (c *Client) Store(ctx context.Context, req []byte, attempt int) error {
+func (c *Client) Store(ctx context.Context, req []byte, attempt int) (WriteResponseStats, error) {
 	httpReq, err := http.NewRequest(http.MethodPost, c.urlString, bytes.NewReader(req))
 	if err != nil {
 		// Errors from NewRequest are from unparsable URLs, so are not
 		// recoverable.
-		return err
+		return WriteResponseStats{}, err
 	}
 
-	httpReq.Header.Add("Content-Encoding", "snappy")
-	httpReq.Header.Set("Content-Type", "application/x-protobuf")
+	httpReq.Header.Add("Content-Encoding", string(c.writeCompression))
+	httpReq.Header.Set("Content-Type", remoteWriteContentTypeHeaders[c.writeProtoMsg])
 	httpReq.Header.Set("User-Agent", UserAgent)
-	httpReq.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
+	if c.writeProtoMsg == config.RemoteWriteProtoMsgV1 {
+		// Compatibility mode for 1.0.
+		httpReq.Header.Set(RemoteWriteVersionHeader, RemoteWriteVersion1HeaderValue)
+	} else {
+		httpReq.Header.Set(RemoteWriteVersionHeader, RemoteWriteVersion20HeaderValue)
+	}
+
 	if attempt > 0 {
 		httpReq.Header.Set("Retry-Attempt", strconv.Itoa(attempt))
 	}
@@ -285,7 +293,7 @@ func (c *Client) Store(ctx context.Context, req []byte, attempt int) error {
 	if err != nil {
 		// Errors from Client.Do are from (for example) network errors, so are
 		// recoverable.
-		return RecoverableError{err, defaultBackoff}
+		return WriteResponseStats{}, RecoverableError{err, defaultBackoff}
 	}
 	defer func() {
 		_, _ = io.Copy(io.Discard, httpResp.Body)
@@ -308,9 +316,9 @@ func (c *Client) Store(ctx context.Context, req []byte, attempt int) error {
 
 	if httpResp.StatusCode/100 == 5 ||
 		(c.retryOnRateLimit && httpResp.StatusCode == http.StatusTooManyRequests) {
-		return RecoverableError{err, retryAfterDuration(httpResp.Header.Get("Retry-After"))}
+		return rs, RecoverableError{err, retryAfterDuration(httpResp.Header.Get("Retry-After"))}
 	}
-	return err
+	return rs, err
 }
 
 // retryAfterDuration returns the duration for the Retry-After header. In case of any errors, it
@@ -330,12 +338,12 @@ func retryAfterDuration(t string) model.Duration {
 }
 
 // Name uniquely identifies the client.
-func (c Client) Name() string {
+func (c *Client) Name() string {
 	return c.remoteName
 }
 
 // Endpoint is the remote read or write endpoint.
-func (c Client) Endpoint() string {
+func (c *Client) Endpoint() string {
 	return c.urlString
 }
 

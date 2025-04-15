@@ -70,24 +70,22 @@ func (o *OOOChunk) NumSamples() int {
 	return len(o.samples)
 }
 
-func (o *OOOChunk) ToXOR() (*chunkenc.XORChunk, error) {
-	x := chunkenc.NewXORChunk()
-	app, err := x.Appender()
-	if err != nil {
-		return nil, err
+// ToEncodedChunks returns chunks with the samples in the OOOChunk.
+//
+//nolint:revive // unexported-return.
+func (o *OOOChunk) ToEncodedChunks(mint, maxt int64) (chks []memChunk, err error) {
+	if len(o.samples) == 0 {
+		return nil, nil
 	}
-	for _, s := range o.samples {
-		app.Append(s.t, s.f)
-	}
-	return x, nil
-}
-
-func (o *OOOChunk) ToXORBetweenTimestamps(mint, maxt int64) (*chunkenc.XORChunk, error) {
-	x := chunkenc.NewXORChunk()
-	app, err := x.Appender()
-	if err != nil {
-		return nil, err
-	}
+	// The most common case is that there will be a single chunk, with the same type of samples in it - this is always true for float samples.
+	chks = make([]memChunk, 0, 1)
+	var (
+		cmint int64
+		cmaxt int64
+		chunk chunkenc.Chunk
+		app   chunkenc.Appender
+	)
+	prevEncoding := chunkenc.EncNone // Yes we could call the chunk for this, but this is more efficient.
 	for _, s := range o.samples {
 		if s.t < mint {
 			continue
@@ -162,5 +160,8 @@ func (o *OOOChunk) ToXORBetweenTimestamps(mint, maxt int64) (*chunkenc.XORChunk,
 		cmaxt = s.t
 		prevEncoding = encoding
 	}
-	return x, nil
+	if prevEncoding != chunkenc.EncNone {
+		chks = append(chks, memChunk{chunk, cmint, cmaxt, nil})
+	}
+	return chks, nil
 }

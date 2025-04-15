@@ -56,6 +56,7 @@ type WriteTo interface {
 	AppendHistograms([]record.RefHistogramSample) bool
 	AppendFloatHistograms([]record.RefFloatHistogramSample) bool
 	StoreSeries([]record.RefSeries, int)
+	StoreMetadata([]record.RefMetadata)
 
 	// UpdateSeriesSegment and SeriesReset are intended for
 	// garbage-collection:
@@ -88,6 +89,7 @@ type Watcher struct {
 	lastCheckpoint string
 	sendExemplars  bool
 	sendHistograms bool
+	sendMetadata   bool
 	metrics        *WatcherMetrics
 	readerMetrics  *LiveReaderMetrics
 
@@ -183,6 +185,7 @@ func NewWatcher(metrics *WatcherMetrics, readerMetrics *LiveReaderMetrics, logge
 		name:           name,
 		sendExemplars:  sendExemplars,
 		sendHistograms: sendHistograms,
+		sendMetadata:   sendMetadata,
 
 		readNotify: make(chan struct{}),
 		quit:       make(chan struct{}),
@@ -485,6 +488,7 @@ func (w *Watcher) readSegment(r *LiveReader, segmentNum int, tail bool) error {
 		histogramsToSend      []record.RefHistogramSample
 		floatHistograms       []record.RefFloatHistogramSample
 		floatHistogramsToSend []record.RefFloatHistogramSample
+		metadata              []record.RefMetadata
 	)
 	for r.Next() && !isClosed(w.quit) {
 		rec := r.Record()

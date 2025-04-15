@@ -11,6 +11,9 @@ linters:
   - ineffassign
   - misspell
   - revive
+  - staticcheck
+  - testifylint
+  - unused
 
 linters-settings:
   forbidigo:

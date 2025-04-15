@@ -43,9 +43,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"reflect"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/kylelemons/godebug/diff"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/model"
@@ -235,6 +234,31 @@ func TransactionalGatherAndCompare(g prometheus.TransactionalGatherer, expected 
 	return compareMetricFamilies(got, wanted, metricNames...)
 }
 
+// CollectAndFormat collects the metrics identified by `metricNames` and returns them in the given format.
+func CollectAndFormat(c prometheus.Collector, format expfmt.FormatType, metricNames ...string) ([]byte, error) {
+	reg := prometheus.NewPedanticRegistry()
+	if err := reg.Register(c); err != nil {
+		return nil, fmt.Errorf("registering collector failed: %w", err)
+	}
+
+	gotFiltered, err := reg.Gather()
+	if err != nil {
+		return nil, fmt.Errorf("gathering metrics failed: %w", err)
+	}
+
+	gotFiltered = filterMetrics(gotFiltered, metricNames)
+
+	var gotFormatted bytes.Buffer
+	enc := expfmt.NewEncoder(&gotFormatted, expfmt.NewFormat(format))
+	for _, mf := range gotFiltered {
+		if err := enc.Encode(mf); err != nil {
+			return nil, fmt.Errorf("encoding gathered metrics failed: %w", err)
+		}
+	}
+
+	return gotFormatted.Bytes(), nil
+}
+
 // convertReaderToMetricFamily would read from a io.Reader object and convert it to a slice of
 // dto.MetricFamily.
 func convertReaderToMetricFamily(reader io.Reader) ([]*dto.MetricFamily, error) {
@@ -294,67 +318,6 @@ func compare(got, want []*dto.MetricFamily) error {
 		return errors.New(diffErr)
 	}
 	return nil
-}
-
-// diff returns a diff of both values as long as both are of the same type and
-// are a struct, map, slice, array or string. Otherwise it returns an empty string.
-func diff(expected, actual interface{}) string {
-	if expected == nil || actual == nil {
-		return ""
-	}
-
-	et, ek := typeAndKind(expected)
-	at, _ := typeAndKind(actual)
-	if et != at {
-		return ""
-	}
-
-	if ek != reflect.Struct && ek != reflect.Map && ek != reflect.Slice && ek != reflect.Array && ek != reflect.String {
-		return ""
-	}
-
-	var e, a string
-	c := spew.ConfigState{
-		Indent:                  " ",
-		DisablePointerAddresses: true,
-		DisableCapacities:       true,
-		SortKeys:                true,
-	}
-	if et != reflect.TypeOf("") {
-		e = c.Sdump(expected)
-		a = c.Sdump(actual)
-	} else {
-		e = reflect.ValueOf(expected).String()
-		a = reflect.ValueOf(actual).String()
-	}
-
-	diff, _ := internal.GetUnifiedDiffString(internal.UnifiedDiff{
-		A:        internal.SplitLines(e),
-		B:        internal.SplitLines(a),
-		FromFile: "metric output does not match expectation; want",
-		FromDate: "",
-		ToFile:   "got:",
-		ToDate:   "",
-		Context:  1,
-	})
-
-	if diff == "" {
-		return ""
-	}
-
-	return "\n\nDiff:\n" + diff
-}
-
-// typeAndKind returns the type and kind of the given interface{}
-func typeAndKind(v interface{}) (reflect.Type, reflect.Kind) {
-	t := reflect.TypeOf(v)
-	k := t.Kind()
-
-	if k == reflect.Ptr {
-		t = t.Elem()
-		k = t.Kind()
-	}
-	return t, k
 }
 
 func filterMetrics(metrics []*dto.MetricFamily, names []string) []*dto.MetricFamily {

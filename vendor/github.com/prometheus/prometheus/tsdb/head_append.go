@@ -633,7 +633,7 @@ func (a *headAppender) AppendExemplar(ref storage.SeriesRef, lset labels.Labels,
 	// Ensure no empty labels have gotten through.
 	e.Labels = e.Labels.WithoutEmpty()
 
-	err := a.head.exemplars.ValidateExemplar(s.lset, e)
+	err := a.head.exemplars.ValidateExemplar(s.labels(), e)
 	if err != nil {
 		if errors.Is(err, storage.ErrDuplicateExemplar) || errors.Is(err, storage.ErrExemplarsDisabled) {
 			// Duplicate, don't return an error but don't accept the exemplar.
@@ -903,7 +903,7 @@ func (a *headAppender) GetRef(lset labels.Labels, hash uint64) (storage.SeriesRe
 		return 0, labels.EmptyLabels()
 	}
 	// returned labels must be suitable to pass to Append()
-	return storage.SeriesRef(s.ref), s.lset
+	return storage.SeriesRef(s.ref), s.labels()
 }
 
 // log writes all headAppender's data to the WAL.
@@ -1536,7 +1536,7 @@ func (s *memSeries) insert(t int64, v float64, h *histogram.Histogram, fh *histo
 			c.maxTime = t
 		}
 	}
-	return ok, chunkCreated, mmapRef
+	return ok, chunkCreated, mmapRefs
 }
 
 // chunkOpts are chunk-level options that are passed when appending to a memSeries.
@@ -1916,16 +1916,8 @@ func (s *memSeries) mmapCurrentOOOHeadChunk(chunkDiskMapper *chunks.ChunkDiskMap
 			maxTime:    memchunk.maxTime,
 		})
 	}
-	xor, _ := s.ooo.oooHeadChunk.chunk.ToXOR() // Encode to XorChunk which is more compact and implements all of the needed functionality.
-	chunkRef := chunkDiskMapper.WriteChunk(s.ref, s.ooo.oooHeadChunk.minTime, s.ooo.oooHeadChunk.maxTime, xor, true, handleChunkWriteError)
-	s.ooo.oooMmappedChunks = append(s.ooo.oooMmappedChunks, &mmappedChunk{
-		ref:        chunkRef,
-		numSamples: uint16(xor.NumSamples()),
-		minTime:    s.ooo.oooHeadChunk.minTime,
-		maxTime:    s.ooo.oooHeadChunk.maxTime,
-	})
 	s.ooo.oooHeadChunk = nil
-	return chunkRef
+	return chunkRefs
 }
 
 // mmapChunks will m-map all but first chunk on s.headChunks list.

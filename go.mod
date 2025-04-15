@@ -1,6 +1,27 @@
 module github.com/VictoriaMetrics/VictoriaMetrics
 
-go 1.23.1
+go 1.24.2
+
+// This is needed in order to avoid vmbackup and vmrestore binary size increase by 20MB
+// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/8008
+// TODO: remove this entry after https://github.com/googleapis/google-cloud-go/issues/11448 is fixed
+replace cloud.google.com/go/storage => cloud.google.com/go/storage v1.43.0
+
+// This is needed in order to avoid breaking builds as Prometheus with v0.63.0
+// version is not released yet.
+replace github.com/prometheus/common => github.com/prometheus/common v0.62.0
+
+// Pin AWS libraries to version before 2025-01-15
+// Release notes: https://github.com/aws/aws-sdk-go-v2/releases/tag/release-2025-01-15
+// This version enabled request and response checksum verification by default which
+// breaks compatibility with non-AWS S3-compatible storage providers.
+// See: https://github.com/victoriaMetrics/victoriaMetrics/issues/8622
+replace (
+	github.com/aws/aws-sdk-go-v2 => github.com/aws/aws-sdk-go-v2 v1.32.8
+	github.com/aws/aws-sdk-go-v2/config => github.com/aws/aws-sdk-go-v2/config v1.28.11
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager => github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.48
+	github.com/aws/aws-sdk-go-v2/service/s3 => github.com/aws/aws-sdk-go-v2/service/s3 v1.72.3
+)
 
 require (
 	cloud.google.com/go/storage v1.51.0
@@ -26,18 +47,18 @@ require (
 	github.com/influxdata/influxdb v1.11.8
 	github.com/klauspost/compress v1.18.0
 	github.com/mattn/go-isatty v0.0.20
-	github.com/prometheus/prometheus v0.54.1
-	github.com/urfave/cli/v2 v2.27.4
+	github.com/prometheus/prometheus v0.302.1
+	github.com/urfave/cli/v2 v2.27.6
 	github.com/valyala/fastjson v1.6.4
 	github.com/valyala/fastrand v1.1.0
 	github.com/valyala/fasttemplate v1.2.2
 	github.com/valyala/gozstd v1.21.2
 	github.com/valyala/histogram v1.2.0
 	github.com/valyala/quicktemplate v1.8.0
-	golang.org/x/net v0.29.0
-	golang.org/x/oauth2 v0.23.0
-	golang.org/x/sys v0.25.0
-	google.golang.org/api v0.199.0
+	golang.org/x/net v0.38.0
+	golang.org/x/oauth2 v0.28.0
+	golang.org/x/sys v0.31.0
+	google.golang.org/api v0.228.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -96,6 +117,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.122.0 // indirect
@@ -103,11 +125,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.122.0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/client_golang v1.20.4 // indirect
+	github.com/prometheus/client_golang v1.21.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.59.1 // indirect
-	github.com/prometheus/common/sigv4 v0.1.0 // indirect
-	github.com/prometheus/procfs v0.15.1 // indirect
+	github.com/prometheus/common v0.63.0 // indirect
+	github.com/prometheus/procfs v0.16.0 // indirect
+	github.com/prometheus/sigv4 v0.1.2 // indirect
+	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect

@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"slices"
 	"strconv"
+	"unsafe"
 
 	"github.com/prometheus/common/model"
 )

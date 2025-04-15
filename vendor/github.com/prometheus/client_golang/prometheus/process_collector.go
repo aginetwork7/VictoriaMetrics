@@ -102,6 +102,16 @@ func NewProcessCollector(opts ProcessCollectorOpts) Collector {
 			"Start time of the process since unix epoch in seconds.",
 			nil, nil,
 		),
+		inBytes: NewDesc(
+			ns+"process_network_receive_bytes_total",
+			"Number of bytes received by the process over the network.",
+			nil, nil,
+		),
+		outBytes: NewDesc(
+			ns+"process_network_transmit_bytes_total",
+			"Number of bytes sent by the process over the network.",
+			nil, nil,
+		),
 	}
 
 	if opts.PidFn == nil {

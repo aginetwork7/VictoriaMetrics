@@ -20,6 +20,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -27,11 +29,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/common/model"
 
-	"github.com/prometheus/client_golang/prometheus"
-
+	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/exemplar"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/prompb"
+	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage"
 	otlptranslator "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 
@@ -68,22 +72,50 @@ func NewWriteHandler(logger *slog.Logger, reg prometheus.Registerer, appendable 
 		protoMsgs[acc] = struct{}{}
 	}
 	h := &writeHandler{
-		logger:     logger,
-		appendable: appendable,
-
-		samplesWithInvalidLabelsTotal: prometheus.NewCounter(prometheus.CounterOpts{
+		logger:            logger,
+		appendable:        appendable,
+		acceptedProtoMsgs: protoMsgs,
+		samplesWithInvalidLabelsTotal: promauto.With(reg).NewCounter(prometheus.CounterOpts{
 			Namespace: "prometheus",
 			Subsystem: "api",
 			Name:      "remote_write_invalid_labels_samples_total",
-			Help:      "The total number of remote write samples which contains invalid labels.",
+			Help:      "The total number of received remote write samples and histogram samples which were rejected due to invalid labels.",
+		}),
+		samplesAppendedWithoutMetadata: promauto.With(reg).NewCounter(prometheus.CounterOpts{
+			Namespace: "prometheus",
+			Subsystem: "api",
+			Name:      "remote_write_without_metadata_appended_samples_total",
+			Help:      "The total number of received remote write samples (and histogram samples) which were ingested without corresponding metadata.",
 		}),
 
 		ingestCTZeroSample: ingestCTZeroSample,
 	}
-	if reg != nil {
-		reg.MustRegister(h.samplesWithInvalidLabelsTotal)
-	}
 	return h
+}
+
+func (h *writeHandler) parseProtoMsg(contentType string) (config.RemoteWriteProtoMsg, error) {
+	contentType = strings.TrimSpace(contentType)
+
+	parts := strings.Split(contentType, ";")
+	if parts[0] != appProtoContentType {
+		return "", fmt.Errorf("expected %v as the first (media) part, got %v content-type", appProtoContentType, contentType)
+	}
+	// Parse potential https://www.rfc-editor.org/rfc/rfc9110#parameter
+	for _, p := range parts[1:] {
+		pair := strings.Split(p, "=")
+		if len(pair) != 2 {
+			return "", fmt.Errorf("as per https://www.rfc-editor.org/rfc/rfc9110#parameter expected parameters to be key-values, got %v in %v content-type", p, contentType)
+		}
+		if pair[0] == "proto" {
+			ret := config.RemoteWriteProtoMsg(pair[1])
+			if err := ret.Validate(); err != nil {
+				return "", fmt.Errorf("got %v content type; %w", contentType, err)
+			}
+			return ret, nil
+		}
+	}
+	// No "proto=" parameter, assuming v1.
+	return config.RemoteWriteProtoMsgV1, nil
 }
 
 func (h *writeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -191,39 +223,28 @@ func (h *writeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// checkAppendExemplarError modifies the AppendExemplar's returned error based on the error cause.
-func (h *writeHandler) checkAppendExemplarError(err error, e exemplar.Exemplar, outOfOrderErrs *int) error {
-	unwrappedErr := errors.Unwrap(err)
-	if unwrappedErr == nil {
-		unwrappedErr = err
-	}
-	switch {
-	case errors.Is(unwrappedErr, storage.ErrNotFound):
-		return storage.ErrNotFound
-	case errors.Is(unwrappedErr, storage.ErrOutOfOrderExemplar):
-		*outOfOrderErrs++
-		level.Debug(h.logger).Log("msg", "Out of order exemplar", "exemplar", fmt.Sprintf("%+v", e))
-		return nil
-	default:
-		return err
-	}
-}
-
 func (h *writeHandler) write(ctx context.Context, req *prompb.WriteRequest) (err error) {
 	outOfOrderExemplarErrs := 0
 	samplesWithInvalidLabels := 0
+	samplesAppended := 0
 
-	app := h.appendable.Appender(ctx)
+	app := &timeLimitAppender{
+		Appender: h.appendable.Appender(ctx),
+		maxTime:  timestamp.FromTime(time.Now().Add(maxAheadTime)),
+	}
+
 	defer func() {
 		if err != nil {
 			_ = app.Rollback()
 			return
 		}
 		err = app.Commit()
+		if err != nil {
+			h.samplesAppendedWithoutMetadata.Add(float64(samplesAppended))
+		}
 	}()
 
 	b := labels.NewScratchBuilder(0)
-	var exemplarErr error
 	for _, ts := range req.Timeseries {
 		ls := ts.ToLabels(&b, nil)
 
@@ -255,45 +276,13 @@ func (h *writeHandler) write(ctx context.Context, req *prompb.WriteRequest) (err
 					// Since exemplar storage is still experimental, we don't fail the request on ingestion errors
 					h.logger.Debug("Error while adding exemplar in AppendExemplar", "series", ls.String(), "exemplar", fmt.Sprintf("%+v", e), "err", err)
 				}
-				if errors.Is(err, storage.ErrOutOfOrderSample) || errors.Is(unwrappedErr, storage.ErrOutOfBounds) || errors.Is(unwrappedErr, storage.ErrDuplicateSampleForTimestamp) {
-					level.Error(h.logger).Log("msg", "Out of order sample from remote write", "err", err.Error(), "series", labels.String(), "timestamp", s.Timestamp)
-				}
-				return err
 			}
 		}
 
-		for _, ep := range ts.Exemplars {
-			e := exemplarProtoToExemplar(&b, ep)
-
-			_, exemplarErr = app.AppendExemplar(0, labels, e)
-			exemplarErr = h.checkAppendExemplarError(exemplarErr, e, &outOfOrderExemplarErrs)
-			if exemplarErr != nil {
-				// Since exemplar storage is still experimental, we don't fail the request on ingestion errors.
-				level.Debug(h.logger).Log("msg", "Error while adding exemplar in AddExemplar", "exemplar", fmt.Sprintf("%+v", e), "err", exemplarErr)
-			}
+		if err = h.appendV1Histograms(app, ts.Histograms, ls); err != nil {
+			return err
 		}
-
-		for _, hp := range ts.Histograms {
-			if hp.IsFloatHistogram() {
-				fhs := FloatHistogramProtoToFloatHistogram(hp)
-				_, err = app.AppendHistogram(0, labels, hp.Timestamp, nil, fhs)
-			} else {
-				hs := HistogramProtoToHistogram(hp)
-				_, err = app.AppendHistogram(0, labels, hp.Timestamp, hs, nil)
-			}
-			if err != nil {
-				unwrappedErr := errors.Unwrap(err)
-				if unwrappedErr == nil {
-					unwrappedErr = err
-				}
-				// Although AppendHistogram does not currently return ErrDuplicateSampleForTimestamp there is
-				// a note indicating its inclusion in the future.
-				if errors.Is(unwrappedErr, storage.ErrOutOfOrderSample) || errors.Is(unwrappedErr, storage.ErrOutOfBounds) || errors.Is(unwrappedErr, storage.ErrDuplicateSampleForTimestamp) {
-					level.Error(h.logger).Log("msg", "Out of order histogram from remote write", "err", err.Error(), "series", labels.String(), "timestamp", hp.Timestamp)
-				}
-				return err
-			}
-		}
+		samplesAppended += len(ts.Histograms)
 	}
 
 	if outOfOrderExemplarErrs > 0 {
@@ -302,7 +291,6 @@ func (h *writeHandler) write(ctx context.Context, req *prompb.WriteRequest) (err
 	if samplesWithInvalidLabels > 0 {
 		h.samplesWithInvalidLabelsTotal.Add(float64(samplesWithInvalidLabels))
 	}
-
 	return nil
 }
 

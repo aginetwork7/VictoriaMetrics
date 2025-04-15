@@ -66,7 +66,7 @@ func (oh *HeadAndOOOIndexReader) Series(ref storage.SeriesRef, builder *labels.S
 		oh.head.metrics.seriesNotFound.Inc()
 		return storage.ErrNotFound
 	}
-	builder.Assign(s.lset)
+	builder.Assign(s.labels())
 
 	if chks == nil {
 		return nil
@@ -91,36 +91,16 @@ func (oh *HeadAndOOOIndexReader) Series(ref storage.SeriesRef, builder *labels.S
 func getOOOSeriesChunks(s *memSeries, mint, maxt int64, lastGarbageCollectedMmapRef, maxMmapRef chunks.ChunkDiskMapperRef, includeInOrder bool, inoMint int64, chks *[]chunks.Meta) error {
 	tmpChks := make([]chunks.Meta, 0, len(s.ooo.oooMmappedChunks))
 
-	// We define these markers to track the last chunk reference while we
-	// fill the chunk meta.
-	// These markers are useful to give consistent responses to repeated queries
-	// even if new chunks that might be overlapping or not are added afterwards.
-	// Also, lastMinT and lastMaxT are initialized to the max int as a sentinel
-	// value to know they are unset.
-	var lastChunkRef chunks.ChunkRef
-	lastMinT, lastMaxT := int64(math.MaxInt64), int64(math.MaxInt64)
-
-	addChunk := func(minT, maxT int64, ref chunks.ChunkRef) {
-		// the first time we get called is for the last included chunk.
-		// set the markers accordingly
-		if lastMinT == int64(math.MaxInt64) {
-			lastChunkRef = ref
-			lastMinT = minT
-			lastMaxT = maxT
-		}
-
+	addChunk := func(minT, maxT int64, ref chunks.ChunkRef, chunk chunkenc.Chunk) {
 		tmpChks = append(tmpChks, chunks.Meta{
-			MinTime:        minT,
-			MaxTime:        maxT,
-			Ref:            ref,
-			OOOLastRef:     lastChunkRef,
-			OOOLastMinTime: lastMinT,
-			OOOLastMaxTime: lastMaxT,
+			MinTime: minT,
+			MaxTime: maxT,
+			Ref:     ref,
+			Chunk:   chunk,
 		})
 	}
 
-	// Collect all chunks that overlap the query range, in order from most recent to most old,
-	// so we can set the correct markers.
+	// Collect all chunks that overlap the query range.
 	if s.ooo.oooHeadChunk != nil {
 		c := s.ooo.oooHeadChunk
 		if c.OverlapsClosedInterval(mint, maxt) && maxMmapRef == 0 {
@@ -144,7 +124,7 @@ func getOOOSeriesChunks(s *memSeries, mint, maxt int64, lastGarbageCollectedMmap
 		c := s.ooo.oooMmappedChunks[i]
 		if c.OverlapsClosedInterval(mint, maxt) && (maxMmapRef == 0 || maxMmapRef.GreaterThanOrEqualTo(c.ref)) && (lastGarbageCollectedMmapRef == 0 || c.ref.GreaterThan(lastGarbageCollectedMmapRef)) {
 			ref := chunks.ChunkRef(chunks.NewHeadChunkRef(s.ref, s.oooHeadChunkID(i)))
-			addChunk(c.minTime, c.maxTime, ref)
+			addChunk(c.minTime, c.maxTime, ref, nil)
 		}
 	}
 
@@ -370,11 +350,16 @@ func NewOOOCompactionHead(ctx context.Context, head *Head) (*OOOCompactionHead, 
 		mmapRefs := ms.mmapCurrentOOOHeadChunk(head.chunkDiskMapper, head.logger)
 		if len(mmapRefs) == 0 && len(ms.ooo.oooMmappedChunks) > 0 {
 			// Nothing was m-mapped. So take the mmapRef from the existing slice if it exists.
-			mmapRef = ms.ooo.oooMmappedChunks[len(ms.ooo.oooMmappedChunks)-1].ref
+			mmapRefs = []chunks.ChunkDiskMapperRef{ms.ooo.oooMmappedChunks[len(ms.ooo.oooMmappedChunks)-1].ref}
 		}
-		seq, off := mmapRef.Unpack()
+		if len(mmapRefs) == 0 {
+			lastMmapRef = 0
+		} else {
+			lastMmapRef = mmapRefs[len(mmapRefs)-1]
+		}
+		seq, off := lastMmapRef.Unpack()
 		if seq > lastSeq || (seq == lastSeq && off > lastOff) {
-			ch.lastMmapRef, lastSeq, lastOff = mmapRef, seq, off
+			ch.lastMmapRef, lastSeq, lastOff = lastMmapRef, seq, off
 		}
 		if len(ms.ooo.oooMmappedChunks) > 0 {
 			ch.postings = append(ch.postings, seriesRef)
@@ -519,7 +504,7 @@ func (ir *OOOCompactionHeadIndexReader) LabelValueFor(context.Context, storage.S
 	return "", errors.New("not implemented")
 }
 
-func (ir *OOOCompactionHeadIndexReader) LabelNamesFor(ctx context.Context, ids ...storage.SeriesRef) ([]string, error) {
+func (ir *OOOCompactionHeadIndexReader) LabelNamesFor(ctx context.Context, postings index.Postings) ([]string, error) {
 	return nil, errors.New("not implemented")
 }
 

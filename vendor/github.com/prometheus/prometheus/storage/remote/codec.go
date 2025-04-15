@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"slices"
 	"sort"
-	"strings"
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
@@ -30,10 +29,10 @@ import (
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 
-	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/prompb"
+	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 	"github.com/prometheus/prometheus/tsdb/chunks"
@@ -95,7 +94,7 @@ func EncodeReadResponse(resp *prompb.ReadResponse, w http.ResponseWriter) error 
 
 // ToQuery builds a Query proto.
 func ToQuery(from, to int64, matchers []*labels.Matcher, hints *storage.SelectHints) (*prompb.Query, error) {
-	ms, err := toLabelMatchers(matchers)
+	ms, err := ToLabelMatchers(matchers)
 	if err != nil {
 		return nil, err
 	}
@@ -153,10 +152,10 @@ func ToQueryResult(ss storage.SeriesSet, sampleLimit int) (*prompb.QueryResult, 
 				})
 			case chunkenc.ValHistogram:
 				ts, h := iter.AtHistogram(nil)
-				histograms = append(histograms, HistogramToHistogramProto(ts, h))
+				histograms = append(histograms, prompb.FromIntHistogram(ts, h))
 			case chunkenc.ValFloatHistogram:
 				ts, fh := iter.AtFloatHistogram(nil)
-				histograms = append(histograms, FloatHistogramToHistogramProto(ts, fh))
+				histograms = append(histograms, prompb.FromFloatHistogram(ts, fh))
 			default:
 				return nil, ss.Warnings(), fmt.Errorf("unrecognized value type: %s", valType)
 			}
@@ -166,7 +165,7 @@ func ToQueryResult(ss storage.SeriesSet, sampleLimit int) (*prompb.QueryResult, 
 		}
 
 		resp.Timeseries = append(resp.Timeseries, &prompb.TimeSeries{
-			Labels:     labelsToLabelsProto(series.Labels(), nil),
+			Labels:     prompb.FromLabels(series.Labels(), nil),
 			Samples:    samples,
 			Histograms: histograms,
 		})
@@ -182,7 +181,7 @@ func FromQueryResult(sortSeries bool, res *prompb.QueryResult) storage.SeriesSet
 		if err := validateLabelsAndMetricName(ts.Labels); err != nil {
 			return errSeriesSet{err: err}
 		}
-		lbls := labelProtosToLabels(&b, ts.Labels)
+		lbls := ts.ToLabels(&b, nil)
 		series = append(series, &concreteSeries{labels: lbls, floats: ts.Samples, histograms: ts.Histograms})
 	}
 
@@ -235,7 +234,7 @@ func StreamChunkedReadResponses(
 	for ss.Next() {
 		series := ss.At()
 		iter = series.Iterator(iter)
-		lbls = MergeLabels(labelsToLabelsProto(series.Labels(), lbls), sortedExternalLabels)
+		lbls = MergeLabels(prompb.FromLabels(series.Labels(), lbls), sortedExternalLabels)
 
 		maxDataLength := maxBytesInFrame
 		for _, lbl := range lbls {
@@ -481,21 +480,16 @@ func (c *concreteSeriesIterator) AtHistogram(*histogram.Histogram) (int64, *hist
 		panic("iterator is not on an integer histogram sample")
 	}
 	h := c.series.histograms[c.histogramsCur]
-	return h.Timestamp, HistogramProtoToHistogram(h)
+	return h.Timestamp, h.ToIntHistogram()
 }
 
 // AtFloatHistogram implements chunkenc.Iterator.
 func (c *concreteSeriesIterator) AtFloatHistogram(*histogram.FloatHistogram) (int64, *histogram.FloatHistogram) {
-	switch c.curValType {
-	case chunkenc.ValHistogram:
+	if c.curValType == chunkenc.ValHistogram || c.curValType == chunkenc.ValFloatHistogram {
 		fh := c.series.histograms[c.histogramsCur]
-		return fh.Timestamp, HistogramProtoToFloatHistogram(fh)
-	case chunkenc.ValFloatHistogram:
-		fh := c.series.histograms[c.histogramsCur]
-		return fh.Timestamp, FloatHistogramProtoToFloatHistogram(fh)
-	default:
-		panic("iterator is not on a histogram sample")
+		return fh.Timestamp, fh.ToFloatHistogram() // integer will be auto-converted.
 	}
+	panic("iterator is not on a histogram sample")
 }
 
 // AtT implements chunkenc.Iterator.
@@ -780,7 +774,8 @@ func validateLabelsAndMetricName(ls []prompb.Label) error {
 	return nil
 }
 
-func toLabelMatchers(matchers []*labels.Matcher) ([]*prompb.LabelMatcher, error) {
+// ToLabelMatchers converts Prometheus label matchers to protobuf label matchers.
+func ToLabelMatchers(matchers []*labels.Matcher) ([]*prompb.LabelMatcher, error) {
 	pbMatchers := make([]*prompb.LabelMatcher, 0, len(matchers))
 	for _, m := range matchers {
 		var mType prompb.LabelMatcher_Type
@@ -805,7 +800,7 @@ func toLabelMatchers(matchers []*labels.Matcher) ([]*prompb.LabelMatcher, error)
 	return pbMatchers, nil
 }
 
-// FromLabelMatchers parses protobuf label matchers to Prometheus label matchers.
+// FromLabelMatchers converts protobuf label matchers to Prometheus label matchers.
 func FromLabelMatchers(matchers []*prompb.LabelMatcher) ([]*labels.Matcher, error) {
 	result := make([]*labels.Matcher, 0, len(matchers))
 	for _, matcher := range matchers {
@@ -833,6 +828,7 @@ func FromLabelMatchers(matchers []*prompb.LabelMatcher) ([]*labels.Matcher, erro
 
 // DecodeWriteRequest from an io.Reader into a prompb.WriteRequest, handling
 // snappy decompression.
+// Used also by documentation/examples/remote_storage.
 func DecodeWriteRequest(r io.Reader) (*prompb.WriteRequest, error) {
 	compressed, err := io.ReadAll(r)
 	if err != nil {
@@ -845,6 +841,28 @@ func DecodeWriteRequest(r io.Reader) (*prompb.WriteRequest, error) {
 	}
 
 	var req prompb.WriteRequest
+	if err := proto.Unmarshal(reqBuf, &req); err != nil {
+		return nil, err
+	}
+
+	return &req, nil
+}
+
+// DecodeWriteV2Request from an io.Reader into a writev2.Request, handling
+// snappy decompression.
+// Used also by documentation/examples/remote_storage.
+func DecodeWriteV2Request(r io.Reader) (*writev2.Request, error) {
+	compressed, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	reqBuf, err := snappy.Decode(nil, compressed)
+	if err != nil {
+		return nil, err
+	}
+
+	var req writev2.Request
 	if err := proto.Unmarshal(reqBuf, &req); err != nil {
 		return nil, err
 	}

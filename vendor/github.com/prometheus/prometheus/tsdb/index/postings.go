@@ -300,8 +300,10 @@ func (p *MemPostings) EnsureOrder(numberOfConcurrentProcesses int) {
 }
 
 // Delete removes all ids in the given map from the postings lists.
-func (p *MemPostings) Delete(deleted map[storage.SeriesRef]struct{}) {
-	var keys, vals []string
+// affectedLabels contains all the labels that are affected by the deletion, there's no need to check other labels.
+func (p *MemPostings) Delete(deleted map[storage.SeriesRef]struct{}, affected map[labels.Label]struct{}) {
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
 
 	affectedLabelNames := map[string]struct{}{}
 	process := func(l labels.Label) {
@@ -319,7 +321,6 @@ func (p *MemPostings) Delete(deleted map[storage.SeriesRef]struct{}) {
 			affectedLabelNames[l.Name] = struct{}{}
 		}
 	}
-	p.mtx.RUnlock()
 
 	i := 0
 	for l := range affected {
@@ -848,9 +849,7 @@ func (it *ListPostings) Seek(x storage.SeriesRef) bool {
 	}
 
 	// Do binary search between current position and end.
-	i := sort.Search(len(it.list), func(i int) bool {
-		return it.list[i] >= x
-	})
+	i, _ := slices.BinarySearch(it.list, x)
 	if i < len(it.list) {
 		it.cur = it.list[i]
 		it.list = it.list[i+1:]

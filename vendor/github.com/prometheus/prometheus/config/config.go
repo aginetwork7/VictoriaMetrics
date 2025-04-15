@@ -202,6 +202,7 @@ var (
 	// DefaultRemoteWriteConfig is the default remote write configuration.
 	DefaultRemoteWriteConfig = RemoteWriteConfig{
 		RemoteTimeout:    model.Duration(30 * time.Second),
+		ProtobufMessage:  RemoteWriteProtoMsgV1,
 		QueueConfig:      DefaultQueueConfig,
 		MetadataConfig:   DefaultMetadataConfig,
 		HTTPClientConfig: DefaultRemoteWriteHTTPClientConfig,
@@ -1148,6 +1149,50 @@ func CheckTargetAddress(address model.LabelValue) error {
 	return nil
 }
 
+// RemoteWriteProtoMsg represents the known protobuf message for the remote write
+// 1.0 and 2.0 specs.
+type RemoteWriteProtoMsg string
+
+// Validate returns error if the given reference for the protobuf message is not supported.
+func (s RemoteWriteProtoMsg) Validate() error {
+	switch s {
+	case RemoteWriteProtoMsgV1, RemoteWriteProtoMsgV2:
+		return nil
+	default:
+		return fmt.Errorf("unknown remote write protobuf message %v, supported: %v", s, RemoteWriteProtoMsgs{RemoteWriteProtoMsgV1, RemoteWriteProtoMsgV2}.String())
+	}
+}
+
+type RemoteWriteProtoMsgs []RemoteWriteProtoMsg
+
+func (m RemoteWriteProtoMsgs) Strings() []string {
+	ret := make([]string, 0, len(m))
+	for _, typ := range m {
+		ret = append(ret, string(typ))
+	}
+	return ret
+}
+
+func (m RemoteWriteProtoMsgs) String() string {
+	return strings.Join(m.Strings(), ", ")
+}
+
+var (
+	// RemoteWriteProtoMsgV1 represents the `prometheus.WriteRequest` protobuf
+	// message introduced in the https://prometheus.io/docs/specs/remote_write_spec/,
+	// which will eventually be deprecated.
+	//
+	// NOTE: This string is used for both HTTP header values and config value, so don't change
+	// this reference.
+	RemoteWriteProtoMsgV1 RemoteWriteProtoMsg = "prometheus.WriteRequest"
+	// RemoteWriteProtoMsgV2 represents the `io.prometheus.write.v2.Request` protobuf
+	// message introduced in https://prometheus.io/docs/specs/remote_write_spec_2_0/
+	//
+	// NOTE: This string is used for both HTTP header values and config value, so don't change
+	// this reference.
+	RemoteWriteProtoMsgV2 RemoteWriteProtoMsg = "io.prometheus.write.v2.Request"
+)
+
 // RemoteWriteConfig is the configuration for writing to remote storage.
 type RemoteWriteConfig struct {
 	URL                  *config.URL       `yaml:"url"`
@@ -1194,6 +1239,10 @@ func (c *RemoteWriteConfig) UnmarshalYAML(unmarshal func(interface{}) error) err
 	}
 	if err := validateHeaders(c.Headers); err != nil {
 		return err
+	}
+
+	if err := c.ProtobufMessage.Validate(); err != nil {
+		return fmt.Errorf("invalid protobuf_message value: %w", err)
 	}
 
 	// The UnmarshalYAML method of HTTPClientConfig is not being called because it's not a pointer.

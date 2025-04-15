@@ -230,6 +230,10 @@ type NewCompactorFunc func(ctx context.Context, r prometheus.Registerer, l *slog
 
 type BlocksToDeleteFunc func(blocks []*Block) map[ulid.ULID]struct{}
 
+type BlockQuerierFunc func(b BlockReader, mint, maxt int64) (storage.Querier, error)
+
+type BlockChunkQuerierFunc func(b BlockReader, mint, maxt int64) (storage.ChunkQuerier, error)
+
 // DB handles reads and writes of time series falling into
 // a hashed partition of a seriedb.
 type DB struct {
@@ -279,6 +283,10 @@ type DB struct {
 	writeNotified wlog.WriteNotified
 
 	registerer prometheus.Registerer
+
+	blockQuerierFunc BlockQuerierFunc
+
+	blockChunkQuerierFunc BlockChunkQuerierFunc
 }
 
 type dbMetrics struct {
@@ -594,10 +602,12 @@ func (db *DBReadOnly) loadDataAsQueryable(maxt int64) (storage.SampleAndChunkQue
 
 	db.closers = append(db.closers, head)
 	return &DB{
-		dir:    db.dir,
-		logger: db.logger,
-		blocks: blocks,
-		head:   head,
+		dir:                   db.dir,
+		logger:                db.logger,
+		blocks:                blocks,
+		head:                  head,
+		blockQuerierFunc:      NewBlockQuerier,
+		blockChunkQuerierFunc: NewBlockChunkQuerier,
 	}, nil
 }
 
@@ -905,6 +915,18 @@ func open(dir string, l *slog.Logger, r prometheus.Registerer, opts *Options, rn
 		return nil, fmt.Errorf("create compactor: %w", err)
 	}
 	db.compactCancel = cancel
+
+	if opts.BlockQuerierFunc == nil {
+		db.blockQuerierFunc = NewBlockQuerier
+	} else {
+		db.blockQuerierFunc = opts.BlockQuerierFunc
+	}
+
+	if opts.BlockChunkQuerierFunc == nil {
+		db.blockChunkQuerierFunc = NewBlockChunkQuerier
+	} else {
+		db.blockChunkQuerierFunc = opts.BlockChunkQuerierFunc
+	}
 
 	var wal, wbl *wlog.WL
 	segmentSize := wlog.DefaultSegmentSize
@@ -1338,6 +1360,9 @@ func (db *DB) CompactOOOHead(ctx context.Context) error {
 	return db.compactOOOHead(ctx)
 }
 
+// Callback for testing.
+var compactOOOHeadTestingCallback func()
+
 func (db *DB) compactOOOHead(ctx context.Context) error {
 	if !db.oooWasEnabled.Load() {
 		return nil
@@ -1345,6 +1370,11 @@ func (db *DB) compactOOOHead(ctx context.Context) error {
 	oooHead, err := NewOOOCompactionHead(ctx, db.head)
 	if err != nil {
 		return fmt.Errorf("get ooo compaction head: %w", err)
+	}
+
+	if compactOOOHeadTestingCallback != nil {
+		compactOOOHeadTestingCallback()
+		compactOOOHeadTestingCallback = nil
 	}
 
 	ulids, err := db.compactOOO(db.dir, oooHead)
@@ -1407,13 +1437,11 @@ func (db *DB) compactOOO(dest string, oooHead *OOOCompactionHead) (_ []ulid.ULID
 	for t := blockSize * (oooHeadMint / blockSize); t <= oooHeadMaxt; t += blockSize {
 		mint, maxt := t, t+blockSize
 		// Block intervals are half-open: [b.MinTime, b.MaxTime). Block intervals are always +1 than the total samples it includes.
-		uid, err := db.compactor.Write(dest, oooHead.CloneForTimeRange(mint, maxt-1), mint, maxt, meta)
+		uids, err := db.compactor.Write(dest, oooHead.CloneForTimeRange(mint, maxt-1), mint, maxt, meta)
 		if err != nil {
 			return nil, err
 		}
-		if uid.Compare(ulid.ULID{}) != 0 {
-			ulids = append(ulids, uid)
-		}
+		ulids = append(ulids, uids...)
 	}
 
 	if len(ulids) == 0 {
@@ -1435,23 +1463,26 @@ func (db *DB) compactOOO(dest string, oooHead *OOOCompactionHead) (_ []ulid.ULID
 // compactHead compacts the given RangeHead.
 // The compaction mutex should be held before calling this method.
 func (db *DB) compactHead(head *RangeHead) error {
-	uid, err := db.compactor.Write(db.dir, head, head.MinTime(), head.BlockMaxTime(), nil)
+	uids, err := db.compactor.Write(db.dir, head, head.MinTime(), head.BlockMaxTime(), nil)
 	if err != nil {
 		return fmt.Errorf("persist head block: %w", err)
 	}
 
 	if err := db.reloadBlocks(); err != nil {
-		if errRemoveAll := os.RemoveAll(filepath.Join(db.dir, uid.String())); errRemoveAll != nil {
-			return tsdb_errors.NewMulti(
-				fmt.Errorf("reloadBlocks blocks: %w", err),
-				fmt.Errorf("delete persisted head block after failed db reloadBlocks:%s: %w", uid, errRemoveAll),
-			).Err()
+		multiErr := tsdb_errors.NewMulti(fmt.Errorf("reloadBlocks blocks: %w", err))
+		for _, uid := range uids {
+			if errRemoveAll := os.RemoveAll(filepath.Join(db.dir, uid.String())); errRemoveAll != nil {
+				multiErr.Add(fmt.Errorf("delete persisted head block after failed db reloadBlocks:%s: %w", uid, errRemoveAll))
+			}
 		}
-		return fmt.Errorf("reloadBlocks blocks: %w", err)
+		return multiErr.Err()
 	}
 	if err = db.head.truncateMemory(head.BlockMaxTime()); err != nil {
 		return fmt.Errorf("head memory truncate: %w", err)
 	}
+
+	db.head.RebuildSymbolTable(db.logger)
+
 	return nil
 }
 
@@ -1482,16 +1513,19 @@ func (db *DB) compactBlocks() (err error) {
 		default:
 		}
 
-		uid, err := db.compactor.Compact(db.dir, plan, db.blocks)
+		uids, err := db.compactor.Compact(db.dir, plan, db.blocks)
 		if err != nil {
 			return fmt.Errorf("compact %s: %w", plan, err)
 		}
 
 		if err := db.reloadBlocks(); err != nil {
-			if err := os.RemoveAll(filepath.Join(db.dir, uid.String())); err != nil {
-				return fmt.Errorf("delete compacted block after failed db reloadBlocks:%s: %w", uid, err)
+			errs := tsdb_errors.NewMulti(fmt.Errorf("reloadBlocks blocks: %w", err))
+			for _, uid := range uids {
+				if errRemoveAll := os.RemoveAll(filepath.Join(db.dir, uid.String())); errRemoveAll != nil {
+					errs.Add(fmt.Errorf("delete persisted block after failed db reloadBlocks:%s: %w", uid, errRemoveAll))
+				}
 			}
-			return fmt.Errorf("reloadBlocks blocks: %w", err)
+			return errs.Err()
 		}
 	}
 
@@ -2077,7 +2111,7 @@ func (db *DB) Querier(mint, maxt int64) (_ storage.Querier, err error) {
 	}
 
 	for _, b := range blocks {
-		q, err := NewBlockQuerier(b, mint, maxt)
+		q, err := db.blockQuerierFunc(b, mint, maxt)
 		if err != nil {
 			return nil, fmt.Errorf("open querier for block %s: %w", b, err)
 		}
@@ -2154,7 +2188,7 @@ func (db *DB) blockChunkQuerierForRange(mint, maxt int64) (_ []storage.ChunkQuer
 	}
 
 	for _, b := range blocks {
-		q, err := NewBlockChunkQuerier(b, mint, maxt)
+		q, err := db.blockChunkQuerierFunc(b, mint, maxt)
 		if err != nil {
 			return nil, fmt.Errorf("open querier for block %s: %w", b, err)
 		}
@@ -2223,7 +2257,7 @@ func (db *DB) CleanTombstones() (err error) {
 		cleanUpCompleted = true
 
 		for _, pb := range db.Blocks() {
-			uid, safeToDelete, cleanErr := pb.CleanTombstones(db.Dir(), db.compactor)
+			uids, safeToDelete, cleanErr := pb.CleanTombstones(db.Dir(), db.compactor)
 			if cleanErr != nil {
 				return fmt.Errorf("clean tombstones: %s: %w", pb.Dir(), cleanErr)
 			}
@@ -2247,7 +2281,7 @@ func (db *DB) CleanTombstones() (err error) {
 			}
 
 			// Delete new block if it was created.
-			if uid != nil && *uid != (ulid.ULID{}) {
+			for _, uid := range uids {
 				dir := filepath.Join(db.Dir(), uid.String())
 				if err := os.RemoveAll(dir); err != nil {
 					db.logger.Error("failed to delete block after failed `CleanTombstones`", "dir", dir, "err", err)

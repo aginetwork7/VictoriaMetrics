@@ -487,6 +487,9 @@ github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.2
 ## explicit; go 1.12
 github.com/modern-go/reflect2
+# github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
+## explicit
+github.com/munnerz/goautoneg
 # github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f
 ## explicit
 github.com/mwitkow/go-conntrack
@@ -531,7 +534,6 @@ github.com/prometheus/client_model/go
 ## explicit; go 1.21
 github.com/prometheus/common/config
 github.com/prometheus/common/expfmt
-github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/model
 github.com/prometheus/common/promslog
 github.com/prometheus/common/version
@@ -555,6 +557,7 @@ github.com/prometheus/prometheus/model/timestamp
 github.com/prometheus/prometheus/model/value
 github.com/prometheus/prometheus/prompb
 github.com/prometheus/prometheus/prompb/io/prometheus/client
+github.com/prometheus/prometheus/prompb/io/prometheus/write/v2
 github.com/prometheus/prometheus/promql/parser/posrange
 github.com/prometheus/prometheus/scrape
 github.com/prometheus/prometheus/storage

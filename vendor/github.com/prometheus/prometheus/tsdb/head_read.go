@@ -131,7 +131,7 @@ func (h *headIndexReader) SortedPostings(p index.Postings) index.Postings {
 	}
 
 	slices.SortFunc(series, func(a, b *memSeries) int {
-		return labels.Compare(a.lset, b.lset)
+		return labels.Compare(a.labels(), b.labels())
 	})
 
 	// Convert back to list.
@@ -178,7 +178,7 @@ func (h *headIndexReader) Series(ref storage.SeriesRef, builder *labels.ScratchB
 		h.head.metrics.seriesNotFound.Inc()
 		return storage.ErrNotFound
 	}
-	builder.Assign(s.lset)
+	builder.Assign(s.labels())
 
 	if chks == nil {
 		return nil
@@ -260,7 +260,7 @@ func (h *headIndexReader) LabelValueFor(_ context.Context, id storage.SeriesRef,
 		return "", storage.ErrNotFound
 	}
 
-	value := memSeries.lset.Get(label)
+	value := memSeries.labels().Get(label)
 	if value == "" {
 		return "", storage.ErrNotFound
 	}
@@ -268,21 +268,28 @@ func (h *headIndexReader) LabelValueFor(_ context.Context, id storage.SeriesRef,
 	return value, nil
 }
 
-// LabelNamesFor returns all the label names for the series referred to by IDs.
+// LabelNamesFor returns all the label names for the series referred to by the postings.
 // The names returned are sorted.
-func (h *headIndexReader) LabelNamesFor(ctx context.Context, ids ...storage.SeriesRef) ([]string, error) {
+func (h *headIndexReader) LabelNamesFor(ctx context.Context, series index.Postings) ([]string, error) {
 	namesMap := make(map[string]struct{})
-	for _, id := range ids {
-		if ctx.Err() != nil {
+	i := 0
+	for series.Next() {
+		i++
+		if i%checkContextEveryNIterations == 0 && ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
-		memSeries := h.head.series.getByID(chunks.HeadSeriesRef(id))
+		memSeries := h.head.series.getByID(chunks.HeadSeriesRef(series.At()))
 		if memSeries == nil {
-			return nil, storage.ErrNotFound
+			// Series not found, this happens during compaction,
+			// when series was garbage collected after the caller got the series IDs.
+			continue
 		}
-		memSeries.lset.Range(func(lbl labels.Label) {
+		memSeries.labels().Range(func(lbl labels.Label) {
 			namesMap[lbl.Name] = struct{}{}
 		})
+	}
+	if err := series.Err(); err != nil {
+		return nil, err
 	}
 	names := make([]string, 0, len(namesMap))
 	for name := range namesMap {
@@ -485,74 +492,6 @@ func (s *memSeries) oooChunk(id chunks.HeadChunkID, chunkDiskMapper *chunks.Chun
 
 	chk, err := chunkDiskMapper.Chunk(s.ooo.oooMmappedChunks[ix].ref)
 	return chk, s.ooo.oooMmappedChunks[ix].maxTime, err
-}
-
-var _ chunkenc.Iterable = &boundedIterable{}
-
-// boundedIterable is an implementation of chunkenc.Iterable that uses a
-// boundedIterator that only iterates through samples which timestamps are
-// >= minT and <= maxT.
-type boundedIterable struct {
-	chunk chunkenc.Chunk
-	minT  int64
-	maxT  int64
-}
-
-func (b boundedIterable) Iterator(iterator chunkenc.Iterator) chunkenc.Iterator {
-	it := b.chunk.Iterator(iterator)
-	if it == nil {
-		panic("iterator shouldn't be nil")
-	}
-	return boundedIterator{it, b.minT, b.maxT}
-}
-
-var _ chunkenc.Iterator = &boundedIterator{}
-
-// boundedIterator is an implementation of Iterator that only iterates through
-// samples which timestamps are >= minT and <= maxT.
-type boundedIterator struct {
-	chunkenc.Iterator
-	minT int64
-	maxT int64
-}
-
-// Next the first time its called it will advance as many positions as necessary
-// until its able to find a sample within the bounds minT and maxT.
-// If there are samples within bounds it will advance one by one amongst them.
-// If there are no samples within bounds it will return false.
-func (b boundedIterator) Next() chunkenc.ValueType {
-	for b.Iterator.Next() == chunkenc.ValFloat {
-		t, _ := b.Iterator.At()
-		switch {
-		case t < b.minT:
-			continue
-		case t > b.maxT:
-			return chunkenc.ValNone
-		default:
-			return chunkenc.ValFloat
-		}
-	}
-	return chunkenc.ValNone
-}
-
-func (b boundedIterator) Seek(t int64) chunkenc.ValueType {
-	if t < b.minT {
-		// We must seek at least up to b.minT if it is asked for something before that.
-		val := b.Iterator.Seek(b.minT)
-		if !(val == chunkenc.ValFloat) {
-			return chunkenc.ValNone
-		}
-		t, _ := b.Iterator.At()
-		if t <= b.maxT {
-			return chunkenc.ValFloat
-		}
-	}
-	if t > b.maxT {
-		// We seek anyway so that the subsequent Next() calls will also return false.
-		b.Iterator.Seek(t)
-		return chunkenc.ValNone
-	}
-	return b.Iterator.Seek(t)
 }
 
 // safeHeadChunk makes sure that the chunk can be accessed without a race condition.

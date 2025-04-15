@@ -57,14 +57,9 @@ func (c *PrometheusConverter) addExponentialHistogramDataPoints(ctx context.Cont
 			nil,
 			true,
 			model.MetricNameLabel,
-			baseName,
+			promName,
 		)
 		ts, _ := c.getOrCreateTimeSeries(lbls)
-
-		histogram, err := exponentialToNativeHistogram(pt)
-		if err != nil {
-			return err
-		}
 		ts.Histograms = append(ts.Histograms, histogram)
 
 		exemplars, err := getPromExemplars[pmetric.ExponentialHistogramDataPoint](ctx, &c.everyN, pt)

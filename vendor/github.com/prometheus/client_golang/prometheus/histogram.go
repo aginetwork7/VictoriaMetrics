@@ -446,7 +446,7 @@ type HistogramOpts struct {
 	// constant (or any negative float value).
 	NativeHistogramZeroThreshold float64
 
-	// The remaining fields define a strategy to limit the number of
+	// The next three fields define a strategy to limit the number of
 	// populated sparse buckets. If NativeHistogramMaxBucketNumber is left
 	// at zero, the number of buckets is not limited. (Note that this might
 	// lead to unbounded memory consumption if the values observed by the
@@ -478,6 +478,22 @@ type HistogramOpts struct {
 	NativeHistogramMaxBucketNumber  uint32
 	NativeHistogramMinResetDuration time.Duration
 	NativeHistogramMaxZeroThreshold float64
+
+	// NativeHistogramMaxExemplars limits the number of exemplars
+	// that are kept in memory for each native histogram. If you leave it at
+	// zero, a default value of 10 is used. If no exemplars should be kept specifically
+	// for native histograms, set it to a negative value. (Scrapers can
+	// still use the exemplars exposed for classic buckets, which are managed
+	// independently.)
+	NativeHistogramMaxExemplars int
+	// NativeHistogramExemplarTTL is only checked once
+	// NativeHistogramMaxExemplars is exceeded. In that case, the
+	// oldest exemplar is removed if it is older than NativeHistogramExemplarTTL.
+	// Otherwise, the older exemplar in the pair of exemplars that are closest
+	// together (on an exponential scale) is removed.
+	// If NativeHistogramExemplarTTL is left at its zero value, a default value of
+	// 5m is used. To always delete the oldest exemplar, set it to a negative value.
+	NativeHistogramExemplarTTL time.Duration
 
 	// now is for testing purposes, by default it's time.Now.
 	now func() time.Time
@@ -538,6 +554,7 @@ func newHistogram(desc *Desc, opts HistogramOpts, labelValues ...string) Histogr
 	if opts.afterFunc == nil {
 		opts.afterFunc = time.AfterFunc
 	}
+
 	h := &histogram{
 		desc:                            desc,
 		upperBounds:                     opts.Buckets,
@@ -562,6 +579,7 @@ func newHistogram(desc *Desc, opts HistogramOpts, labelValues ...string) Histogr
 			h.nativeHistogramZeroThreshold = DefNativeHistogramZeroThreshold
 		} // Leave h.nativeHistogramZeroThreshold at 0 otherwise.
 		h.nativeHistogramSchema = pickSchema(opts.NativeHistogramBucketFactor)
+		h.nativeExemplars = makeNativeExemplars(opts.NativeHistogramExemplarTTL, opts.NativeHistogramMaxExemplars)
 	}
 	for i, upperBound := range h.upperBounds {
 		if i < len(h.upperBounds)-1 {
@@ -731,7 +749,8 @@ type histogram struct {
 	// resetScheduled is protected by mtx. It is true if a reset is
 	// scheduled for a later time (when nativeHistogramMinResetDuration has
 	// passed).
-	resetScheduled bool
+	resetScheduled  bool
+	nativeExemplars nativeExemplars
 
 	// now is for testing purposes, by default it's time.Now.
 	now func() time.Time
@@ -748,6 +767,9 @@ func (h *histogram) Observe(v float64) {
 	h.observe(v, h.findBucket(v))
 }
 
+// ObserveWithExemplar should not be called in a high-frequency setting
+// for a native histogram with configured exemplars. For this case,
+// the implementation isn't lock-free and might suffer from lock contention.
 func (h *histogram) ObserveWithExemplar(v float64, e Labels) {
 	i := h.findBucket(v)
 	h.observe(v, i)
@@ -827,6 +849,13 @@ func (h *histogram) Write(out *dto.Metric) error {
 				Length: proto.Uint32(0),
 			}}
 		}
+
+		if h.nativeExemplars.isEnabled() {
+			h.nativeExemplars.Lock()
+			his.Exemplars = append(his.Exemplars, h.nativeExemplars.exemplars...)
+			h.nativeExemplars.Unlock()
+		}
+
 	}
 	addAndResetCounts(hotCounts, coldCounts)
 	return nil
@@ -1117,8 +1146,10 @@ func (h *histogram) resetCounts(counts *histogramCounts) {
 	deleteSyncMap(&counts.nativeHistogramBucketsPositive)
 }
 
-// updateExemplar replaces the exemplar for the provided bucket. With empty
-// labels, it's a no-op. It panics if any of the labels is invalid.
+// updateExemplar replaces the exemplar for the provided classic bucket.
+// With empty labels, it's a no-op. It panics if any of the labels is invalid.
+// If histogram is native, the exemplar will be cached into nativeExemplars,
+// which has a limit, and will remove one exemplar when limit is reached.
 func (h *histogram) updateExemplar(v float64, bucket int, l Labels) {
 	if l == nil {
 		return
@@ -1128,6 +1159,10 @@ func (h *histogram) updateExemplar(v float64, bucket int, l Labels) {
 		panic(err)
 	}
 	h.exemplars[bucket].Store(e)
+	doSparse := h.nativeHistogramSchema > math.MinInt32 && !math.IsNaN(v)
+	if doSparse {
+		h.nativeExemplars.addExemplar(e)
+	}
 }
 
 // HistogramVec is a Collector that bundles a set of Histograms that all share the
@@ -1356,6 +1391,48 @@ func MustNewConstHistogram(
 	labelValues ...string,
 ) Metric {
 	m, err := NewConstHistogram(desc, count, sum, buckets, labelValues...)
+	if err != nil {
+		panic(err)
+	}
+	return m
+}
+
+// NewConstHistogramWithCreatedTimestamp does the same thing as NewConstHistogram but sets the created timestamp.
+func NewConstHistogramWithCreatedTimestamp(
+	desc *Desc,
+	count uint64,
+	sum float64,
+	buckets map[float64]uint64,
+	ct time.Time,
+	labelValues ...string,
+) (Metric, error) {
+	if desc.err != nil {
+		return nil, desc.err
+	}
+	if err := validateLabelValues(labelValues, len(desc.variableLabels.names)); err != nil {
+		return nil, err
+	}
+	return &constHistogram{
+		desc:       desc,
+		count:      count,
+		sum:        sum,
+		buckets:    buckets,
+		labelPairs: MakeLabelPairs(desc, labelValues),
+		createdTs:  timestamppb.New(ct),
+	}, nil
+}
+
+// MustNewConstHistogramWithCreatedTimestamp is a version of NewConstHistogramWithCreatedTimestamp that panics where
+// NewConstHistogramWithCreatedTimestamp would have returned an error.
+func MustNewConstHistogramWithCreatedTimestamp(
+	desc *Desc,
+	count uint64,
+	sum float64,
+	buckets map[float64]uint64,
+	ct time.Time,
+	labelValues ...string,
+) Metric {
+	m, err := NewConstHistogramWithCreatedTimestamp(desc, count, sum, buckets, ct, labelValues...)
 	if err != nil {
 		panic(err)
 	}
