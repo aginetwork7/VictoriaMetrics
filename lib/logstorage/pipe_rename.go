@@ -31,6 +31,10 @@ func (pr *pipeRename) String() string {
 	return "rename " + strings.Join(a, ", ")
 }
 
+func (pr *pipeRename) splitToRemoteAndLocal(_ int64) (pipe, []pipe) {
+	return pr, nil
+}
+
 func (pr *pipeRename) canLiveTail() bool {
 	return true
 }
@@ -58,16 +62,16 @@ func (pr *pipeRename) updateNeededFields(neededFields, unneededFields fieldsSet)
 	}
 }
 
-func (pr *pipeRename) optimize() {
-	// nothing to do
-}
-
 func (pr *pipeRename) hasFilterInWithQuery() bool {
 	return false
 }
 
-func (pr *pipeRename) initFilterInValues(_ map[string][]string, _ getFieldValuesFunc) (pipe, error) {
+func (pr *pipeRename) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
 	return pr, nil
+}
+
+func (pr *pipeRename) visitSubqueries(_ func(q *Query)) {
+	// nothing to do
 }
 
 func (pr *pipeRename) newPipeProcessor(_ int, _ <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
@@ -95,7 +99,7 @@ func (prp *pipeRenameProcessor) flush() error {
 	return nil
 }
 
-func parsePipeRename(lex *lexer) (*pipeRename, error) {
+func parsePipeRename(lex *lexer) (pipe, error) {
 	if !lex.isKeyword("rename", "mv") {
 		return nil, fmt.Errorf("expecting 'rename' or 'mv'; got %q", lex.token)
 	}

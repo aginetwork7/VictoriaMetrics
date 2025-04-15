@@ -138,13 +138,13 @@ func (ls Labels) Bytes(buf []byte) []byte {
 	b := bytes.NewBuffer(buf[:0])
 	for i := 0; i < len(ls.data); {
 		if i > 0 {
-			b.WriteByte(seps[0])
+			b.WriteByte(sep)
 		}
 		var name, value string
 		name, i = decodeString(ls.syms, ls.data, i)
 		value, i = decodeString(ls.syms, ls.data, i)
 		b.WriteString(name)
-		b.WriteByte(seps[0])
+		b.WriteByte(sep)
 		b.WriteString(value)
 	}
 	return b.Bytes()
@@ -193,9 +193,9 @@ func (ls Labels) Hash() uint64 {
 		}
 
 		b = append(b, name...)
-		b = append(b, seps[0])
+		b = append(b, sep)
 		b = append(b, value...)
-		b = append(b, seps[0])
+		b = append(b, sep)
 		pos = newPos
 	}
 	return xxhash.Sum64(b)
@@ -218,9 +218,9 @@ func (ls Labels) HashForLabels(b []byte, names ...string) (uint64, []byte) {
 		}
 		if name == names[j] {
 			b = append(b, name...)
-			b = append(b, seps[0])
+			b = append(b, sep)
 			b = append(b, value...)
-			b = append(b, seps[0])
+			b = append(b, sep)
 		}
 	}
 
@@ -244,9 +244,9 @@ func (ls Labels) HashWithoutLabels(b []byte, names ...string) (uint64, []byte) {
 			continue
 		}
 		b = append(b, name...)
-		b = append(b, seps[0])
+		b = append(b, sep)
 		b = append(b, value...)
-		b = append(b, seps[0])
+		b = append(b, sep)
 	}
 	return xxhash.Sum64(b), b
 }
@@ -267,10 +267,10 @@ func (ls Labels) BytesWithLabels(buf []byte, names ...string) []byte {
 		}
 		if lName == names[j] {
 			if b.Len() > 1 {
-				b.WriteByte(seps[0])
+				b.WriteByte(sep)
 			}
 			b.WriteString(lName)
-			b.WriteByte(seps[0])
+			b.WriteByte(sep)
 			b.WriteString(lValue)
 		}
 		pos = newPos
@@ -291,10 +291,10 @@ func (ls Labels) BytesWithoutLabels(buf []byte, names ...string) []byte {
 		}
 		if j == len(names) || lName != names[j] {
 			if b.Len() > 1 {
-				b.WriteByte(seps[0])
+				b.WriteByte(sep)
 			}
 			b.WriteString(lName)
-			b.WriteByte(seps[0])
+			b.WriteByte(sep)
 			b.WriteString(lValue)
 		}
 		pos = newPos
@@ -804,4 +804,9 @@ func (b *ScratchBuilder) Overwrite(ls *Labels) {
 	marshalNumbersToSizedBuffer(b.nums, b.overwriteBuffer)
 	ls.syms = b.syms.nameTable
 	ls.data = yoloString(b.overwriteBuffer)
+}
+
+// SizeOfLabels returns the approximate space required for n copies of a label.
+func SizeOfLabels(name, value string, n uint64) uint64 {
+	return uint64(len(name)+len(value)) + n*4 // Assuming most symbol-table entries are 2 bytes long.
 }

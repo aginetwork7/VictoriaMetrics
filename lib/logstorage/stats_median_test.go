@@ -1,6 +1,7 @@
 package logstorage
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -108,7 +109,7 @@ func TestStatsMedian(t *testing.T) {
 		},
 	}, [][]Field{
 		{
-			{"x", "54"},
+			{"x", "3"},
 		},
 	})
 
@@ -128,7 +129,7 @@ func TestStatsMedian(t *testing.T) {
 		},
 	}, [][]Field{
 		{
-			{"x", "NaN"},
+			{"x", ""},
 		},
 	})
 
@@ -174,7 +175,7 @@ func TestStatsMedian(t *testing.T) {
 		},
 		{
 			{"b", ""},
-			{"x", "NaN"},
+			{"x", ""},
 		},
 	})
 
@@ -258,7 +259,7 @@ func TestStatsMedian(t *testing.T) {
 	}, [][]Field{
 		{
 			{"a", "1"},
-			{"x", "NaN"},
+			{"x", ""},
 		},
 		{
 			{"a", "3"},
@@ -288,11 +289,11 @@ func TestStatsMedian(t *testing.T) {
 	}, [][]Field{
 		{
 			{"a", "1"},
-			{"x", "3"},
+			{"x", "1"},
 		},
 		{
 			{"a", "3"},
-			{"x", "5"},
+			{"x", "3"},
 		},
 	})
 
@@ -348,7 +349,7 @@ func TestStatsMedian(t *testing.T) {
 		{
 			{"a", "1"},
 			{"b", "3"},
-			{"x", "NaN"},
+			{"x", ""},
 		},
 		{
 			{"a", "1"},
@@ -358,7 +359,45 @@ func TestStatsMedian(t *testing.T) {
 		{
 			{"a", "3"},
 			{"b", "5"},
-			{"x", "NaN"},
+			{"x", ""},
 		},
 	})
+}
+
+func TestStatsMedian_ExportImportState(t *testing.T) {
+	f := func(smp *statsMedianProcessor, dataLenExpected, stateSizeExpected int) {
+		t.Helper()
+
+		data := smp.exportState(nil, nil)
+		dataLen := len(data)
+		if dataLen != dataLenExpected {
+			t.Fatalf("unexpected dataLen; got %d; want %d", dataLen, dataLenExpected)
+		}
+
+		var smp2 statsMedianProcessor
+		stateSize, err := smp2.importState(data, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		if stateSize != stateSizeExpected {
+			t.Fatalf("unexpected state size; got %d bytes; want %d bytes", stateSize, stateSizeExpected)
+		}
+
+		if !reflect.DeepEqual(smp, &smp2) {
+			t.Fatalf("unexpected state imported; got %#v; want %#v", &smp2, smp)
+		}
+	}
+
+	var smp statsMedianProcessor
+
+	// zero state
+	f(&smp, 4, 0)
+	/*
+	      See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/8710
+	   	// non-zero state
+	   	smp = statsMedianProcessor{}
+	   	smp.sqp.h.update("foo")
+	   	smp.sqp.h.update("bar")
+	   	smp.sqp.h.update("baz")
+	   	f(&smp, 22, 63)*/
 }

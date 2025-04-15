@@ -8,11 +8,20 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/timeutil"
+	"github.com/valyala/fastrand"
 )
+
+var finalDedupScheduleInterval = time.Hour
+
+// SetFinalDedupScheduleInterval configures the interval for checking when the final deduplication process should start.
+func SetFinalDedupScheduleInterval(d time.Duration) {
+	finalDedupScheduleInterval = d
+}
 
 // table represents a single table with time series data.
 type table struct {
@@ -164,7 +173,10 @@ func (tb *table) addPartitionNolock(pt *partition) {
 }
 
 // MustClose closes the table.
-// It is expected that all the pending searches on the table are finished before calling MustClose.
+//
+// This func must be called only when there are no goroutines using the the
+// table, such as ones that ingest or retrieve time series samples or index
+// data.
 func (tb *table) MustClose() {
 	close(tb.stopCh)
 	tb.retentionWatcherWG.Wait()
@@ -448,6 +460,11 @@ func (tb *table) finalDedupWatcher() {
 		for _, ptw := range ptws {
 			if ptw.pt.name == currentPartitionName {
 				// Do not run final dedup for the current month.
+				// For the current month, the samples are countinously
+				// deduplicated by the background in-memory, small, and big part
+				// merge tasks. See:
+				// - partition.mergeParts() in paritiont.go and
+				// - Block.deduplicateSamplesDuringMerge() in block.go.
 				continue
 			}
 			if !ptw.pt.isFinalDedupNeeded() {
@@ -465,7 +482,15 @@ func (tb *table) finalDedupWatcher() {
 			ptw.pt.isDedupScheduled.Store(false)
 		}
 	}
-	d := timeutil.AddJitterToDuration(time.Hour)
+
+	// adds 25% jitter in order to prevent thundering herd problem
+	// https://github.com/VictoriaMetrics/VictoriaMetrics/issues/7880
+	addJitter := func(d time.Duration) time.Duration {
+		dv := d / 4
+		p := float64(fastrand.Uint32()) / (1 << 32)
+		return d + time.Duration(p*float64(dv))
+	}
+	d := addJitter(finalDedupScheduleInterval)
 	t := time.NewTicker(d)
 	defer t.Stop()
 	for {
@@ -507,12 +532,31 @@ func mustOpenPartitions(smallPartitionsPath, bigPartitionsPath string, s *Storag
 	mustPopulatePartitionNames(smallPartitionsPath, ptNames)
 	mustPopulatePartitionNames(bigPartitionsPath, ptNames)
 	var pts []*partition
+	var ptsLock sync.Mutex
+
+	// Open partitions in parallel. This should reduce the time needed for opening multiple partitions.
+	var wg sync.WaitGroup
+	concurrencyLimiterCh := make(chan struct{}, cgroup.AvailableCPUs())
 	for ptName := range ptNames {
-		smallPartsPath := filepath.Join(smallPartitionsPath, ptName)
-		bigPartsPath := filepath.Join(bigPartitionsPath, ptName)
-		pt := mustOpenPartition(smallPartsPath, bigPartsPath, s)
-		pts = append(pts, pt)
+		wg.Add(1)
+		concurrencyLimiterCh <- struct{}{}
+		go func(ptName string) {
+			defer func() {
+				<-concurrencyLimiterCh
+				wg.Done()
+			}()
+
+			smallPartsPath := filepath.Join(smallPartitionsPath, ptName)
+			bigPartsPath := filepath.Join(bigPartitionsPath, ptName)
+			pt := mustOpenPartition(smallPartsPath, bigPartsPath, s)
+
+			ptsLock.Lock()
+			pts = append(pts, pt)
+			ptsLock.Unlock()
+		}(ptName)
 	}
+	wg.Wait()
+
 	return pts
 }
 

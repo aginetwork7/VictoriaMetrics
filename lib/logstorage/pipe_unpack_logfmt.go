@@ -50,6 +50,10 @@ func (pu *pipeUnpackLogfmt) String() string {
 	return s
 }
 
+func (pu *pipeUnpackLogfmt) splitToRemoteAndLocal(_ int64) (pipe, []pipe) {
+	return pu, nil
+}
+
 func (pu *pipeUnpackLogfmt) canLiveTail() bool {
 	return true
 }
@@ -58,16 +62,12 @@ func (pu *pipeUnpackLogfmt) updateNeededFields(neededFields, unneededFields fiel
 	updateNeededFieldsForUnpackPipe(pu.fromField, pu.fields, pu.keepOriginalFields, pu.skipEmptyResults, pu.iff, neededFields, unneededFields)
 }
 
-func (pu *pipeUnpackLogfmt) optimize() {
-	pu.iff.optimizeFilterIn()
-}
-
 func (pu *pipeUnpackLogfmt) hasFilterInWithQuery() bool {
 	return pu.iff.hasFilterInWithQuery()
 }
 
-func (pu *pipeUnpackLogfmt) initFilterInValues(cache map[string][]string, getFieldValuesFunc getFieldValuesFunc) (pipe, error) {
-	iffNew, err := pu.iff.initFilterInValues(cache, getFieldValuesFunc)
+func (pu *pipeUnpackLogfmt) initFilterInValues(cache *inValuesCache, getFieldValuesFunc getFieldValuesFunc, keepSubquery bool) (pipe, error) {
+	iffNew, err := pu.iff.initFilterInValues(cache, getFieldValuesFunc, keepSubquery)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,11 @@ func (pu *pipeUnpackLogfmt) initFilterInValues(cache map[string][]string, getFie
 	return &puNew, nil
 }
 
-func (pu *pipeUnpackLogfmt) newPipeProcessor(workersCount int, _ <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
+func (pu *pipeUnpackLogfmt) visitSubqueries(visitFunc func(q *Query)) {
+	pu.iff.visitSubqueries(visitFunc)
+}
+
+func (pu *pipeUnpackLogfmt) newPipeProcessor(_ int, _ <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
 	unpackLogfmt := func(uctx *fieldsUnpackerContext, s string) {
 		p := getLogfmtParser()
 
@@ -104,10 +108,10 @@ func (pu *pipeUnpackLogfmt) newPipeProcessor(workersCount int, _ <-chan struct{}
 		putLogfmtParser(p)
 	}
 
-	return newPipeUnpackProcessor(workersCount, unpackLogfmt, ppNext, pu.fromField, pu.resultPrefix, pu.keepOriginalFields, pu.skipEmptyResults, pu.iff)
+	return newPipeUnpackProcessor(unpackLogfmt, ppNext, pu.fromField, pu.resultPrefix, pu.keepOriginalFields, pu.skipEmptyResults, pu.iff)
 }
 
-func parsePipeUnpackLogfmt(lex *lexer) (*pipeUnpackLogfmt, error) {
+func parsePipeUnpackLogfmt(lex *lexer) (pipe, error) {
 	if !lex.isKeyword("unpack_logfmt") {
 		return nil, fmt.Errorf("unexpected token: %q; want %q", lex.token, "unpack_logfmt")
 	}
@@ -123,8 +127,10 @@ func parsePipeUnpackLogfmt(lex *lexer) (*pipeUnpackLogfmt, error) {
 	}
 
 	fromField := "_msg"
-	if lex.isKeyword("from") {
-		lex.nextToken()
+	if !lex.isKeyword("fields", "result_prefix", "keep_original_fields", "skip_empty_results", ")", "|", "") {
+		if lex.isKeyword("from") {
+			lex.nextToken()
+		}
 		f, err := parseFieldName(lex)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse 'from' field name: %w", err)

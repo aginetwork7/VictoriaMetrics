@@ -19,15 +19,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
 	"time"
 
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 	"github.com/oklog/ulid"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/promslog"
 
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
@@ -76,13 +76,14 @@ type Compactor interface {
 // LeveledCompactor implements the Compactor interface.
 type LeveledCompactor struct {
 	metrics                     *CompactorMetrics
-	logger                      log.Logger
+	logger                      *slog.Logger
 	ranges                      []int64
 	chunkPool                   chunkenc.Pool
 	ctx                         context.Context
 	maxBlockChunkSegmentSize    int64
 	mergeFunc                   storage.VerticalChunkSeriesMergeFunc
 	postingsEncoder             index.PostingsEncoder
+	postingsDecoderFactory      PostingsDecoderFactory
 	enableOverlappingCompaction bool
 }
 
@@ -154,6 +155,9 @@ type LeveledCompactorOptions struct {
 	// PE specifies the postings encoder. It is called when compactor is writing out the postings for a label name/value pair during compaction.
 	// If it is nil then the default encoder is used. At the moment that is the "raw" encoder. See index.EncodePostingsRaw for more.
 	PE index.PostingsEncoder
+	// PD specifies the postings decoder factory to return different postings decoder based on BlockMeta. It is called when opening a block or opening the index file.
+	// If it is nil then a default decoder is used, compatible with Prometheus v2.
+	PD PostingsDecoderFactory
 	// MaxBlockChunkSegmentSize is the max block chunk segment size. If it is 0 then the default chunks.DefaultChunkSegmentSize is used.
 	MaxBlockChunkSegmentSize int64
 	// MergeFunc is used for merging series together in vertical compaction. By default storage.NewCompactingChunkSeriesMerger(storage.ChainedSeriesMerge) is used.
@@ -163,7 +167,13 @@ type LeveledCompactorOptions struct {
 	EnableOverlappingCompaction bool
 }
 
-func NewLeveledCompactorWithChunkSize(ctx context.Context, r prometheus.Registerer, l log.Logger, ranges []int64, pool chunkenc.Pool, maxBlockChunkSegmentSize int64, mergeFunc storage.VerticalChunkSeriesMergeFunc) (*LeveledCompactor, error) {
+type PostingsDecoderFactory func(meta *BlockMeta) index.PostingsDecoder
+
+func DefaultPostingsDecoderFactory(_ *BlockMeta) index.PostingsDecoder {
+	return index.DecodePostingsRaw
+}
+
+func NewLeveledCompactorWithChunkSize(ctx context.Context, r prometheus.Registerer, l *slog.Logger, ranges []int64, pool chunkenc.Pool, maxBlockChunkSegmentSize int64, mergeFunc storage.VerticalChunkSeriesMergeFunc) (*LeveledCompactor, error) {
 	return NewLeveledCompactorWithOptions(ctx, r, l, ranges, pool, LeveledCompactorOptions{
 		MaxBlockChunkSegmentSize:    maxBlockChunkSegmentSize,
 		MergeFunc:                   mergeFunc,
@@ -171,22 +181,22 @@ func NewLeveledCompactorWithChunkSize(ctx context.Context, r prometheus.Register
 	})
 }
 
-func NewLeveledCompactor(ctx context.Context, r prometheus.Registerer, l log.Logger, ranges []int64, pool chunkenc.Pool, mergeFunc storage.VerticalChunkSeriesMergeFunc) (*LeveledCompactor, error) {
+func NewLeveledCompactor(ctx context.Context, r prometheus.Registerer, l *slog.Logger, ranges []int64, pool chunkenc.Pool, mergeFunc storage.VerticalChunkSeriesMergeFunc) (*LeveledCompactor, error) {
 	return NewLeveledCompactorWithOptions(ctx, r, l, ranges, pool, LeveledCompactorOptions{
 		MergeFunc:                   mergeFunc,
 		EnableOverlappingCompaction: true,
 	})
 }
 
-func NewLeveledCompactorWithOptions(ctx context.Context, r prometheus.Registerer, l log.Logger, ranges []int64, pool chunkenc.Pool, opts LeveledCompactorOptions) (*LeveledCompactor, error) {
+func NewLeveledCompactorWithOptions(ctx context.Context, r prometheus.Registerer, l *slog.Logger, ranges []int64, pool chunkenc.Pool, opts LeveledCompactorOptions) (*LeveledCompactor, error) {
 	if len(ranges) == 0 {
-		return nil, fmt.Errorf("at least one range must be provided")
+		return nil, errors.New("at least one range must be provided")
 	}
 	if pool == nil {
 		pool = chunkenc.NewPool()
 	}
 	if l == nil {
-		l = log.NewNopLogger()
+		l = promslog.NewNopLogger()
 	}
 	mergeFunc := opts.MergeFunc
 	if mergeFunc == nil {
@@ -209,6 +219,7 @@ func NewLeveledCompactorWithOptions(ctx context.Context, r prometheus.Registerer
 		maxBlockChunkSegmentSize:    maxBlockChunkSegmentSize,
 		mergeFunc:                   mergeFunc,
 		postingsEncoder:             pe,
+		postingsDecoderFactory:      opts.PD,
 		enableOverlappingCompaction: opts.EnableOverlappingCompaction,
 	}, nil
 }
@@ -473,7 +484,7 @@ func (c *LeveledCompactor) CompactWithBlockPopulator(dest string, dirs []string,
 
 		if b == nil {
 			var err error
-			b, err = OpenBlock(c.logger, d, c.chunkPool)
+			b, err = OpenBlock(c.logger, d, c.chunkPool, c.postingsDecoderFactory)
 			if err != nil {
 				return uid, err
 			}
@@ -496,16 +507,15 @@ func (c *LeveledCompactor) CompactWithBlockPopulator(dest string, dirs []string,
 				b.meta.Compaction.Deletable = true
 				n, err := writeMetaFile(c.logger, b.dir, &b.meta)
 				if err != nil {
-					level.Error(c.logger).Log(
-						"msg", "Failed to write 'Deletable' to meta file after compaction",
+					c.logger.Error(
+						"Failed to write 'Deletable' to meta file after compaction",
 						"ulid", b.meta.ULID,
 					)
 				}
 				b.numBytesMeta = n
 			}
-			uid = ulid.ULID{}
-			level.Info(c.logger).Log(
-				"msg", "compact blocks resulted in empty block",
+			c.logger.Info(
+				"compact blocks resulted in empty block",
 				"count", len(blocks),
 				"sources", fmt.Sprintf("%v", uids),
 				"duration", time.Since(start),
@@ -521,7 +531,17 @@ func (c *LeveledCompactor) CompactWithBlockPopulator(dest string, dirs []string,
 				"duration", time.Since(start),
 			)
 		}
-		return uid, nil
+
+		c.logger.Info(
+			"compact blocks",
+			"count", len(blocks),
+			"mint", meta.MinTime,
+			"maxt", meta.MaxTime,
+			"ulid", meta.ULID,
+			"sources", fmt.Sprintf("%v", uids),
+			"duration", time.Since(start),
+		)
+		return []ulid.ULID{uid}, nil
 	}
 
 	errs := tsdb_errors.NewMulti(err)
@@ -564,8 +584,8 @@ func (c *LeveledCompactor) Write(dest string, b BlockReader, mint, maxt int64, b
 	}
 
 	if meta.Stats.NumSamples == 0 {
-		level.Info(c.logger).Log(
-			"msg", "write block resulted in empty block",
+		c.logger.Info(
+			"write block resulted in empty block",
 			"mint", meta.MinTime,
 			"maxt", meta.MaxTime,
 			"duration", time.Since(start),
@@ -573,8 +593,8 @@ func (c *LeveledCompactor) Write(dest string, b BlockReader, mint, maxt int64, b
 		return ulid.ULID{}, nil
 	}
 
-	level.Info(c.logger).Log(
-		"msg", "write block",
+	c.logger.Info(
+		"write block",
 		"mint", meta.MinTime,
 		"maxt", meta.MaxTime,
 		"ulid", meta.ULID,
@@ -613,7 +633,7 @@ func (c *LeveledCompactor) write(dest string, meta *BlockMeta, blockPopulator Bl
 
 		// RemoveAll returns no error when tmp doesn't exist so it is safe to always run it.
 		if err := os.RemoveAll(tmp); err != nil {
-			level.Error(c.logger).Log("msg", "removed tmp folder after failed compaction", "err", err.Error())
+			c.logger.Error("removed tmp folder after failed compaction", "err", err.Error())
 		}
 		c.metrics.Ran.Inc()
 		c.metrics.Duration.Observe(time.Since(t).Seconds())
@@ -718,7 +738,20 @@ func (c *LeveledCompactor) write(dest string, meta *BlockMeta, blockPopulator Bl
 }
 
 type BlockPopulator interface {
-	PopulateBlock(ctx context.Context, metrics *CompactorMetrics, logger log.Logger, chunkPool chunkenc.Pool, mergeFunc storage.VerticalChunkSeriesMergeFunc, blocks []BlockReader, meta *BlockMeta, indexw IndexWriter, chunkw ChunkWriter) error
+	PopulateBlock(ctx context.Context, metrics *CompactorMetrics, logger *slog.Logger, chunkPool chunkenc.Pool, mergeFunc storage.VerticalChunkSeriesMergeFunc, blocks []BlockReader, meta *BlockMeta, indexw IndexWriter, chunkw ChunkWriter, postingsFunc IndexReaderPostingsFunc) error
+}
+
+// IndexReaderPostingsFunc is a function to get a sorted posting iterator from a given index reader.
+type IndexReaderPostingsFunc func(ctx context.Context, reader IndexReader) index.Postings
+
+// AllSortedPostings returns a sorted all posting iterator from the input index reader.
+func AllSortedPostings(ctx context.Context, reader IndexReader) index.Postings {
+	k, v := index.AllPostingsKey()
+	all, err := reader.Postings(ctx, k, v)
+	if err != nil {
+		return index.ErrPostings(err)
+	}
+	return reader.SortedPostings(all)
 }
 
 type DefaultBlockPopulator struct{}
@@ -726,7 +759,7 @@ type DefaultBlockPopulator struct{}
 // PopulateBlock fills the index and chunk writers with new data gathered as the union
 // of the provided blocks. It returns meta information for the new block.
 // It expects sorted blocks input by mint.
-func (c DefaultBlockPopulator) PopulateBlock(ctx context.Context, metrics *CompactorMetrics, logger log.Logger, chunkPool chunkenc.Pool, mergeFunc storage.VerticalChunkSeriesMergeFunc, blocks []BlockReader, meta *BlockMeta, indexw IndexWriter, chunkw ChunkWriter) (err error) {
+func (c DefaultBlockPopulator) PopulateBlock(ctx context.Context, metrics *CompactorMetrics, logger *slog.Logger, chunkPool chunkenc.Pool, mergeFunc storage.VerticalChunkSeriesMergeFunc, blocks []BlockReader, meta *BlockMeta, indexw IndexWriter, chunkw ChunkWriter, postingsFunc IndexReaderPostingsFunc) (err error) {
 	if len(blocks) == 0 {
 		return errors.New("cannot populate block from no readers")
 	}
@@ -759,7 +792,7 @@ func (c DefaultBlockPopulator) PopulateBlock(ctx context.Context, metrics *Compa
 			if i > 0 && b.Meta().MinTime < globalMaxt {
 				metrics.OverlappingBlocks.Inc()
 				overlapping = true
-				level.Info(logger).Log("msg", "Found overlapping blocks during compaction", "ulid", meta.ULID)
+				logger.Info("Found overlapping blocks during compaction", "ulid", meta.ULID)
 			}
 			if b.Meta().MaxTime > globalMaxt {
 				globalMaxt = b.Meta().MaxTime
@@ -819,7 +852,7 @@ func (c DefaultBlockPopulator) PopulateBlock(ctx context.Context, metrics *Compa
 	if len(sets) > 1 {
 		// Merge series using specified chunk series merger.
 		// The default one is the compacting series merger.
-		set = storage.NewMergeChunkSeriesSet(sets, mergeFunc)
+		set = storage.NewMergeChunkSeriesSet(sets, 0, mergeFunc)
 	}
 
 	// Iterate over all sorted chunk series.

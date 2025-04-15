@@ -12,7 +12,7 @@ import (
 
 	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/notifier"
 	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/tpl"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/utils"
+	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/vmalertutil"
 )
 
 //line app/vmalert/web.qtpl:14
@@ -201,7 +201,7 @@ func StreamListGroups(qw422016 *qt422016.Writer, r *http.Request, originGroups [
 	qw422016.N().S(`
     `)
 //line app/vmalert/web.qtpl:42
-	prefix := utils.Prefix(r.URL.Path)
+	prefix := vmalertutil.Prefix(r.URL.Path)
 
 //line app/vmalert/web.qtpl:42
 	qw422016.N().S(`
@@ -355,7 +355,7 @@ func StreamListGroups(qw422016 *qt422016.Writer, r *http.Request, originGroups [
 			}
 //line app/vmalert/web.qtpl:99
 			qw422016.N().S(`
-                    <span class="badge bg-success" title="Number of rules withs status Ok">`)
+                    <span class="badge bg-success" title="Number of rules with status Ok">`)
 //line app/vmalert/web.qtpl:100
 			qw422016.N().D(rOk[g.ID])
 //line app/vmalert/web.qtpl:100
@@ -667,7 +667,7 @@ func StreamListAlerts(qw422016 *qt422016.Writer, r *http.Request, groupAlerts []
 	qw422016.N().S(`
     `)
 //line app/vmalert/web.qtpl:184
-	prefix := utils.Prefix(r.URL.Path)
+	prefix := vmalertutil.Prefix(r.URL.Path)
 
 //line app/vmalert/web.qtpl:184
 	qw422016.N().S(`
@@ -1149,7 +1149,7 @@ func StreamAlert(qw422016 *qt422016.Writer, r *http.Request, alert *apiAlert) {
 	qw422016.N().S(`
     `)
 //line app/vmalert/web.qtpl:343
-	prefix := utils.Prefix(r.URL.Path)
+	prefix := vmalertutil.Prefix(r.URL.Path)
 
 //line app/vmalert/web.qtpl:343
 	qw422016.N().S(`
@@ -1358,7 +1358,7 @@ func StreamRuleDetails(qw422016 *qt422016.Writer, r *http.Request, rule apiRule)
 	qw422016.N().S(`
     `)
 //line app/vmalert/web.qtpl:430
-	prefix := utils.Prefix(r.URL.Path)
+	prefix := vmalertutil.Prefix(r.URL.Path)
 
 //line app/vmalert/web.qtpl:430
 	qw422016.N().S(`

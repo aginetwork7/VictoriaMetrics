@@ -16,6 +16,10 @@ func (po *pipeOffset) String() string {
 	return fmt.Sprintf("offset %d", po.offset)
 }
 
+func (po *pipeOffset) splitToRemoteAndLocal(_ int64) (pipe, []pipe) {
+	return nil, []pipe{po}
+}
+
 func (po *pipeOffset) canLiveTail() bool {
 	return false
 }
@@ -24,16 +28,16 @@ func (po *pipeOffset) updateNeededFields(_, _ fieldsSet) {
 	// nothing to do
 }
 
-func (po *pipeOffset) optimize() {
-	// nothing to do
-}
-
 func (po *pipeOffset) hasFilterInWithQuery() bool {
 	return false
 }
 
-func (po *pipeOffset) initFilterInValues(_ map[string][]string, _ getFieldValuesFunc) (pipe, error) {
+func (po *pipeOffset) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
 	return po, nil
+}
+
+func (po *pipeOffset) visitSubqueries(_ func(q *Query)) {
+	// nothing to do
 }
 
 func (po *pipeOffset) newPipeProcessor(_ int, _ <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
@@ -75,7 +79,7 @@ func (pop *pipeOffsetProcessor) flush() error {
 	return nil
 }
 
-func parsePipeOffset(lex *lexer) (*pipeOffset, error) {
+func parsePipeOffset(lex *lexer) (pipe, error) {
 	if !lex.isKeyword("offset", "skip") {
 		return nil, fmt.Errorf("expecting 'offset' or 'skip'; got %q", lex.token)
 	}

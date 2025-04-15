@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strings"
 	"unsafe"
+
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
 )
 
 type statsValues struct {
@@ -23,27 +26,23 @@ func (sv *statsValues) updateNeededFields(neededFields fieldsSet) {
 	updateNeededFieldsForStatsFunc(neededFields, sv.fields)
 }
 
-func (sv *statsValues) newStatsProcessor() (statsProcessor, int) {
-	svp := &statsValuesProcessor{
-		sv: sv,
-	}
-	return svp, int(unsafe.Sizeof(*svp))
+func (sv *statsValues) newStatsProcessor(a *chunkedAllocator) statsProcessor {
+	return a.newStatsValuesProcessor()
 }
 
 type statsValuesProcessor struct {
-	sv *statsValues
-
 	values []string
 }
 
-func (svp *statsValuesProcessor) updateStatsForAllRows(br *blockResult) int {
-	if svp.limitReached() {
+func (svp *statsValuesProcessor) updateStatsForAllRows(sf statsFunc, br *blockResult) int {
+	sv := sf.(*statsValues)
+	if svp.limitReached(sv) {
 		// Limit on the number of unique values has been reached
 		return 0
 	}
 
 	stateSizeIncrease := 0
-	fields := svp.sv.fields
+	fields := sv.fields
 	if len(fields) == 0 {
 		for _, c := range br.getColumns() {
 			stateSizeIncrease += svp.updateStatsForAllRowsColumn(c, br)
@@ -91,12 +90,13 @@ func (svp *statsValuesProcessor) updateStatsForAllRowsColumn(c *blockResultColum
 	}
 
 	values := svp.values
+	vPrev := ""
 	for _, v := range c.getValues(br) {
-		if len(values) == 0 || values[len(values)-1] != v {
-			v = strings.Clone(v)
-			stateSizeIncrease += len(v)
+		if len(values) == 0 || v != vPrev {
+			vPrev = strings.Clone(v)
+			stateSizeIncrease += len(vPrev)
 		}
-		values = append(values, v)
+		values = append(values, vPrev)
 	}
 	svp.values = values
 
@@ -104,14 +104,15 @@ func (svp *statsValuesProcessor) updateStatsForAllRowsColumn(c *blockResultColum
 	return stateSizeIncrease
 }
 
-func (svp *statsValuesProcessor) updateStatsForRow(br *blockResult, rowIdx int) int {
-	if svp.limitReached() {
+func (svp *statsValuesProcessor) updateStatsForRow(sf statsFunc, br *blockResult, rowIdx int) int {
+	sv := sf.(*statsValues)
+	if svp.limitReached(sv) {
 		// Limit on the number of unique values has been reached
 		return 0
 	}
 
 	stateSizeIncrease := 0
-	fields := svp.sv.fields
+	fields := sv.fields
 	if len(fields) == 0 {
 		for _, c := range br.getColumns() {
 			stateSizeIncrease += svp.updateStatsForRowColumn(c, br, rowIdx)
@@ -160,8 +161,9 @@ func (svp *statsValuesProcessor) updateStatsForRowColumn(c *blockResultColumn, b
 	return stateSizeIncrease
 }
 
-func (svp *statsValuesProcessor) mergeState(sfp statsProcessor) {
-	if svp.limitReached() {
+func (svp *statsValuesProcessor) mergeState(_ *chunkedAllocator, sf statsFunc, sfp statsProcessor) {
+	sv := sf.(*statsValues)
+	if svp.limitReached(sv) {
 		return
 	}
 
@@ -169,21 +171,61 @@ func (svp *statsValuesProcessor) mergeState(sfp statsProcessor) {
 	svp.values = append(svp.values, src.values...)
 }
 
-func (svp *statsValuesProcessor) finalizeStats() string {
-	items := svp.values
-	if len(items) == 0 {
-		return "[]"
+func (svp *statsValuesProcessor) exportState(dst []byte, _ <-chan struct{}) []byte {
+	dst = encoding.MarshalVarUint64(dst, uint64(len(svp.values)))
+	for _, v := range svp.values {
+		dst = encoding.MarshalBytes(dst, bytesutil.ToUnsafeBytes(v))
+	}
+	return dst
+}
+
+func (svp *statsValuesProcessor) importState(src []byte, _ <-chan struct{}) (int, error) {
+	valuesLen, n := encoding.UnmarshalVarUint64(src)
+	if n <= 0 {
+		return 0, fmt.Errorf("cannot unmarshal valuesLen")
+	}
+	src = src[n:]
+
+	values := make([]string, valuesLen)
+	stateSize := int(unsafe.Sizeof(values[0])) * len(values)
+	for i := range values {
+		v, n := encoding.UnmarshalBytes(src)
+		if n <= 0 {
+			return 0, fmt.Errorf("cannot unmarshal value")
+		}
+		src = src[n:]
+
+		values[i] = string(v)
+		stateSize += len(v)
+	}
+	if len(values) == 0 {
+		values = nil
+	}
+	svp.values = values
+
+	if len(src) > 0 {
+		return 0, fmt.Errorf("unexpected non-empty tail left; len(tail)=%d", len(src))
 	}
 
-	if limit := svp.sv.limit; limit > 0 && uint64(len(items)) > limit {
+	return stateSize, nil
+}
+
+func (svp *statsValuesProcessor) finalizeStats(sf statsFunc, dst []byte, _ <-chan struct{}) []byte {
+	sv := sf.(*statsValues)
+	items := svp.values
+	if len(items) == 0 {
+		return append(dst, "[]"...)
+	}
+
+	if limit := sv.limit; limit > 0 && uint64(len(items)) > limit {
 		items = items[:limit]
 	}
 
-	return marshalJSONArray(items)
+	return marshalJSONArray(dst, items)
 }
 
-func (svp *statsValuesProcessor) limitReached() bool {
-	limit := svp.sv.limit
+func (svp *statsValuesProcessor) limitReached(sv *statsValues) bool {
+	limit := sv.limit
 	return limit > 0 && uint64(len(svp.values)) > limit
 }
 

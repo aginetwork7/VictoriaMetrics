@@ -1,33 +1,5 @@
 
 {
-  "__inputs": [],
-  "__elements": {},
-  "__requires": [
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "10.4.2"
-    },
-    {
-      "type": "datasource",
-      "id": "victoriametrics-datasource",
-      "name": "VictoriaMetrics",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "timeseries",
-      "name": "Time series",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -50,7 +22,7 @@
       },
       {
         "datasource": {
-          "type": "victoriametrics-datasource",
+          "type": "victoriametrics-metrics-datasource",
           "uid": "$ds"
         },
         "enable": true,
@@ -63,7 +35,7 @@
       },
       {
         "datasource": {
-          "type": "victoriametrics-datasource",
+          "type": "victoriametrics-metrics-datasource",
           "uid": "$ds"
         },
         "enable": true,
@@ -77,10 +49,10 @@
   },
   "editable": true,
   "fiscalYearStartMonth": 0,
+  "description": "Overview for single-node VictoriaLogs v1.14.0 or higher",
   "graphTooltip": 0,
-  "id": null,
+  "id": 1,
   "links": [],
-  "liveNow": false,
   "panels": [
     {
       "collapsed": false,
@@ -97,10 +69,10 @@
     },
     {
       "datasource": {
-        "type": "victoriametrics-datasource",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "$ds"
       },
-      "description": "How many log entries are in storage",
+      "description": "Shows total amount of log entries in the storage.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -133,6 +105,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -145,11 +118,11 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.2",
+      "pluginVersion": "11.5.0",
       "targets": [
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "editorMode": "code",
@@ -168,10 +141,10 @@
     },
     {
       "datasource": {
-        "type": "victoriametrics-datasource",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "$ds"
       },
-      "description": "Shows the datapoints ingestion rate.",
+      "description": "Shows the cumulative number of log entries ingested over the last 24h.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -193,17 +166,18 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 4,
+        "w": 5,
         "x": 4,
         "y": 1
       },
-      "id": 22,
+      "id": 65,
       "maxDataPoints": 100,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -216,16 +190,16 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.2",
+      "pluginVersion": "11.5.0",
       "targets": [
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(vl_rows_ingested_total{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval]))",
+          "expr": "sum(increase(vl_rows_ingested_total{job=~\"$job\", instance=~\"$instance\"}[24h]))",
           "format": "time_series",
           "instant": true,
           "interval": "",
@@ -234,15 +208,15 @@
           "refId": "A"
         }
       ],
-      "title": "Ingestion rate",
+      "title": "Ingested logs 24h",
       "type": "stat"
     },
     {
       "datasource": {
-        "type": "victoriametrics-datasource",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "$ds"
       },
-      "description": "The ratio of original data size and compressed data stored on disk",
+      "description": "Total amount of used disk space.\nAccounts for all compressed log entries and index size.\n\nSee how to [control disk usage](https://docs.victoriametrics.com/victorialogs/#retention-by-disk-space-usage).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -258,23 +232,24 @@
               }
             ]
           },
-          "unit": "none"
+          "unit": "bytes"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 2,
-        "w": 4,
-        "x": 8,
+        "w": 5,
+        "x": 9,
         "y": 1
       },
-      "id": 25,
+      "id": 24,
       "maxDataPoints": 100,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -287,16 +262,16 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.2",
+      "pluginVersion": "11.5.0",
       "targets": [
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": " sum(vl_uncompressed_data_size_bytes{job=~\"$job\", instance=~\"$instance\"}) / sum(vl_compressed_data_size_bytes{job=~\"$job\", instance=~\"$instance\"})",
+          "expr": "sum(vl_data_size_bytes{job=~\"$job\", instance=~\"$instance\"})",
           "format": "time_series",
           "instant": true,
           "interval": "",
@@ -305,15 +280,87 @@
           "refId": "A"
         }
       ],
-      "title": "Compression ratio",
+      "title": "Disk space usage",
       "type": "stat"
     },
     {
       "datasource": {
-        "type": "victoriametrics-datasource",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "$ds"
       },
-      "description": "Total number of available CPUs for VM process",
+      "description": "Shows the average ingestion rate of log entries.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 5,
+        "x": 14,
+        "y": 1
+      },
+      "id": 22,
+      "maxDataPoints": 100,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "$ds"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(rate(vl_rows_ingested_total{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval]))",
+          "format": "time_series",
+          "instant": true,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Insert req/s",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "$ds"
+      },
+      "description": "Total number of available CPUs for VictoriaLogs process",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -339,8 +386,8 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 4,
-        "x": 12,
+        "w": 5,
+        "x": 19,
         "y": 1
       },
       "id": 30,
@@ -350,6 +397,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -362,11 +410,11 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.2",
+      "pluginVersion": "11.5.0",
       "targets": [
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "editorMode": "code",
@@ -384,31 +432,9 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "victoriametrics-datasource",
-        "uid": "$ds"
-      },
+      "description": "See [latest releases](https://docs.victoriametrics.com/victorialogs/changelog/).",
       "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 1800
-              }
-            ]
-          },
-          "unit": "s"
-        },
+        "defaults": {},
         "overrides": []
       },
       "gridPos": {
@@ -417,49 +443,26 @@
         "x": 0,
         "y": 3
       },
-      "id": 32,
+      "id": 63,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
         },
-        "showPercentChange": false,
-        "text": {},
-        "textMode": "auto",
-        "wideLayout": true
+        "content": "<div style=\"text-align: center;\">$version</div>",
+        "mode": "markdown"
       },
-      "pluginVersion": "10.4.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "victoriametrics-datasource",
-            "uid": "$ds"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "vm_app_uptime_seconds{job=~\"$job\", instance=~\"$instance\"}",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "title": "Uptime",
-      "type": "stat"
+      "pluginVersion": "11.5.0",
+      "title": "Version",
+      "type": "text"
     },
     {
       "datasource": {
-        "type": "victoriametrics-datasource",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "$ds"
       },
-      "description": "Total amount of used disk space",
+      "description": "Shows the cumulative number of log entries ingested over the last 24h. \n\nThe size is calculated before compression.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -481,17 +484,18 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 4,
+        "w": 5,
         "x": 4,
         "y": 3
       },
-      "id": 24,
+      "id": 64,
       "maxDataPoints": 100,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -504,16 +508,16 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.2",
+      "pluginVersion": "11.5.0",
       "targets": [
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(vl_compressed_data_size_bytes{job=~\"$job\", instance=~\"$instance\"})",
+          "expr": "sum(increase(vl_bytes_ingested_total{job=~\"$job\", instance=~\"$instance\"}[24h]))",
           "format": "time_series",
           "instant": true,
           "interval": "",
@@ -522,12 +526,84 @@
           "refId": "A"
         }
       ],
-      "title": "Disk space usage",
+      "title": "Ingested bytes 24h",
       "type": "stat"
     },
     {
       "datasource": {
-        "type": "victoriametrics-datasource",
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "$ds"
+      },
+      "description": "The ratio between original data size and compressed data stored on disk.\n\nCompression ratio doesn't account for indexdb size. It also may change with time, as [merges](https://docs.victoriametrics.com/victorialogs/#forced-merge) are improving compression of historical data.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 5,
+        "x": 9,
+        "y": 3
+      },
+      "id": 25,
+      "maxDataPoints": 100,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "$ds"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": " sum(vl_uncompressed_data_size_bytes{job=~\"$job\", instance=~\"$instance\"}) / sum(vl_compressed_data_size_bytes{job=~\"$job\", instance=~\"$instance\"})",
+          "format": "time_series",
+          "instant": true,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Compression ratio",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
         "uid": "$ds"
       },
       "description": "Shows the rate of HTTP read requests.",
@@ -552,8 +628,8 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 4,
-        "x": 8,
+        "w": 5,
+        "x": 14,
         "y": 3
       },
       "id": 36,
@@ -563,6 +639,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -575,16 +652,16 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.2",
+      "pluginVersion": "11.5.0",
       "targets": [
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(vl_http_requests_total{job=~\"$job\", instance=~\"$instance\", path!~\".*(/insert|/metrics)\"}[$__rate_interval]))",
+          "expr": "sum(rate(vl_http_requests_total{job=~\"$job\", instance=~\"$instance\", path=~\"/select/.*\"}[$__rate_interval]))",
           "format": "time_series",
           "instant": true,
           "interval": "",
@@ -593,15 +670,15 @@
           "refId": "A"
         }
       ],
-      "title": "Read requests",
+      "title": "Read req/s",
       "type": "stat"
     },
     {
       "datasource": {
-        "type": "victoriametrics-datasource",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "$ds"
       },
-      "description": "Total size of available memory for VM process",
+      "description": "Total size of available memory for VictoriaLogs process",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -623,8 +700,8 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 4,
-        "x": 12,
+        "w": 5,
+        "x": 19,
         "y": 3
       },
       "id": 34,
@@ -634,6 +711,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -646,7 +724,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.2",
+      "pluginVersion": "11.5.0",
       "targets": [
         {
           "datasource": {
@@ -680,10 +758,10 @@
     },
     {
       "datasource": {
-        "type": "victoriametrics-datasource",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "$ds"
       },
-      "description": "How many datapoints are inserted into storage per second",
+      "description": "Shows ingestion rate in number of log entries and bytes per second.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -696,8 +774,9 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -739,7 +818,24 @@
           },
           "unit": "short"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*(bytes)/"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 8,
@@ -761,15 +857,16 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "pluginVersion": "9.1.0",
+      "pluginVersion": "11.5.0",
       "targets": [
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "editorMode": "code",
@@ -780,17 +877,30 @@
           "legendFormat": "{{type}}",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "$ds"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(vl_bytes_ingested_total{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval])) by (type) > 0",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{type}} (bytes)",
+          "range": true,
+          "refId": "B"
         }
       ],
-      "title": "Datapoints ingestion rate ",
+      "title": "Logs ingestion rate ",
       "type": "timeseries"
     },
     {
       "datasource": {
-        "type": "victoriametrics-datasource",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "$ds"
       },
-      "description": "* `*` - unsupported query path\n* `/insert` - insert into VM\n* `/metrics` - query VL system metrics\n* `/query` - read the data",
+      "description": "* `*` - unsupported query path\n* `/insert` - [inserts](https://docs.victoriametrics.com/victorialogs/data-ingestion/)\n* `/select` - [reads](https://docs.victoriametrics.com/victorialogs/querying/)\n* `/metrics` - scraping of system metrics",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -803,6 +913,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -869,15 +980,16 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "pluginVersion": "9.1.0",
+      "pluginVersion": "11.5.0",
       "targets": [
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "editorMode": "code",
@@ -895,10 +1007,10 @@
     },
     {
       "datasource": {
-        "type": "victoriametrics-datasource",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "$ds"
       },
-      "description": "Shows the amount of on-disk space occupied by data before and after compressiom",
+      "description": "* `*` - unsupported query path\n* `/insert` - [inserts](https://docs.victoriametrics.com/victorialogs/data-ingestion/)\n* `/select` - [reads](https://docs.victoriametrics.com/victorialogs/querying/)\n* `/metrics` - scraping of system metrics",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -911,6 +1023,240 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "links": [],
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "id": 69,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "$ds"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(rate(vm_http_request_errors_total{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval])) by (instance, path) > 0",
+          "format": "time_series",
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{instance}} - {{path}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "$ds"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(rate(vl_http_errors_total{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval])) by (instance, path) > 0",
+          "format": "time_series",
+          "hide": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{instance}} - {{path}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Requests error rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "$ds"
+      },
+      "description": "The less time it takes is better.\n",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "links": [],
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "id": 66,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "$ds"
+          },
+          "editorMode": "code",
+          "expr": "max(vl_http_request_duration_seconds{job=~\"$job\", instance=~\"$instance\", quantile=\"0.99\"}) by (instance, path) > 0",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "{{instance}} - {{path}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Query duration 0.99 quantile",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "$ds"
+      },
+      "description": "Shows the amount of on-disk space occupied by all the data stored in the storage.\n\nSee how to [control disk usage](https://docs.victoriametrics.com/victorialogs/#retention-by-disk-space-usage).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -960,7 +1306,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 14
+        "y": 22
       },
       "id": 6,
       "options": {
@@ -977,19 +1323,20 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "pluginVersion": "9.1.0",
+      "pluginVersion": "11.5.0",
       "targets": [
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "editorMode": "code",
-          "expr": "sum(vl_compressed_data_size_bytes{job=~\"$job\", instance=~\"$instance\"})",
+          "expr": "sum(vl_data_size_bytes{job=~\"$job\", instance=~\"$instance\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -1003,10 +1350,10 @@
     },
     {
       "datasource": {
-        "type": "victoriametrics-datasource",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "$ds"
       },
-      "description": "The number of the new log streams created over the last 24h",
+      "description": "Shows the rate of logging the messages by their level. Unexpected spike in rate is a good reason to check logs.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1019,8 +1366,9 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "bars",
+            "fillOpacity": 100,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1034,7 +1382,7 @@
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "never",
+            "showPoints": "auto",
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1044,9 +1392,7 @@
               "mode": "off"
             }
           },
-          "links": [],
           "mappings": [],
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1059,8 +1405,7 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "short"
+          }
         },
         "overrides": []
       },
@@ -1068,14 +1413,14 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 14
+        "y": 22
       },
-      "id": 26,
+      "id": 67,
       "options": {
         "legend": {
           "calcs": [
-            "mean",
             "lastNotNull",
+            "mean",
             "max"
           ],
           "displayMode": "table",
@@ -1085,28 +1430,27 @@
           "sortDesc": true
         },
         "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
         }
       },
-      "pluginVersion": "9.1.0",
+      "pluginVersion": "11.5.0",
       "targets": [
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "editorMode": "code",
-          "expr": "increase(vl_streams_created_total{job=~\"$job\", instance=~\"$instance\"}[1d])",
-          "format": "time_series",
-          "interval": "",
-          "intervalFactor": 1,
-          "legendFormat": "new log streams over 24h",
+          "expr": "sum(rate(vm_log_messages_total{job=~\"$job\", instance=~\"$instance\", level!=\"info\"}[$__rate_interval])) by (instance, level, location) > 0",
+          "interval": "5m",
+          "legendFormat": "{{instance}} - {{level}}: {{location}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Log stream churn rate",
+      "title": "Logging rate",
       "type": "timeseries"
     },
     {
@@ -1115,13 +1459,463 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 30
+      },
+      "id": 68,
+      "panels": [
+        {
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "$ds"
+          },
+          "description": "Shows the number of restarts per job. The chart can be useful to identify periodic process restarts and correlate them with potential issues or anomalies. Normally, processes shouldn't restart unless restart was inited by user. The reason of restarts should be figured out by checking the logs of each specific service. ",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "axisSoftMin": 0,
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "stepAfter",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "decimals": 0,
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 227
+          },
+          "id": 62,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Last *",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "11.5.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "victoriametrics-metrics-datasource",
+                "uid": "$ds"
+              },
+              "editorMode": "code",
+              "expr": "sum(changes(vm_app_start_timestamp{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval]) > 0) by(job)",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "{{job}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Restarts",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "$ds"
+          },
+          "description": "The number of the new [log streams](https://docs.victoriametrics.com/victorialogs/keyconcepts/#stream-fields) created over the last 24h.\n\nPrefer having as low churn rate as possible. \nSee [How to determine which fields must be associated with log streams?](https://docs.victoriametrics.com/victorialogs/keyconcepts/#how-to-determine-which-fields-must-be-associated-with-log-streams)\n",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 227
+          },
+          "id": 26,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "lastNotNull",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Last *",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "11.5.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "victoriametrics-metrics-datasource",
+                "uid": "$ds"
+              },
+              "editorMode": "code",
+              "expr": "increase(vl_streams_created_total{job=~\"$job\", instance=~\"$instance\"}[1d])",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "new log streams over 24h",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Log stream churn rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "$ds"
+          },
+          "description": "Flags explicitly set to non-default values",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "job"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 291
+          },
+          "id": 70,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true
+          },
+          "pluginVersion": "11.5.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "victoriametrics-metrics-datasource",
+                "uid": "$ds"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum(flag{is_set=\"true\", job=~\"$job\", instance=~\"$instance\"}) by(job, instance, name, value)",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "__auto",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "Non-default flags",
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "$ds"
+          },
+          "description": "Shows how many log entries were ignored or dropped on insertion due to various reasons:\n* timestamp out of retention period or timestamp in future;\n* number of fields per entry exceeded.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 291
+          },
+          "id": 71,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "lastNotNull",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Last *",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.5.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "victoriametrics-metrics-datasource",
+                "uid": "$ds"
+              },
+              "editorMode": "code",
+              "exemplar": true,
+              "expr": "sum(increase(vl_rows_dropped_total{job=~\"$job\", instance=~\"$instance\"}[1h])) by (instance, reason)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "{{instance}} - {{reason}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Logs dropped for last 1h",
+          "type": "timeseries"
+        }
+      ],
+      "title": "Troubleshooting",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 31
       },
       "id": 28,
       "panels": [
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "description": "Percentage of used memory (resident).\nThe application's performance will significantly degrade when memory usage is close to 100%.",
@@ -1137,6 +1931,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 0,
                 "gradientMode": "none",
@@ -1186,7 +1981,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 3
+            "y": 228
           },
           "id": 38,
           "options": {
@@ -1203,15 +1998,16 @@
               "sortDesc": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "desc"
             }
           },
-          "pluginVersion": "9.1.0",
+          "pluginVersion": "11.5.0",
           "targets": [
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "editorMode": "code",
@@ -1228,7 +2024,7 @@
         },
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "description": "",
@@ -1244,6 +2040,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 0,
                 "gradientMode": "none",
@@ -1293,7 +2090,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 3
+            "y": 228
           },
           "id": 40,
           "options": {
@@ -1310,15 +2107,16 @@
               "sortDesc": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "desc"
             }
           },
-          "pluginVersion": "9.1.0",
+          "pluginVersion": "11.5.0",
           "targets": [
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "expr": "sum(go_memstats_sys_bytes{job=~\"$job\", instance=~\"$instance\"}) + sum(vm_cache_size_bytes{job=~\"$job\", instance=~\"$instance\"})",
@@ -1330,7 +2128,7 @@
             },
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "expr": "sum(go_memstats_heap_inuse_bytes{job=~\"$job\", instance=~\"$instance\"}) + sum(vm_cache_size_bytes{job=~\"$job\", instance=~\"$instance\"})",
@@ -1342,7 +2140,7 @@
             },
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "expr": "sum(go_memstats_stack_inuse_bytes{job=~\"$job\", instance=~\"$instance\"})",
@@ -1354,7 +2152,7 @@
             },
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "expr": "sum(process_resident_memory_bytes{job=~\"$job\", instance=~\"$instance\"})",
@@ -1367,7 +2165,7 @@
             },
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "exemplar": false,
@@ -1385,7 +2183,7 @@
         },
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "description": "Share for memory allocated by the process itself. When memory usage reaches 100% it will be likely OOM-killed.\nSafe memory usage % considered to be below 80%",
@@ -1401,6 +2199,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 0,
                 "gradientMode": "none",
@@ -1450,7 +2249,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 11
+            "y": 236
           },
           "id": 42,
           "options": {
@@ -1467,15 +2266,16 @@
               "sortDesc": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "desc"
             }
           },
-          "pluginVersion": "9.1.0",
+          "pluginVersion": "11.5.0",
           "targets": [
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "editorMode": "code",
@@ -1492,7 +2292,7 @@
         },
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "fieldConfig": {
@@ -1507,6 +2307,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 0,
                 "gradientMode": "none",
@@ -1556,7 +2357,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 11
+            "y": 236
           },
           "id": 44,
           "options": {
@@ -1573,20 +2374,21 @@
               "sortDesc": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "none"
             }
           },
-          "pluginVersion": "9.1.0",
+          "pluginVersion": "11.5.0",
           "targets": [
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "max(\n    rate(process_cpu_seconds_total{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval])\n    /\n    vm_available_cpu_cores{job=~\"$job\", instance=~\"$instance\"}\n) by(instance)",
+              "expr": "max(\n    rate(process_cpu_seconds_total{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval])\n    /\n    process_cpu_cores_available{job=~\"$job\", instance=~\"$instance\"}\n) by(instance)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -1600,7 +2402,7 @@
         },
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "description": "Shows the percentage of open file descriptors compared to the limit set in the OS.\nReaching the limit of open files can cause various issues and must be prevented.\n\nSee how to change limits here https://medium.com/@muhammadtriwibowo/set-permanently-ulimit-n-open-files-in-ubuntu-4d61064429a",
@@ -1616,6 +2418,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 0,
                 "gradientMode": "none",
@@ -1682,7 +2485,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 19
+            "y": 244
           },
           "id": 46,
           "options": {
@@ -1699,15 +2502,16 @@
               "sortDesc": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "none"
             }
           },
-          "pluginVersion": "9.1.0",
+          "pluginVersion": "11.5.0",
           "targets": [
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "editorMode": "code",
@@ -1726,7 +2530,7 @@
         },
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "description": "",
@@ -1742,6 +2546,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 0,
                 "gradientMode": "none",
@@ -1807,7 +2612,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 19
+            "y": 244
           },
           "id": 48,
           "options": {
@@ -1824,15 +2629,16 @@
               "sortDesc": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "desc"
             }
           },
-          "pluginVersion": "9.1.0",
+          "pluginVersion": "11.5.0",
           "targets": [
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "editorMode": "code",
@@ -1846,7 +2652,7 @@
             },
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "exemplar": false,
@@ -1864,7 +2670,7 @@
         },
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "fieldConfig": {
@@ -1879,6 +2685,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -1929,7 +2736,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 27
+            "y": 252
           },
           "id": 50,
           "options": {
@@ -1946,15 +2753,16 @@
               "sortDesc": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "none"
             }
           },
-          "pluginVersion": "9.1.0",
+          "pluginVersion": "11.5.0",
           "targets": [
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "editorMode": "code",
@@ -1971,7 +2779,7 @@
         },
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "description": "Shows the number of bytes read/write from the storage layer.",
@@ -1987,6 +2795,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -2048,7 +2857,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 27
+            "y": 252
           },
           "id": 52,
           "options": {
@@ -2065,15 +2874,16 @@
               "sortDesc": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "none"
             }
           },
-          "pluginVersion": "9.1.0",
+          "pluginVersion": "11.5.0",
           "targets": [
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "expr": "sum(rate(process_io_storage_read_bytes_total{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval]))",
@@ -2086,7 +2896,7 @@
             },
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "expr": "sum(rate(process_io_storage_written_bytes_total{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval]))",
@@ -2103,7 +2913,7 @@
         },
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "fieldConfig": {
@@ -2118,6 +2928,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -2168,7 +2979,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 35
+            "y": 260
           },
           "id": 54,
           "options": {
@@ -2185,15 +2996,16 @@
               "sortDesc": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "none"
             }
           },
-          "pluginVersion": "9.1.0",
+          "pluginVersion": "11.5.0",
           "targets": [
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "editorMode": "code",
@@ -2210,7 +3022,7 @@
         },
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "description": "Shows the number of read/write syscalls such as read, pread, write, pwrite.",
@@ -2226,6 +3038,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -2287,7 +3100,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 35
+            "y": 260
           },
           "id": 56,
           "options": {
@@ -2304,15 +3117,16 @@
               "sortDesc": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "none"
             }
           },
-          "pluginVersion": "9.1.0",
+          "pluginVersion": "11.5.0",
           "targets": [
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "editorMode": "code",
@@ -2327,7 +3141,7 @@
             },
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "editorMode": "code",
@@ -2346,7 +3160,7 @@
         },
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "description": "",
@@ -2362,6 +3176,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -2411,7 +3226,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 43
+            "y": 268
           },
           "id": 58,
           "options": {
@@ -2428,15 +3243,16 @@
               "sortDesc": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "none"
             }
           },
-          "pluginVersion": "9.1.0",
+          "pluginVersion": "11.5.0",
           "targets": [
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "editorMode": "code",
@@ -2454,7 +3270,7 @@
         },
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "description": "",
@@ -2470,6 +3286,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -2519,7 +3336,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 43
+            "y": 268
           },
           "id": 60,
           "options": {
@@ -2536,15 +3353,16 @@
               "sortDesc": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "none"
             }
           },
-          "pluginVersion": "9.1.0",
+          "pluginVersion": "11.5.0",
           "targets": [
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "editorMode": "code",
@@ -2562,7 +3380,7 @@
         },
         {
           "datasource": {
-            "type": "victoriametrics-datasource",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "$ds"
           },
           "description": "Shows the time goroutines have spent in runnable state before actually running. The lower is better.\n\nHigh values or values exceeding the threshold is usually a sign of            insufficient CPU resources or CPU throttling. \n\nVerify that service has enough CPU resources. Otherwise, the service could work unreliably with delays in processing.",
@@ -2578,6 +3396,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 0,
                 "gradientMode": "none",
@@ -2628,7 +3447,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 51
+            "y": 276
           },
           "id": 61,
           "options": {
@@ -2643,15 +3462,16 @@
               "showLegend": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "desc"
             }
           },
-          "pluginVersion": "9.2.6",
+          "pluginVersion": "11.5.0",
           "targets": [
             {
               "datasource": {
-                "type": "victoriametrics-datasource",
+                "type": "victoriametrics-metrics-datasource",
                 "uid": "$ds"
               },
               "editorMode": "code",
@@ -2672,39 +3492,36 @@
       "type": "row"
     }
   ],
+  "preload": false,
   "refresh": "",
-  "schemaVersion": 39,
-  "tags": [],
+  "schemaVersion": 40,
+  "tags": [
+    "victoriametrics",
+    "victorialogs"
+  ],
   "templating": {
     "list": [
       {
         "current": {
-          "selected": false,
           "text": "VictoriaMetrics",
           "value": "P4169E866C3094E38"
         },
-        "hide": 0,
         "includeAll": false,
-        "multi": false,
         "name": "ds",
         "options": [],
-        "query": "victoriametrics-datasource",
-        "queryValue": "",
+        "query": "victoriametrics-metrics-datasource",
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
         "type": "datasource"
       },
       {
         "current": {},
         "datasource": {
-          "type": "victoriametrics-datasource",
+          "type": "victoriametrics-metrics-datasource",
           "uid": "$ds"
         },
         "definition": "label_values(vm_app_version{version=~\"victoria-logs-.*\"}, job)",
-        "hide": 0,
         "includeAll": false,
-        "multi": false,
         "name": "job",
         "options": [],
         "query": {
@@ -2713,20 +3530,17 @@
         },
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       },
       {
         "current": {},
         "datasource": {
-          "type": "victoriametrics-datasource",
+          "type": "victoriametrics-metrics-datasource",
           "uid": "$ds"
         },
         "definition": "label_values(vm_app_version{job=~\"$job\"}, instance)",
-        "hide": 0,
-        "includeAll": false,
-        "multi": false,
+        "includeAll": true,
+        "multi": true,
         "name": "instance",
         "options": [],
         "query": {
@@ -2735,30 +3549,46 @@
         },
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       },
       {
+        "current": {},
         "datasource": {
-          "type": "victoriametrics-datasource",
+          "type": "victoriametrics-metrics-datasource",
+          "uid": "${ds}"
+        },
+        "definition": "label_values(vm_app_version{job=~\"$job\", instance=~\"$instance\"},short_version)",
+        "hide": 2,
+        "name": "version",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(vm_app_version{job=~\"$job\", instance=~\"$instance\"},short_version)",
+          "refId": "VictoriaMetricsVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "baseFilters": [],
+        "datasource": {
+          "type": "victoriametrics-metrics-datasource",
           "uid": "$ds"
         },
         "filters": [],
-        "hide": 0,
         "name": "adhoc",
-        "skipUrlSync": false,
         "type": "adhoc"
       }
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
-  "title": "VictoriaLogs (VM)",
+  "title": "VictoriaLogs - single-node",
   "uid": "OqPIZTX4z_vm",
   "version": 1,
   "weekStart": ""

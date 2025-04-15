@@ -1,11 +1,12 @@
 package logstorage
 
 import (
+	"fmt"
 	"math"
 	"strings"
-	"unsafe"
 
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 )
 
@@ -21,23 +22,20 @@ func (sm *statsMin) updateNeededFields(neededFields fieldsSet) {
 	updateNeededFieldsForStatsFunc(neededFields, sm.fields)
 }
 
-func (sm *statsMin) newStatsProcessor() (statsProcessor, int) {
-	smp := &statsMinProcessor{
-		sm: sm,
-	}
-	return smp, int(unsafe.Sizeof(*smp))
+func (sm *statsMin) newStatsProcessor(a *chunkedAllocator) statsProcessor {
+	return a.newStatsMinProcessor()
 }
 
 type statsMinProcessor struct {
-	sm *statsMin
-
-	min string
+	min      string
+	hasItems bool
 }
 
-func (smp *statsMinProcessor) updateStatsForAllRows(br *blockResult) int {
+func (smp *statsMinProcessor) updateStatsForAllRows(sf statsFunc, br *blockResult) int {
+	sm := sf.(*statsMin)
 	minLen := len(smp.min)
 
-	fields := smp.sm.fields
+	fields := sm.fields
 	if len(fields) == 0 {
 		// Find the minimum value across all the columns
 		for _, c := range br.getColumns() {
@@ -54,10 +52,11 @@ func (smp *statsMinProcessor) updateStatsForAllRows(br *blockResult) int {
 	return len(smp.min) - minLen
 }
 
-func (smp *statsMinProcessor) updateStatsForRow(br *blockResult, rowIdx int) int {
+func (smp *statsMinProcessor) updateStatsForRow(sf statsFunc, br *blockResult, rowIdx int) int {
+	sm := sf.(*statsMin)
 	minLen := len(smp.min)
 
-	fields := smp.sm.fields
+	fields := sm.fields
 	if len(fields) == 0 {
 		// Find the minimum value across all the fields for the given row
 		for _, c := range br.getColumns() {
@@ -76,16 +75,50 @@ func (smp *statsMinProcessor) updateStatsForRow(br *blockResult, rowIdx int) int
 	return minLen - len(smp.min)
 }
 
-func (smp *statsMinProcessor) mergeState(sfp statsProcessor) {
+func (smp *statsMinProcessor) mergeState(_ *chunkedAllocator, _ statsFunc, sfp statsProcessor) {
 	src := sfp.(*statsMinProcessor)
-	smp.updateStateString(src.min)
+	if src.hasItems {
+		smp.updateStateString(src.min)
+	}
+}
+
+func (smp *statsMinProcessor) exportState(dst []byte, _ <-chan struct{}) []byte {
+	if !smp.hasItems {
+		dst = append(dst, 0)
+		return dst
+	}
+
+	dst = append(dst, 1)
+	dst = encoding.MarshalBytes(dst, bytesutil.ToUnsafeBytes(smp.min))
+	return dst
+}
+
+func (smp *statsMinProcessor) importState(src []byte, _ <-chan struct{}) (int, error) {
+	if len(src) == 0 {
+		return 0, fmt.Errorf("missing `hasItems`")
+	}
+	smp.hasItems = (src[0] == 1)
+	src = src[1:]
+
+	if smp.hasItems {
+		minValue, n := encoding.UnmarshalBytes(src)
+		if n <= 0 {
+			return 0, fmt.Errorf("cannot unmarshal min value")
+		}
+		smp.min = string(minValue)
+		src = src[n:]
+	} else {
+		smp.min = ""
+	}
+
+	if len(src) > 0 {
+		return 0, fmt.Errorf("unexpected tail left after decoding min value; len(tail)=%d", len(src))
+	}
+
+	return len(smp.min), nil
 }
 
 func (smp *statsMinProcessor) updateStateForColumn(br *blockResult, c *blockResultColumn) {
-	if br.rowsLen == 0 {
-		return
-	}
-
 	if c.isTime {
 		timestamp, ok := TryParseTimestampRFC3339Nano(smp.min)
 		if !ok {
@@ -116,12 +149,17 @@ func (smp *statsMinProcessor) updateStateForColumn(br *blockResult, c *blockResu
 			smp.updateStateString(v)
 		}
 	case valueTypeDict:
-		for _, v := range c.dictValues {
+		c.forEachDictValue(br, func(v string) {
 			smp.updateStateString(v)
-		}
+		})
 	case valueTypeUint8, valueTypeUint16, valueTypeUint32, valueTypeUint64:
 		bb := bbPool.Get()
 		bb.B = marshalUint64String(bb.B[:0], c.minValue)
+		smp.updateStateBytes(bb.B)
+		bbPool.Put(bb)
+	case valueTypeInt64:
+		bb := bbPool.Get()
+		bb.B = marshalInt64String(bb.B[:0], int64(c.minValue))
 		smp.updateStateBytes(bb.B)
 		bbPool.Put(bb)
 	case valueTypeFloat64:
@@ -151,18 +189,18 @@ func (smp *statsMinProcessor) updateStateBytes(b []byte) {
 }
 
 func (smp *statsMinProcessor) updateStateString(v string) {
-	if v == "" {
-		// Skip empty strings
+	if !smp.hasItems {
+		smp.min = strings.Clone(v)
+		smp.hasItems = true
 		return
 	}
-	if smp.min != "" && !lessString(v, smp.min) {
-		return
+	if lessString(v, smp.min) {
+		smp.min = strings.Clone(v)
 	}
-	smp.min = strings.Clone(v)
 }
 
-func (smp *statsMinProcessor) finalizeStats() string {
-	return smp.min
+func (smp *statsMinProcessor) finalizeStats(_ statsFunc, dst []byte, _ <-chan struct{}) []byte {
+	return append(dst, smp.min...)
 }
 
 func parseStatsMin(lex *lexer) (*statsMin, error) {

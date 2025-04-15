@@ -3,13 +3,10 @@ package logstorage
 import (
 	"fmt"
 	"slices"
-	"strings"
 	"sync"
 	"sync/atomic"
-	"unsafe"
 
-	"github.com/cespare/xxhash/v2"
-
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/atomicutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
@@ -26,6 +23,8 @@ type pipeUniq struct {
 	// if hitsFieldName isn't empty, then the number of hits per each unique value is stored in this field.
 	hitsFieldName string
 
+	// limit is the maximum number of unique values to return.
+	// If hitsFieldName != "" and the limit is exceeded, then all the hits are set to 0.
 	limit uint64
 }
 
@@ -43,6 +42,17 @@ func (pu *pipeUniq) String() string {
 	return s
 }
 
+func (pu *pipeUniq) splitToRemoteAndLocal(_ int64) (pipe, []pipe) {
+	if pu.hitsFieldName == "" {
+		return pu, []pipe{pu}
+	}
+
+	pLocal := &pipeUniqLocal{
+		pu: pu,
+	}
+	return pu, []pipe{pLocal}
+}
+
 func (pu *pipeUniq) canLiveTail() bool {
 	return false
 }
@@ -58,29 +68,20 @@ func (pu *pipeUniq) updateNeededFields(neededFields, unneededFields fieldsSet) {
 	}
 }
 
-func (pu *pipeUniq) optimize() {
-	// nothing to do
-}
-
 func (pu *pipeUniq) hasFilterInWithQuery() bool {
 	return false
 }
 
-func (pu *pipeUniq) initFilterInValues(_ map[string][]string, _ getFieldValuesFunc) (pipe, error) {
+func (pu *pipeUniq) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
 	return pu, nil
 }
 
-func (pu *pipeUniq) newPipeProcessor(workersCount int, stopCh <-chan struct{}, cancel func(), ppNext pipeProcessor) pipeProcessor {
-	maxStateSize := int64(float64(memory.Allowed()) * 0.2)
+func (pu *pipeUniq) visitSubqueries(_ func(q *Query)) {
+	// nothing to do
+}
 
-	shards := make([]pipeUniqProcessorShard, workersCount)
-	for i := range shards {
-		shards[i] = pipeUniqProcessorShard{
-			pipeUniqProcessorShardNopad: pipeUniqProcessorShardNopad{
-				pu: pu,
-			},
-		}
-	}
+func (pu *pipeUniq) newPipeProcessor(concurrency int, stopCh <-chan struct{}, cancel func(), ppNext pipeProcessor) pipeProcessor {
+	maxStateSize := int64(float64(memory.Allowed()) * 0.4)
 
 	pup := &pipeUniqProcessor{
 		pu:     pu,
@@ -88,9 +89,11 @@ func (pu *pipeUniq) newPipeProcessor(workersCount int, stopCh <-chan struct{}, c
 		cancel: cancel,
 		ppNext: ppNext,
 
-		shards: shards,
-
 		maxStateSize: maxStateSize,
+	}
+	pup.shards.Init = func(shard *pipeUniqProcessorShard) {
+		shard.pu = pu
+		shard.m.init(uint(concurrency), &shard.stateSizeBudget)
 	}
 	pup.stateSizeBudget.Store(maxStateSize)
 
@@ -103,25 +106,18 @@ type pipeUniqProcessor struct {
 	cancel func()
 	ppNext pipeProcessor
 
-	shards []pipeUniqProcessorShard
+	shards atomicutil.Slice[pipeUniqProcessorShard]
 
 	maxStateSize    int64
 	stateSizeBudget atomic.Int64
 }
 
 type pipeUniqProcessorShard struct {
-	pipeUniqProcessorShardNopad
-
-	// The padding prevents false sharing on widespread platforms with 128 mod (cache line size) = 0 .
-	_ [128 - unsafe.Sizeof(pipeUniqProcessorShardNopad{})%128]byte
-}
-
-type pipeUniqProcessorShardNopad struct {
 	// pu points to the parent pipeUniq.
 	pu *pipeUniq
 
 	// m holds per-row hits.
-	m map[string]*uint64
+	m hitsMapAdaptive
 
 	// keyBuf is a temporary buffer for building keys for m.
 	keyBuf []byte
@@ -138,7 +134,7 @@ type pipeUniqProcessorShardNopad struct {
 //
 // It returns false if the block cannot be written because of the exceeded limit.
 func (shard *pipeUniqProcessorShard) writeBlock(br *blockResult) bool {
-	if limit := shard.pu.limit; limit > 0 && uint64(len(shard.m)) > limit {
+	if limit := shard.pu.limit; limit > 0 && shard.m.entriesCount() > limit {
 		return false
 	}
 
@@ -155,30 +151,14 @@ func (shard *pipeUniqProcessorShard) writeBlock(br *blockResult) bool {
 				keyBuf = encoding.MarshalBytes(keyBuf, bytesutil.ToUnsafeBytes(c.name))
 				keyBuf = encoding.MarshalBytes(keyBuf, bytesutil.ToUnsafeBytes(v))
 			}
-			shard.updateState(bytesutil.ToUnsafeString(keyBuf), 1)
+			shard.m.updateStateString(keyBuf, 1)
 		}
 		shard.keyBuf = keyBuf
 		return true
 	}
 	if len(byFields) == 1 {
 		// Fast path for a single field.
-		c := br.getColumnByName(byFields[0])
-		if c.isConst {
-			v := c.valuesEncoded[0]
-			shard.updateState(v, uint64(br.rowsLen))
-			return true
-		}
-		if c.valueType == valueTypeDict {
-			c.forEachDictValueWithHits(br, shard.updateState)
-			return true
-		}
-
-		values := c.getValues(br)
-		for i, v := range values {
-			if needHits || i == 0 || values[i-1] != values[i] {
-				shard.updateState(v, 1)
-			}
-		}
+		shard.updateStatsSingleColumn(br, byFields[0], needHits)
 		return true
 	}
 
@@ -208,31 +188,61 @@ func (shard *pipeUniqProcessorShard) writeBlock(br *blockResult) bool {
 		for _, values := range columnValues {
 			keyBuf = encoding.MarshalBytes(keyBuf, bytesutil.ToUnsafeBytes(values[i]))
 		}
-		shard.updateState(bytesutil.ToUnsafeString(keyBuf), 1)
+		shard.m.updateStateString(keyBuf, 1)
 	}
 	shard.keyBuf = keyBuf
 
 	return true
 }
 
-func (shard *pipeUniqProcessorShard) updateState(v string, hits uint64) {
-	m := shard.getM()
-	pHits := m[v]
-	if pHits == nil {
-		vCopy := strings.Clone(v)
-		hits := uint64(0)
-		pHits = &hits
-		m[vCopy] = pHits
-		shard.stateSizeBudget -= len(vCopy) + int(unsafe.Sizeof(vCopy)+unsafe.Sizeof(hits)+unsafe.Sizeof(pHits))
+func (shard *pipeUniqProcessorShard) updateStatsSingleColumn(br *blockResult, columnName string, needHits bool) {
+	c := br.getColumnByName(columnName)
+	if c.isConst {
+		v := c.valuesEncoded[0]
+		shard.m.updateStateGeneric(v, uint64(br.rowsLen))
+		return
 	}
-	*pHits += hits
-}
-
-func (shard *pipeUniqProcessorShard) getM() map[string]*uint64 {
-	if shard.m == nil {
-		shard.m = make(map[string]*uint64)
+	switch c.valueType {
+	case valueTypeDict:
+		c.forEachDictValueWithHits(br, shard.m.updateStateGeneric)
+	case valueTypeUint8:
+		values := c.getValuesEncoded(br)
+		for _, v := range values {
+			n := unmarshalUint8(v)
+			shard.m.updateStateUint64(uint64(n), 1)
+		}
+	case valueTypeUint16:
+		values := c.getValuesEncoded(br)
+		for _, v := range values {
+			n := unmarshalUint16(v)
+			shard.m.updateStateUint64(uint64(n), 1)
+		}
+	case valueTypeUint32:
+		values := c.getValuesEncoded(br)
+		for _, v := range values {
+			n := unmarshalUint32(v)
+			shard.m.updateStateUint64(uint64(n), 1)
+		}
+	case valueTypeUint64:
+		values := c.getValuesEncoded(br)
+		for _, v := range values {
+			n := unmarshalUint64(v)
+			shard.m.updateStateUint64(n, 1)
+		}
+	case valueTypeInt64:
+		values := c.getValuesEncoded(br)
+		for _, v := range values {
+			n := unmarshalInt64(v)
+			shard.m.updateStateInt64(n, 1)
+		}
+	default:
+		values := c.getValues(br)
+		for i, v := range values {
+			if needHits || i == 0 || values[i-1] != v {
+				shard.m.updateStateGeneric(v, 1)
+			}
+		}
 	}
-	return shard.m
 }
 
 func (pup *pipeUniqProcessor) writeBlock(workerID uint, br *blockResult) {
@@ -240,7 +250,7 @@ func (pup *pipeUniqProcessor) writeBlock(workerID uint, br *blockResult) {
 		return
 	}
 
-	shard := &pup.shards[workerID]
+	shard := pup.shards.Get(workerID)
 
 	for shard.stateSizeBudget < 0 {
 		// steal some budget for the state size from the global budget.
@@ -267,10 +277,7 @@ func (pup *pipeUniqProcessor) flush() error {
 	}
 
 	// merge state across shards in parallel
-	ms, err := pup.mergeShardsParallel()
-	if err != nil {
-		return err
-	}
+	hms := pup.mergeShardsParallel()
 	if needStop(pup.stopCh) {
 		return nil
 	}
@@ -278,12 +285,12 @@ func (pup *pipeUniqProcessor) flush() error {
 	resetHits := false
 	if limit := pup.pu.limit; limit > 0 {
 		// Trim the number of entries according to the given limit
-		entriesLen := 0
-		result := ms[:0]
-		for _, m := range ms {
-			entriesLen += len(m)
-			if uint64(entriesLen) <= limit {
-				result = append(result, m)
+		entriesLen := uint64(0)
+		result := hms[:0]
+		for _, hm := range hms {
+			entriesLen += hm.entriesCount()
+			if entriesLen <= limit {
+				result = append(result, hm)
 				continue
 			}
 
@@ -291,28 +298,42 @@ func (pup *pipeUniqProcessor) flush() error {
 			// since arbitrary number of unique entries and hits for these entries could be skipped.
 			// It is better to return zero hits instead of misleading hits results.
 			resetHits = true
-			for k := range m {
-				delete(m, k)
-				entriesLen--
-				if uint64(entriesLen) <= limit {
+			for n := range hm.u64 {
+				if entriesLen <= limit {
 					break
 				}
+				delete(hm.u64, n)
+				entriesLen--
 			}
-			if len(m) > 0 {
-				result = append(result, m)
+			for n := range hm.negative64 {
+				if entriesLen <= limit {
+					break
+				}
+				delete(hm.negative64, n)
+				entriesLen--
+			}
+			for k := range hm.strings {
+				if entriesLen <= limit {
+					break
+				}
+				delete(hm.strings, k)
+				entriesLen--
+			}
+			if hm.entriesCount() > 0 {
+				result = append(result, hm)
 			}
 			break
 		}
-		ms = result
+		hms = result
 	}
 
 	// Write the calculated stats in parallel to the next pipe.
 	var wg sync.WaitGroup
-	for i, m := range ms {
+	for i := range hms {
 		wg.Add(1)
 		go func(workerID uint) {
 			defer wg.Done()
-			pup.writeShardData(workerID, m, resetHits)
+			pup.writeShardData(workerID, hms[workerID], resetHits)
 		}(uint(i))
 	}
 	wg.Wait()
@@ -320,31 +341,32 @@ func (pup *pipeUniqProcessor) flush() error {
 	return nil
 }
 
-func (pup *pipeUniqProcessor) writeShardData(workerID uint, m map[string]*uint64, resetHits bool) {
+func (pup *pipeUniqProcessor) writeShardData(workerID uint, hm *hitsMap, resetHits bool) {
 	wctx := &pipeUniqWriteContext{
 		workerID: workerID,
-		pup:      pup,
+		ppNext:   pup.ppNext,
 	}
+
 	byFields := pup.pu.byFields
 	var rowFields []Field
 
-	addHitsFieldIfNeeded := func(dst []Field, hits uint64) []Field {
+	addHitsFieldIfNeeded := func(dst []Field, pHits *uint64) []Field {
 		if pup.pu.hitsFieldName == "" {
 			return dst
 		}
-		if resetHits {
-			hits = 0
+		hits := uint64(0)
+		if !resetHits {
+			hits = *pHits
 		}
-		hitsStr := string(marshalUint64String(nil, hits))
 		dst = append(dst, Field{
 			Name:  pup.pu.hitsFieldName,
-			Value: hitsStr,
+			Value: wctx.getUint64String(hits),
 		})
 		return dst
 	}
 
 	if len(byFields) == 0 {
-		for k, pHits := range m {
+		for k, pHits := range hm.strings {
 			if needStop(pup.stopCh) {
 				return
 			}
@@ -369,25 +391,46 @@ func (pup *pipeUniqProcessor) writeShardData(workerID uint, m map[string]*uint64
 					Value: bytesutil.ToUnsafeString(value),
 				})
 			}
-			rowFields = addHitsFieldIfNeeded(rowFields, *pHits)
+			rowFields = addHitsFieldIfNeeded(rowFields, pHits)
 			wctx.writeRow(rowFields)
 		}
 	} else if len(byFields) == 1 {
 		fieldName := byFields[0]
-		for k, pHits := range m {
+		for n, pHits := range hm.u64 {
 			if needStop(pup.stopCh) {
 				return
 			}
-
+			rowFields = append(rowFields[:0], Field{
+				Name:  fieldName,
+				Value: wctx.getUint64String(n),
+			})
+			rowFields = addHitsFieldIfNeeded(rowFields, pHits)
+			wctx.writeRow(rowFields)
+		}
+		for n, pHits := range hm.negative64 {
+			if needStop(pup.stopCh) {
+				return
+			}
+			rowFields = append(rowFields[:0], Field{
+				Name:  fieldName,
+				Value: wctx.getInt64String(int64(n)),
+			})
+			rowFields = addHitsFieldIfNeeded(rowFields, pHits)
+			wctx.writeRow(rowFields)
+		}
+		for k, pHits := range hm.strings {
+			if needStop(pup.stopCh) {
+				return
+			}
 			rowFields = append(rowFields[:0], Field{
 				Name:  fieldName,
 				Value: k,
 			})
-			rowFields = addHitsFieldIfNeeded(rowFields, *pHits)
+			rowFields = addHitsFieldIfNeeded(rowFields, pHits)
 			wctx.writeRow(rowFields)
 		}
 	} else {
-		for k, pHits := range m {
+		for k, pHits := range hm.strings {
 			if needStop(pup.stopCh) {
 				return
 			}
@@ -408,7 +451,7 @@ func (pup *pipeUniqProcessor) writeShardData(workerID uint, m map[string]*uint64
 				})
 				fieldIdx++
 			}
-			rowFields = addHitsFieldIfNeeded(rowFields, *pHits)
+			rowFields = addHitsFieldIfNeeded(rowFields, pHits)
 			wctx.writeRow(rowFields)
 		}
 	}
@@ -416,139 +459,61 @@ func (pup *pipeUniqProcessor) writeShardData(workerID uint, m map[string]*uint64
 	wctx.flush()
 }
 
-func (pup *pipeUniqProcessor) mergeShardsParallel() ([]map[string]*uint64, error) {
-	shards := pup.shards
-	shardsLen := len(shards)
-	if shardsLen == 1 {
-		m := shards[0].getM()
-		var ms []map[string]*uint64
-		if len(m) > 0 {
-			ms = append(ms, m)
-		}
-		return ms, nil
+func (pup *pipeUniqProcessor) mergeShardsParallel() []*hitsMap {
+	shards := pup.shards.GetSlice()
+	if len(shards) == 0 {
+		return nil
 	}
 
-	var wg sync.WaitGroup
-	perShardMaps := make([][]map[string]*uint64, shardsLen)
-	for i := range shards {
-		wg.Add(1)
-		go func(idx int) {
-			defer wg.Done()
-
-			shardMaps := make([]map[string]*uint64, shardsLen)
-			for i := range shardMaps {
-				shardMaps[i] = make(map[string]*uint64)
-			}
-
-			n := int64(0)
-			nTotal := int64(0)
-			for k, pHits := range shards[idx].getM() {
-				if needStop(pup.stopCh) {
-					return
-				}
-				h := xxhash.Sum64(bytesutil.ToUnsafeBytes(k))
-				m := shardMaps[h%uint64(len(shardMaps))]
-				n += updatePipeUniqMap(m, k, pHits)
-				if n > stateSizeBudgetChunk {
-					if nRemaining := pup.stateSizeBudget.Add(-n); nRemaining < 0 {
-						return
-					}
-					nTotal += n
-					n = 0
-				}
-			}
-			nTotal += n
-			pup.stateSizeBudget.Add(-n)
-
-			perShardMaps[idx] = shardMaps
-
-			// Clean the original map and return its state size budget back.
-			shards[idx].m = nil
-			pup.stateSizeBudget.Add(nTotal)
-		}(i)
-	}
-	wg.Wait()
-	if needStop(pup.stopCh) {
-		return nil, nil
-	}
-	if n := pup.stateSizeBudget.Load(); n < 0 {
-		return nil, fmt.Errorf("cannot calculate [%s], since it requires more than %dMB of memory", pup.pu.String(), pup.maxStateSize/(1<<20))
-	}
-
-	// Merge per-shard entries into perShardMaps[0]
-	for i := range perShardMaps {
-		wg.Add(1)
-		go func(idx int) {
-			defer wg.Done()
-
-			m := perShardMaps[0][idx]
-			for i := 1; i < len(perShardMaps); i++ {
-				n := int64(0)
-				nTotal := int64(0)
-				for k, psg := range perShardMaps[i][idx] {
-					if needStop(pup.stopCh) {
-						return
-					}
-					n += updatePipeUniqMap(m, k, psg)
-					if n > stateSizeBudgetChunk {
-						if nRemaining := pup.stateSizeBudget.Add(-n); nRemaining < 0 {
-							return
-						}
-						nTotal += n
-						n = 0
-					}
-				}
-				nTotal += n
-				pup.stateSizeBudget.Add(-n)
-
-				// Clean the original map and return its state size budget back.
-				perShardMaps[i][idx] = nil
-				pup.stateSizeBudget.Add(nTotal)
-			}
-		}(i)
-	}
-	wg.Wait()
-	if needStop(pup.stopCh) {
-		return nil, nil
-	}
-	if n := pup.stateSizeBudget.Load(); n < 0 {
-		return nil, fmt.Errorf("cannot calculate [%s], since it requires more than %dMB of memory", pup.pu.String(), pup.maxStateSize/(1<<20))
-	}
-
-	// Filter out maps without entries
-	ms := perShardMaps[0]
-	result := ms[:0]
-	for _, m := range ms {
-		if len(m) > 0 {
-			result = append(result, m)
+	hmas := make([]*hitsMapAdaptive, 0, len(shards))
+	for _, shard := range shards {
+		hma := &shard.m
+		if hma.entriesCount() > 0 {
+			hmas = append(hmas, hma)
 		}
 	}
 
-	return result, nil
-}
-
-func updatePipeUniqMap(m map[string]*uint64, k string, pHitsSrc *uint64) int64 {
-	pHitsDst := m[k]
-	if pHitsDst != nil {
-		*pHitsDst += *pHitsSrc
-		return 0
+	var hmsResult []*hitsMap
+	var hmsLock sync.Mutex
+	hitsMapMergeParallel(hmas, pup.stopCh, func(hm *hitsMap) {
+		if hm.entriesCount() > 0 {
+			hmsLock.Lock()
+			hmsResult = append(hmsResult, hm)
+			hmsLock.Unlock()
+		}
+	})
+	if needStop(pup.stopCh) {
+		return nil
 	}
 
-	m[k] = pHitsSrc
-	return int64(unsafe.Sizeof(k) + unsafe.Sizeof(pHitsSrc))
+	return hmsResult
 }
 
 type pipeUniqWriteContext struct {
 	workerID uint
-	pup      *pipeUniqProcessor
+	ppNext   pipeProcessor
 	rcs      []resultColumn
 	br       blockResult
+
+	a arena
 
 	// rowsCount is the number of rows in the current block
 	rowsCount int
 
 	// valuesLen is the total length of values in the current block
 	valuesLen int
+}
+
+func (wctx *pipeUniqWriteContext) getUint64String(n uint64) string {
+	bLen := len(wctx.a.b)
+	wctx.a.b = marshalUint64String(wctx.a.b, n)
+	return bytesutil.ToUnsafeString(wctx.a.b[bLen:])
+}
+
+func (wctx *pipeUniqWriteContext) getInt64String(n int64) string {
+	bLen := len(wctx.a.b)
+	wctx.a.b = marshalInt64String(wctx.a.b, n)
+	return bytesutil.ToUnsafeString(wctx.a.b[bLen:])
 }
 
 func (wctx *pipeUniqWriteContext) writeRow(rowFields []Field) {
@@ -581,46 +546,64 @@ func (wctx *pipeUniqWriteContext) writeRow(rowFields []Field) {
 	}
 
 	wctx.rowsCount++
-	if wctx.valuesLen >= 1_000_000 {
+
+	// The 64_000 limit provides the best performance results.
+	if wctx.valuesLen >= 64_000 {
 		wctx.flush()
 	}
 }
 
 func (wctx *pipeUniqWriteContext) flush() {
-	rcs := wctx.rcs
-	br := &wctx.br
-
-	wctx.valuesLen = 0
+	if wctx.rowsCount == 0 {
+		return
+	}
 
 	// Flush rcs to ppNext
-	br.setResultColumns(rcs, wctx.rowsCount)
+	wctx.br.setResultColumns(wctx.rcs, wctx.rowsCount)
+	wctx.valuesLen = 0
 	wctx.rowsCount = 0
-	wctx.pup.ppNext.writeBlock(wctx.workerID, br)
-	br.reset()
-	for i := range rcs {
-		rcs[i].resetValues()
+	wctx.ppNext.writeBlock(wctx.workerID, &wctx.br)
+	wctx.br.reset()
+	for i := range wctx.rcs {
+		wctx.rcs[i].resetValues()
 	}
+	wctx.a.reset()
 }
 
-func parsePipeUniq(lex *lexer) (*pipeUniq, error) {
+func parsePipeUniq(lex *lexer) (pipe, error) {
 	if !lex.isKeyword("uniq") {
 		return nil, fmt.Errorf("expecting 'uniq'; got %q", lex.token)
 	}
 	lex.nextToken()
 
-	var pu pipeUniq
-	if lex.isKeyword("by", "(") {
-		if lex.isKeyword("by") {
-			lex.nextToken()
-		}
+	needFields := false
+	if lex.isKeyword("by") {
+		lex.nextToken()
+		needFields = true
+	}
+
+	var byFields []string
+	if lex.isKeyword("(") {
 		bfs, err := parseFieldNamesInParens(lex)
 		if err != nil {
-			return nil, fmt.Errorf("cannot parse 'by' clause: %w", err)
+			return nil, fmt.Errorf("cannot parse 'by(...)': %w", err)
 		}
-		if slices.Contains(bfs, "*") {
-			bfs = nil
+		byFields = bfs
+	} else if !lex.isKeyword("with", "hits", "limit", ")", "|", "") {
+		bfs, err := parseCommaSeparatedFields(lex)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse 'by ...': %w", err)
 		}
-		pu.byFields = bfs
+		byFields = bfs
+	} else if needFields {
+		return nil, fmt.Errorf("missing fields after 'by'")
+	}
+	if slices.Contains(byFields, "*") {
+		byFields = nil
+	}
+
+	pu := &pipeUniq{
+		byFields: byFields,
 	}
 
 	if lex.isKeyword("with") {
@@ -649,5 +632,5 @@ func parsePipeUniq(lex *lexer) (*pipeUniq, error) {
 		pu.limit = n
 	}
 
-	return &pu, nil
+	return pu, nil
 }

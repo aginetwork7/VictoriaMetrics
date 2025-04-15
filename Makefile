@@ -18,7 +18,7 @@ TAR_OWNERSHIP ?= --owner=1000 --group=1000
 .PHONY: $(MAKECMDGOALS)
 
 include app/*/Makefile
-include cspell/Makefile
+include codespell/Makefile
 include docs/Makefile
 include deployment/*/Makefile
 include dashboards/Makefile
@@ -513,22 +513,22 @@ check-all: fmt vet golangci-lint govulncheck
 clean-checkers: remove-golangci-lint remove-govulncheck
 
 test:
-	DISABLE_FSYNC_FOR_TESTING=1 go test ./lib/... ./app/...
+	go test ./lib/... ./app/...
 
 test-race:
-	DISABLE_FSYNC_FOR_TESTING=1 go test -race ./lib/... ./app/...
+	go test -race ./lib/... ./app/...
 
 test-pure:
-	DISABLE_FSYNC_FOR_TESTING=1 CGO_ENABLED=0 go test ./lib/... ./app/...
+	CGO_ENABLED=0 go test ./lib/... ./app/...
 
 test-full:
-	DISABLE_FSYNC_FOR_TESTING=1 go test -coverprofile=coverage.txt -covermode=atomic ./lib/... ./app/...
+	go test -coverprofile=coverage.txt -covermode=atomic ./lib/... ./app/...
 
 test-full-386:
-	DISABLE_FSYNC_FOR_TESTING=1 GOARCH=386 go test -coverprofile=coverage.txt -covermode=atomic ./lib/... ./app/...
+	GOARCH=386 go test -coverprofile=coverage.txt -covermode=atomic ./lib/... ./app/...
 
-integration-test: all
-	go test ./apptest/...
+integration-test: victoria-metrics vmagent vmalert vmauth
+	go test ./apptest/... -skip="^TestCluster.*"
 
 benchmark:
 	go test -bench=. ./lib/...
@@ -567,7 +567,7 @@ golangci-lint: install-golangci-lint
 	golangci-lint run
 
 install-golangci-lint:
-	which golangci-lint || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.60.3
+	which golangci-lint || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.64.7
 
 remove-golangci-lint:
 	rm -rf `which golangci-lint`

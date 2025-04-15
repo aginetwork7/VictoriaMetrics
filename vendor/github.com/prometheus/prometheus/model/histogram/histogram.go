@@ -14,6 +14,7 @@
 package histogram
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"slices"
@@ -364,8 +365,37 @@ func resize[T any](items []T, n int) []T {
 // because NaN observations do not increment the values of buckets (but they do increment
 // the total h.Count).
 func (h *Histogram) Validate() error {
-	if err := checkHistogramSpans(h.NegativeSpans, len(h.NegativeBuckets)); err != nil {
-		return fmt.Errorf("negative side: %w", err)
+	var nCount, pCount uint64
+	if h.UsesCustomBuckets() {
+		if err := checkHistogramCustomBounds(h.CustomValues, h.PositiveSpans, len(h.PositiveBuckets)); err != nil {
+			return fmt.Errorf("custom buckets: %w", err)
+		}
+		if h.ZeroCount != 0 {
+			return errors.New("custom buckets: must have zero count of 0")
+		}
+		if h.ZeroThreshold != 0 {
+			return errors.New("custom buckets: must have zero threshold of 0")
+		}
+		if len(h.NegativeSpans) > 0 {
+			return errors.New("custom buckets: must not have negative spans")
+		}
+		if len(h.NegativeBuckets) > 0 {
+			return errors.New("custom buckets: must not have negative buckets")
+		}
+	} else {
+		if err := checkHistogramSpans(h.PositiveSpans, len(h.PositiveBuckets)); err != nil {
+			return fmt.Errorf("positive side: %w", err)
+		}
+		if err := checkHistogramSpans(h.NegativeSpans, len(h.NegativeBuckets)); err != nil {
+			return fmt.Errorf("negative side: %w", err)
+		}
+		err := checkHistogramBuckets(h.NegativeBuckets, &nCount, true)
+		if err != nil {
+			return fmt.Errorf("negative side: %w", err)
+		}
+		if h.CustomValues != nil {
+			return errors.New("histogram with exponential schema must not have custom bounds")
+		}
 	}
 	if err := checkHistogramSpans(h.PositiveSpans, len(h.PositiveBuckets)); err != nil {
 		return fmt.Errorf("positive side: %w", err)

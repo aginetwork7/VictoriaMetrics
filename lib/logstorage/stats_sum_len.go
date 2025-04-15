@@ -1,8 +1,10 @@
 package logstorage
 
 import (
+	"fmt"
 	"strconv"
-	"unsafe"
+
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
 )
 
 type statsSumLen struct {
@@ -17,22 +19,17 @@ func (ss *statsSumLen) updateNeededFields(neededFields fieldsSet) {
 	updateNeededFieldsForStatsFunc(neededFields, ss.fields)
 }
 
-func (ss *statsSumLen) newStatsProcessor() (statsProcessor, int) {
-	ssp := &statsSumLenProcessor{
-		ss:     ss,
-		sumLen: 0,
-	}
-	return ssp, int(unsafe.Sizeof(*ssp))
+func (ss *statsSumLen) newStatsProcessor(a *chunkedAllocator) statsProcessor {
+	return a.newStatsSumLenProcessor()
 }
 
 type statsSumLenProcessor struct {
-	ss *statsSumLen
-
 	sumLen uint64
 }
 
-func (ssp *statsSumLenProcessor) updateStatsForAllRows(br *blockResult) int {
-	fields := ssp.ss.fields
+func (ssp *statsSumLenProcessor) updateStatsForAllRows(sf statsFunc, br *blockResult) int {
+	ss := sf.(*statsSumLen)
+	fields := ss.fields
 	if len(fields) == 0 {
 		// Sum all the columns
 		for _, c := range br.getColumns() {
@@ -48,8 +45,9 @@ func (ssp *statsSumLenProcessor) updateStatsForAllRows(br *blockResult) int {
 	return 0
 }
 
-func (ssp *statsSumLenProcessor) updateStatsForRow(br *blockResult, rowIdx int) int {
-	fields := ssp.ss.fields
+func (ssp *statsSumLenProcessor) updateStatsForRow(sf statsFunc, br *blockResult, rowIdx int) int {
+	ss := sf.(*statsSumLen)
+	fields := ss.fields
 	if len(fields) == 0 {
 		// Sum all the fields for the given row
 		for _, c := range br.getColumns() {
@@ -67,13 +65,32 @@ func (ssp *statsSumLenProcessor) updateStatsForRow(br *blockResult, rowIdx int) 
 	return 0
 }
 
-func (ssp *statsSumLenProcessor) mergeState(sfp statsProcessor) {
+func (ssp *statsSumLenProcessor) mergeState(_ *chunkedAllocator, _ statsFunc, sfp statsProcessor) {
 	src := sfp.(*statsSumLenProcessor)
 	ssp.sumLen += src.sumLen
 }
 
-func (ssp *statsSumLenProcessor) finalizeStats() string {
-	return strconv.FormatUint(ssp.sumLen, 10)
+func (ssp *statsSumLenProcessor) exportState(dst []byte, _ <-chan struct{}) []byte {
+	return encoding.MarshalVarUint64(dst, ssp.sumLen)
+}
+
+func (ssp *statsSumLenProcessor) importState(src []byte, _ <-chan struct{}) (int, error) {
+	sumLen, n := encoding.UnmarshalVarUint64(src)
+	if n <= 0 {
+		return 0, fmt.Errorf("cannot unmarshal sumLen")
+	}
+	src = src[n:]
+	ssp.sumLen = sumLen
+
+	if len(src) > 0 {
+		return 0, fmt.Errorf("unexpected non-empty tail left; len(tail)=%d", len(src))
+	}
+
+	return 0, nil
+}
+
+func (ssp *statsSumLenProcessor) finalizeStats(_ statsFunc, dst []byte, _ <-chan struct{}) []byte {
+	return strconv.AppendUint(dst, ssp.sumLen, 10)
 }
 
 func parseStatsSumLen(lex *lexer) (*statsSumLen, error) {
