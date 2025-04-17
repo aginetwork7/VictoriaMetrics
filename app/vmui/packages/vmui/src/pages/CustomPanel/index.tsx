@@ -18,6 +18,7 @@ import WarningLimitSeries from "./WarningLimitSeries/WarningLimitSeries";
 import CustomPanelTabs from "./CustomPanelTabs";
 import { DisplayType } from "../../types";
 import DownloadReport from "./DownloadReport/DownloadReport";
+import WarningHeatmapToLine from "./WarningHeatmapToLine/WarningHeatmapToLine";
 
 const CustomPanel: FC = () => {
   useSetQueryParams();
@@ -85,6 +86,7 @@ const CustomPanel: FC = () => {
         onHideQuery={handleHideQuery}
         onRunQuery={handleRunQuery}
         abortFetch={abortFetch}
+        hideButtons={{ reduceMemUsage: true }}
       />
       <CustomPanelTraces
         traces={traces}
@@ -92,6 +94,7 @@ const CustomPanel: FC = () => {
       />
       {showError && <Alert variant="error">{error}</Alert>}
       {showInstantQueryTip && <Alert variant="info"><InstantQueryTip/></Alert>}
+      <WarningHeatmapToLine/>
       {warning && (
         <WarningLimitSeries
           warning={warning}

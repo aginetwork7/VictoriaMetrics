@@ -45,11 +45,11 @@ const (
 	fieldTransport11TCPLen = 13
 	fieldTransport11UDPLen = 10
 
-	// kernel version >= 4.14 MaxLen
+	// Kernel version >= 4.14 MaxLen
 	// See: https://elixir.bootlin.com/linux/v6.4.8/source/net/sunrpc/xprtrdma/xprt_rdma.h#L393
 	fieldTransport11RDMAMaxLen = 28
 
-	// kernel version <= 4.2 MinLen
+	// Kernel version <= 4.2 MinLen
 	// See: https://elixir.bootlin.com/linux/v4.2.8/source/net/sunrpc/xprtrdma/xprt_rdma.h#L331
 	fieldTransport11RDMAMinLen = 20
 )
@@ -88,7 +88,7 @@ type MountStatsNFS struct {
 	// Statistics broken down by filesystem operation.
 	Operations []NFSOperationStats
 	// Statistics about the NFS RPC transport.
-	Transport NFSTransportStats
+	Transport []NFSTransportStats
 }
 
 // mountStats implements MountStats.
@@ -432,7 +432,7 @@ func parseMountStatsNFS(s *bufio.Scanner, statVersion string) (*MountStatsNFS, e
 				return nil, err
 			}
 
-			stats.Transport = *tstats
+			stats.Transport = append(stats.Transport, *tstats)
 		}
 
 		// When encountering "per-operation statistics", we must break this

@@ -3,8 +3,8 @@ package logstorage
 import (
 	"fmt"
 	"slices"
-	"unsafe"
 
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/atomicutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil"
 )
 
@@ -18,32 +18,52 @@ type pipeJoin struct {
 	// q is a query for obtaining results for joining
 	q *Query
 
+	// The join is performed as INNER JOIN if isInner is set.
+	// Otherwise the join is performed as LEFT JOIN.
+	isInner bool
+
+	// prefix is the prefix to add to log fields from q query
+	prefix string
+
 	// m contains results for joining. They are automatically initialized during query execution
 	m map[string][][]Field
 }
 
 func (pj *pipeJoin) String() string {
-	return fmt.Sprintf("join by (%s) (%s)", fieldNamesString(pj.byFields), pj.q.String())
+	s := fmt.Sprintf("join by (%s) (%s)", fieldNamesString(pj.byFields), pj.q.String())
+	if pj.isInner {
+		s += " inner"
+	}
+	if pj.prefix != "" {
+		s += " prefix " + quoteTokenIfNeeded(pj.prefix)
+	}
+	return s
+}
+
+func (pj *pipeJoin) splitToRemoteAndLocal(_ int64) (pipe, []pipe) {
+	return nil, []pipe{pj}
 }
 
 func (pj *pipeJoin) canLiveTail() bool {
 	return true
 }
 
-func (pj *pipeJoin) optimize() {
-	pj.q.Optimize()
-}
-
 func (pj *pipeJoin) hasFilterInWithQuery() bool {
+	// Do not check for in(...) filters at pj.q, since they are checked separately during pj.q execution.
 	return false
 }
 
-func (pj *pipeJoin) initFilterInValues(_ map[string][]string, _ getFieldValuesFunc) (pipe, error) {
+func (pj *pipeJoin) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
+	// Do not init values for in(...) filters at pj.q, since they are initialized separately at initJoinMap.
 	return pj, nil
 }
 
+func (pj *pipeJoin) visitSubqueries(visitFunc func(q *Query)) {
+	pj.q.visitSubqueries(visitFunc)
+}
+
 func (pj *pipeJoin) initJoinMap(getJoinMapFunc getJoinMapFunc) (pipe, error) {
-	m, err := getJoinMapFunc(pj.q, pj.byFields)
+	m, err := getJoinMapFunc(pj.q, pj.byFields, pj.prefix)
 	if err != nil {
 		return nil, fmt.Errorf("cannot execute query at pipe [%s]: %w", pj, err)
 	}
@@ -60,13 +80,11 @@ func (pj *pipeJoin) updateNeededFields(neededFields, unneededFields fieldsSet) {
 	}
 }
 
-func (pj *pipeJoin) newPipeProcessor(workersCount int, stopCh <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
+func (pj *pipeJoin) newPipeProcessor(_ int, stopCh <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
 	return &pipeJoinProcessor{
 		pj:     pj,
 		stopCh: stopCh,
 		ppNext: ppNext,
-
-		shards: make([]pipeJoinProcessorShard, workersCount),
 	}
 }
 
@@ -75,21 +93,15 @@ type pipeJoinProcessor struct {
 	stopCh <-chan struct{}
 	ppNext pipeProcessor
 
-	shards []pipeJoinProcessorShard
+	shards atomicutil.Slice[pipeJoinProcessorShard]
 }
 
 type pipeJoinProcessorShard struct {
-	pipeJoinProcessorShardNopad
-
-	// The padding prevents false sharing on widespread platforms with 128 mod (cache line size) = 0 .
-	_ [128 - unsafe.Sizeof(pipeJoinProcessorShardNopad{})%128]byte
-}
-
-type pipeJoinProcessorShardNopad struct {
 	wctx pipeUnpackWriteContext
 
-	byValues []string
-	tmpBuf   []byte
+	byValues     []string
+	byValuesIdxs []int
+	tmpBuf       []byte
 }
 
 func (pjp *pipeJoinProcessor) writeBlock(workerID uint, br *blockResult) {
@@ -98,19 +110,26 @@ func (pjp *pipeJoinProcessor) writeBlock(workerID uint, br *blockResult) {
 	}
 
 	pj := pjp.pj
-	shard := &pjp.shards[workerID]
+	shard := pjp.shards.Get(workerID)
 	shard.wctx.init(workerID, pjp.ppNext, true, true, br)
 
 	shard.byValues = slicesutil.SetLength(shard.byValues, len(pj.byFields))
 	byValues := shard.byValues
 
 	cs := br.getColumns()
+	shard.byValuesIdxs = slicesutil.SetLength(shard.byValuesIdxs, len(cs))
+	byValuesIdxs := shard.byValuesIdxs
+	for i := range cs {
+		name := cs[i].name
+		byValuesIdxs[i] = slices.Index(pj.byFields, name)
+
+	}
+
 	for rowIdx := 0; rowIdx < br.rowsLen; rowIdx++ {
 		clear(byValues)
-		for i := range cs {
-			name := cs[i].name
-			if cIdx := slices.Index(pj.byFields, name); cIdx >= 0 {
-				byValues[cIdx] = cs[i].getValueAtRow(br, rowIdx)
+		for j := range cs {
+			if cIdx := byValuesIdxs[j]; cIdx >= 0 {
+				byValues[cIdx] = cs[j].getValueAtRow(br, rowIdx)
 			}
 		}
 
@@ -118,7 +137,9 @@ func (pjp *pipeJoinProcessor) writeBlock(workerID uint, br *blockResult) {
 		matchingRows := pj.m[string(shard.tmpBuf)]
 
 		if len(matchingRows) == 0 {
-			shard.wctx.writeRow(rowIdx, nil)
+			if !pj.isInner {
+				shard.wctx.writeRow(rowIdx, nil)
+			}
 			continue
 		}
 		for _, extraFields := range matchingRows {
@@ -137,7 +158,7 @@ func (pjp *pipeJoinProcessor) flush() error {
 	return nil
 }
 
-func parsePipeJoin(lex *lexer) (*pipeJoin, error) {
+func parsePipeJoin(lex *lexer) (pipe, error) {
 	if !lex.isKeyword("join") {
 		return nil, fmt.Errorf("unexpected token: %q; want %q", lex.token, "join")
 	}
@@ -160,24 +181,28 @@ func parsePipeJoin(lex *lexer) (*pipeJoin, error) {
 	}
 
 	// Parse join query
-	if !lex.isKeyword("(") {
-		return nil, fmt.Errorf("missing '(' in front of join query")
-	}
-	lex.nextToken()
-
-	q, err := parseQuery(lex)
+	q, err := parseQueryInParens(lex)
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse join query: %w", err)
+		return nil, fmt.Errorf("Cannot parse join(...) query: %w", err)
 	}
-
-	if !lex.isKeyword(")") {
-		return nil, fmt.Errorf("missing ')' after the join query [%s]", q)
-	}
-	lex.nextToken()
 
 	pj := &pipeJoin{
 		byFields: byFields,
 		q:        q,
+	}
+
+	if lex.isKeyword("inner") {
+		lex.nextToken()
+		pj.isInner = true
+	}
+
+	if lex.isKeyword("prefix") {
+		lex.nextToken()
+		prefix, err := getCompoundToken(lex)
+		if err != nil {
+			return nil, fmt.Errorf("cannot read prefix for [%s]: %w", pj, err)
+		}
+		pj.prefix = prefix
 	}
 
 	return pj, nil

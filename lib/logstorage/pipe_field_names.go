@@ -2,8 +2,8 @@ package logstorage
 
 import (
 	"fmt"
-	"strings"
-	"unsafe"
+
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/atomicutil"
 )
 
 // pipeFieldNames processes '| field_names' pipe.
@@ -26,6 +26,13 @@ func (pf *pipeFieldNames) String() string {
 	return s
 }
 
+func (pf *pipeFieldNames) splitToRemoteAndLocal(timestamp int64) (pipe, []pipe) {
+	pStr := fmt.Sprintf("stats by (%s) sum(hits) hits", quoteTokenIfNeeded(pf.resultName))
+	pLocal := mustParsePipe(pStr, timestamp)
+
+	return pf, []pipe{pLocal}
+}
+
 func (pf *pipeFieldNames) canLiveTail() bool {
 	return false
 }
@@ -39,27 +46,23 @@ func (pf *pipeFieldNames) updateNeededFields(neededFields, unneededFields fields
 	unneededFields.reset()
 }
 
-func (pf *pipeFieldNames) optimize() {
-	// nothing to do
-}
-
 func (pf *pipeFieldNames) hasFilterInWithQuery() bool {
 	return false
 }
 
-func (pf *pipeFieldNames) initFilterInValues(_ map[string][]string, _ getFieldValuesFunc) (pipe, error) {
+func (pf *pipeFieldNames) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
 	return pf, nil
 }
 
-func (pf *pipeFieldNames) newPipeProcessor(workersCount int, stopCh <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
-	shards := make([]pipeFieldNamesProcessorShard, workersCount)
+func (pf *pipeFieldNames) visitSubqueries(_ func(q *Query)) {
+	// nothing to do
+}
 
+func (pf *pipeFieldNames) newPipeProcessor(_ int, stopCh <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
 	pfp := &pipeFieldNamesProcessor{
 		pf:     pf,
 		stopCh: stopCh,
 		ppNext: ppNext,
-
-		shards: shards,
 	}
 	return pfp
 }
@@ -69,19 +72,15 @@ type pipeFieldNamesProcessor struct {
 	stopCh <-chan struct{}
 	ppNext pipeProcessor
 
-	shards []pipeFieldNamesProcessorShard
+	shards atomicutil.Slice[pipeFieldNamesProcessorShard]
 }
 
 type pipeFieldNamesProcessorShard struct {
-	pipeFieldNamesProcessorShardNopad
-
-	// The padding prevents false sharing on widespread platforms with 128 mod (cache line size) = 0 .
-	_ [128 - unsafe.Sizeof(pipeFieldNamesProcessorShardNopad{})%128]byte
-}
-
-type pipeFieldNamesProcessorShardNopad struct {
 	// m holds hits per each field name
 	m map[string]*uint64
+
+	// a is used for reducing memory allocations when collecting the stats over big number of log fields
+	a chunkedAllocator
 }
 
 func (shard *pipeFieldNamesProcessorShard) getM() map[string]*uint64 {
@@ -100,7 +99,7 @@ func (pfp *pipeFieldNamesProcessor) writeBlock(workerID uint, br *blockResult) {
 	// This is much faster than reading all the column values and counting non-empty rows.
 	hits := uint64(br.rowsLen)
 
-	shard := &pfp.shards[workerID]
+	shard := pfp.shards.Get(workerID)
 	if !pfp.pf.isFirstPipe || br.bs == nil || br.bs.partFormatVersion() < 1 {
 		cs := br.getColumns()
 		for _, c := range cs {
@@ -130,9 +129,8 @@ func (shard *pipeFieldNamesProcessorShard) updateColumnHits(columnName string, h
 	m := shard.getM()
 	pHits := m[columnName]
 	if pHits == nil {
-		nameCopy := strings.Clone(columnName)
-		hits := uint64(0)
-		pHits = &hits
+		nameCopy := shard.a.cloneString(columnName)
+		pHits = shard.a.newUint64()
 		m[nameCopy] = pHits
 	}
 	*pHits += hits
@@ -144,11 +142,15 @@ func (pfp *pipeFieldNamesProcessor) flush() error {
 	}
 
 	// merge state across shards
-	shards := pfp.shards
+	shards := pfp.shards.GetSlice()
+	if len(shards) == 0 {
+		return nil
+	}
+
 	m := shards[0].getM()
 	shards = shards[1:]
-	for i := range shards {
-		for name, pHitsSrc := range shards[i].getM() {
+	for _, shard := range shards {
+		for name, pHitsSrc := range shard.getM() {
 			pHits := m[name]
 			if pHits == nil {
 				m[name] = pHitsSrc
@@ -210,7 +212,7 @@ func (wctx *pipeFieldNamesWriteContext) flush() {
 	wctx.rcs[1].resetValues()
 }
 
-func parsePipeFieldNames(lex *lexer) (*pipeFieldNames, error) {
+func parsePipeFieldNames(lex *lexer) (pipe, error) {
 	if !lex.isKeyword("field_names") {
 		return nil, fmt.Errorf("expecting 'field_names'; got %q", lex.token)
 	}

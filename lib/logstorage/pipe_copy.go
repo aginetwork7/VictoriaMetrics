@@ -31,6 +31,10 @@ func (pc *pipeCopy) String() string {
 	return "copy " + strings.Join(a, ", ")
 }
 
+func (pc *pipeCopy) splitToRemoteAndLocal(_ int64) (pipe, []pipe) {
+	return pc, nil
+}
+
 func (pc *pipeCopy) canLiveTail() bool {
 	return true
 }
@@ -54,16 +58,16 @@ func (pc *pipeCopy) updateNeededFields(neededFields, unneededFields fieldsSet) {
 	}
 }
 
-func (pc *pipeCopy) optimize() {
-	// Nothing to do
-}
-
 func (pc *pipeCopy) hasFilterInWithQuery() bool {
 	return false
 }
 
-func (pc *pipeCopy) initFilterInValues(_ map[string][]string, _ getFieldValuesFunc) (pipe, error) {
+func (pc *pipeCopy) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
 	return pc, nil
+}
+
+func (pc *pipeCopy) visitSubqueries(_ func(q *Query)) {
+	// nothing to do
 }
 
 func (pc *pipeCopy) newPipeProcessor(_ int, _ <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
@@ -91,7 +95,7 @@ func (pcp *pipeCopyProcessor) flush() error {
 	return nil
 }
 
-func parsePipeCopy(lex *lexer) (*pipeCopy, error) {
+func parsePipeCopy(lex *lexer) (pipe, error) {
 	if !lex.isKeyword("copy", "cp") {
 		return nil, fmt.Errorf("expecting 'copy' or 'cp'; got %q", lex.token)
 	}

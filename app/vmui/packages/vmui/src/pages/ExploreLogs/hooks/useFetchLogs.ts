@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "preact/compat";
+import { useCallback, useEffect, useMemo, useRef, useState } from "preact/compat";
 import { getLogsUrl } from "../../../api/logs";
 import { ErrorTypes, TimeParams } from "../../../types";
 import { Logs } from "../../../api/types";
@@ -9,19 +9,23 @@ export const useFetchLogs = (server: string, query: string, limit: number) => {
   const [searchParams] = useSearchParams();
 
   const [logs, setLogs] = useState<Logs[]>([]);
-  const [isLoading, setIsLoading] = useState<{[key: number]: boolean;}>([]);
+  const [isLoading, setIsLoading] = useState<{ [key: number]: boolean }>({});
   const [error, setError] = useState<ErrorTypes | string>();
   const abortControllerRef = useRef(new AbortController());
 
   const url = useMemo(() => getLogsUrl(server), [server]);
 
+  const tenant = useMemo(() => ({
+    AccountID: searchParams.get("accountID") || "0",
+    ProjectID: searchParams.get("projectID") || "0",
+  }), [searchParams]);
+
   const getOptions = (query: string, period: TimeParams, limit: number, signal: AbortSignal) => ({
     signal,
     method: "POST",
     headers: {
+      ...tenant,
       Accept: "application/stream+json",
-      AccountID: searchParams.get("accountID") || "0",
-      ProjectID: searchParams.get("projectID") || "0",
     },
     body: new URLSearchParams({
       query: query.trim(),
@@ -30,14 +34,6 @@ export const useFetchLogs = (server: string, query: string, limit: number) => {
       end: dayjs(period.end * 1000).tz().toISOString()
     })
   });
-
-  const parseLineToJSON = (line: string): Logs | null => {
-    try {
-      return JSON.parse(line);
-    } catch (e) {
-      return null;
-    }
-  };
 
   const fetchLogs = useCallback(async (period: TimeParams) => {
     abortControllerRef.current.abort();
@@ -56,25 +52,33 @@ export const useFetchLogs = (server: string, query: string, limit: number) => {
       if (!response.ok || !response.body) {
         setError(text);
         setLogs([]);
-        setIsLoading(prev => ({ ...prev, [id]: false }));
         return false;
       }
 
-      const lines = text.split("\n").filter(line => line).slice(0, limit);
-      const data = lines.map(parseLineToJSON).filter(line => line) as Logs[];
+      const data = text.split("\n", limit).map(parseLineToJSON).filter(line => line) as Logs[];
       setLogs(data);
-      setIsLoading(prev => ({ ...prev, [id]: false }));
       return true;
     } catch (e) {
-      setIsLoading(prev => ({ ...prev, [id]: false }));
       if (e instanceof Error && e.name !== "AbortError") {
         setError(String(e));
         console.error(e);
         setLogs([]);
       }
       return false;
+    } finally {
+      setIsLoading(prev => {
+        // Remove the `id` key from `isLoading` when its value becomes `false`
+        const { [id]: _, ...rest } = prev;
+        return rest;
+      });
     }
-  }, [url, query, limit, searchParams]);
+  }, [url, query, limit, tenant]);
+
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current.abort();
+    };
+  }, []);
 
   return {
     logs,
@@ -83,4 +87,13 @@ export const useFetchLogs = (server: string, query: string, limit: number) => {
     fetchLogs,
     abortController: abortControllerRef.current
   };
+};
+
+const parseLineToJSON = (line: string): Logs | null => {
+  try {
+    return line && JSON.parse(line);
+  } catch (e) {
+    console.error(`Failed to parse "${line}" to JSON\n`, e);
+    return null;
+  }
 };

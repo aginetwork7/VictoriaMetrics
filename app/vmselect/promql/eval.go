@@ -12,8 +12,11 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/VictoriaMetrics/metrics"
+	"github.com/VictoriaMetrics/metricsql"
+
 	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/netstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/searchutils"
+	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/searchutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
@@ -25,8 +28,6 @@ import (
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/querytracer"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/stringsutil"
-	"github.com/VictoriaMetrics/metrics"
-	"github.com/VictoriaMetrics/metricsql"
 )
 
 var (
@@ -46,6 +47,8 @@ var (
 		"so there is no need in spending additional CPU time on its handling. Staleness markers may exist only in data obtained from Prometheus scrape targets")
 	minWindowForInstantRollupOptimization = flag.Duration("search.minWindowForInstantRollupOptimization", time.Hour*3, "Enable cache-based optimization for repeated queries "+
 		"to /api/v1/query (aka instant queries), which contain rollup functions with lookbehind window exceeding the given value")
+	maxBinaryOpPushdownLabelValues = flag.Int("search.maxBinaryOpPushdownLabelValues", 100, "The maximum number of values for a label in the first expression that can be extracted as a common label filter and pushed down to the second expression in a binary operation. "+
+		"A larger value makes the pushed-down filter more complex but fewer time series will be returned. This flag is useful when selective label contains numerous values, for example `instance`, and storage resources are abundant.")
 )
 
 // The minimum number of points per timeseries for enabling time rounding.
@@ -122,7 +125,7 @@ type EvalConfig struct {
 	// QuotedRemoteAddr contains quoted remote address.
 	QuotedRemoteAddr string
 
-	Deadline searchutils.Deadline
+	Deadline searchutil.Deadline
 
 	// Whether the response can be cached.
 	MayCache bool
@@ -582,7 +585,7 @@ func getCommonLabelFilters(tss []*timeseries) []metricsql.LabelFilter {
 				}
 				continue
 			}
-			if len(vc.values) > 100 {
+			if len(vc.values) > *maxBinaryOpPushdownLabelValues {
 				// Too many unique values found for the given tag.
 				// Do not make a filter on such values, since it may slow down
 				// search for matching time series.
@@ -812,7 +815,19 @@ func evalRollupFunc(qt *querytracer.Tracer, ec *EvalConfig, funcName string, rf 
 			Err: fmt.Errorf("`@` modifier must return a single series; it returns %d series instead", len(tssAt)),
 		}
 	}
-	atTimestamp := int64(tssAt[0].Values[0] * 1000)
+	atValue := math.NaN()
+	for _, v := range tssAt[0].Values {
+		if !math.IsNaN(v) {
+			atValue = v
+			break
+		}
+	}
+	if math.IsNaN(atValue) {
+		return nil, &httpserver.UserReadableError{
+			Err: fmt.Errorf("`@` modifier must return a non-NaN value"),
+		}
+	}
+	atTimestamp := int64(atValue * 1000)
 	ecNew := copyEvalConfig(ec)
 	ecNew.Start = atTimestamp
 	ecNew.End = atTimestamp
@@ -1690,8 +1705,8 @@ func evalRollupFuncNoCache(qt *querytracer.Tracer, ec *EvalConfig, funcName stri
 	}
 
 	// Fetch the result.
-	tfss := searchutils.ToTagFilterss(me.LabelFilterss)
-	tfss = searchutils.JoinTagFilterss(tfss, ec.EnforcedTagFilterss)
+	tfss := searchutil.ToTagFilterss(me.LabelFilterss)
+	tfss = searchutil.JoinTagFilterss(tfss, ec.EnforcedTagFilterss)
 	minTimestamp := ec.Start
 	if needSilenceIntervalForRollupFunc[funcName] {
 		minTimestamp -= maxSilenceInterval()
@@ -1819,7 +1834,7 @@ func evalRollupWithIncrementalAggregate(qt *querytracer.Tracer, funcName string,
 			samplesScannedTotal.Add(samplesScanned)
 			iafc.updateTimeseries(ts, workerID)
 
-			// ts.Timestamps points to sharedTimestamps. Zero it, so it can be re-used.
+			// ts.Timestamps points to sharedTimestamps. Zero it, so it can be reused.
 			ts.Timestamps = nil
 			ts.denyReuse = false
 		}

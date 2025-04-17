@@ -1,8 +1,7 @@
 package logstorage
 
 import (
-	"unsafe"
-
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/atomicutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
 )
 
@@ -102,14 +101,12 @@ func (uctx *fieldsUnpackerContext) addField(name, value string) {
 	})
 }
 
-func newPipeUnpackProcessor(workersCount int, unpackFunc func(uctx *fieldsUnpackerContext, s string), ppNext pipeProcessor,
+func newPipeUnpackProcessor(unpackFunc func(uctx *fieldsUnpackerContext, s string), ppNext pipeProcessor,
 	fromField string, fieldPrefix string, keepOriginalFields, skipEmptyResults bool, iff *ifFilter) *pipeUnpackProcessor {
 
 	return &pipeUnpackProcessor{
 		unpackFunc: unpackFunc,
 		ppNext:     ppNext,
-
-		shards: make([]pipeUnpackProcessorShard, workersCount),
 
 		fromField:          fromField,
 		fieldPrefix:        fieldPrefix,
@@ -123,7 +120,7 @@ type pipeUnpackProcessor struct {
 	unpackFunc func(uctx *fieldsUnpackerContext, s string)
 	ppNext     pipeProcessor
 
-	shards []pipeUnpackProcessorShard
+	shards atomicutil.Slice[pipeUnpackProcessorShard]
 
 	fromField          string
 	fieldPrefix        string
@@ -134,13 +131,6 @@ type pipeUnpackProcessor struct {
 }
 
 type pipeUnpackProcessorShard struct {
-	pipeUnpackProcessorShardNopad
-
-	// The padding prevents false sharing on widespread platforms with 128 mod (cache line size) = 0 .
-	_ [128 - unsafe.Sizeof(pipeUnpackProcessorShardNopad{})%128]byte
-}
-
-type pipeUnpackProcessorShardNopad struct {
 	bm bitmap
 
 	uctx fieldsUnpackerContext
@@ -152,14 +142,14 @@ func (pup *pipeUnpackProcessor) writeBlock(workerID uint, br *blockResult) {
 		return
 	}
 
-	shard := &pup.shards[workerID]
+	shard := pup.shards.Get(workerID)
 	shard.wctx.init(workerID, pup.ppNext, pup.keepOriginalFields, pup.skipEmptyResults, br)
 	shard.uctx.init(pup.fieldPrefix)
 
 	bm := &shard.bm
-	bm.init(br.rowsLen)
-	bm.setBits()
 	if pup.iff != nil {
+		bm.init(br.rowsLen)
+		bm.setBits()
 		pup.iff.f.applyToBlockResult(br, bm)
 		if bm.isZero() {
 			pup.ppNext.writeBlock(workerID, br)
@@ -173,7 +163,7 @@ func (pup *pipeUnpackProcessor) writeBlock(workerID uint, br *blockResult) {
 		shard.uctx.resetFields()
 		pup.unpackFunc(&shard.uctx, v)
 		for rowIdx := 0; rowIdx < br.rowsLen; rowIdx++ {
-			if bm.isSetBit(rowIdx) {
+			if pup.iff == nil || bm.isSetBit(rowIdx) {
 				shard.wctx.writeRow(rowIdx, shard.uctx.fields)
 			} else {
 				shard.wctx.writeRow(rowIdx, nil)
@@ -183,8 +173,8 @@ func (pup *pipeUnpackProcessor) writeBlock(workerID uint, br *blockResult) {
 		values := c.getValues(br)
 		vPrev := ""
 		hadUnpacks := false
-		for i, v := range values {
-			if bm.isSetBit(i) {
+		for rowIdx, v := range values {
+			if pup.iff == nil || bm.isSetBit(rowIdx) {
 				if !hadUnpacks || vPrev != v {
 					vPrev = v
 					hadUnpacks = true
@@ -192,9 +182,9 @@ func (pup *pipeUnpackProcessor) writeBlock(workerID uint, br *blockResult) {
 					shard.uctx.resetFields()
 					pup.unpackFunc(&shard.uctx, v)
 				}
-				shard.wctx.writeRow(i, shard.uctx.fields)
+				shard.wctx.writeRow(rowIdx, shard.uctx.fields)
 			} else {
-				shard.wctx.writeRow(i, nil)
+				shard.wctx.writeRow(rowIdx, nil)
 			}
 		}
 	}
@@ -307,7 +297,8 @@ func (wctx *pipeUnpackWriteContext) writeRow(rowIdx int, extraFields []Field) {
 	}
 
 	wctx.rowsCount++
-	if wctx.valuesLen >= 1_000_000 {
+	// The 64_000 limit provides the best performance results.
+	if wctx.valuesLen >= 64_000 {
 		wctx.flush()
 	}
 }

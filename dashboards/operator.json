@@ -101,6 +101,7 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -242,6 +243,7 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -311,6 +313,7 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -365,7 +368,7 @@
           "refId": "A"
         }
       ],
-      "title": "Electer Leaders",
+      "title": "Elected Leaders",
       "type": "stat"
     },
     {
@@ -382,6 +385,7 @@
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
+            "min": 0,
             "steps": [
               {
                 "color": "green",
@@ -970,7 +974,7 @@
           "refId": "A"
         }
       ],
-      "title": "throttled reconcilation config events",
+      "title": "throttled reconciliation config events",
       "type": "timeseries"
     },
     {
@@ -1069,7 +1073,7 @@
           "refId": "A"
         }
       ],
-      "title": "Wokring queue depth",
+      "title": "Working queue depth",
       "type": "timeseries"
     },
     {
@@ -1170,7 +1174,7 @@
           "refId": "A"
         }
       ],
-      "title": "Reconcilation latency by controller",
+      "title": "Reconciliation latency by controller",
       "type": "timeseries"
     },
     {
@@ -2048,8 +2052,7 @@
   "refresh": "",
   "schemaVersion": 39,
   "tags": [
-    "operator",
-    "VictoriaMetrics"
+    "victoriametrics"
   ],
   "templating": {
     "list": [

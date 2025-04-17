@@ -4,6 +4,7 @@ import (
 	"container/heap"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -12,8 +13,10 @@ import (
 
 	"github.com/valyala/quicktemplate"
 
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/atomicutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/memory"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/stringsutil"
 )
 
 // pipeSort processes '| sort ...' queries.
@@ -36,6 +39,9 @@ type pipeSort struct {
 
 	// The name of the field to store the row rank.
 	rankFieldName string
+
+	// partitionByFields contains fields for partitioning the sorted rows.
+	partitionByFields []string
 }
 
 func (ps *pipeSort) String() string {
@@ -50,16 +56,32 @@ func (ps *pipeSort) String() string {
 	if ps.isDesc {
 		s += " desc"
 	}
+
+	if len(ps.partitionByFields) > 0 {
+		s += " partition by (" + fieldsToString(ps.partitionByFields) + ")"
+	}
+
 	if ps.offset > 0 {
 		s += fmt.Sprintf(" offset %d", ps.offset)
 	}
 	if ps.limit > 0 {
 		s += fmt.Sprintf(" limit %d", ps.limit)
 	}
+
 	if ps.rankFieldName != "" {
 		s += rankFieldNameString(ps.rankFieldName)
 	}
+
 	return s
+}
+
+func (ps *pipeSort) splitToRemoteAndLocal(_ int64) (pipe, []pipe) {
+	pRemote := *ps
+	pRemote.limit += pRemote.offset
+	pRemote.offset = 0
+	pRemote.rankFieldName = ""
+
+	return &pRemote, []pipe{ps}
 }
 
 func (ps *pipeSort) canLiveTail() bool {
@@ -87,38 +109,47 @@ func (ps *pipeSort) updateNeededFields(neededFields, unneededFields fieldsSet) {
 			unneededFields.remove(bf.name)
 		}
 	}
-}
 
-func (ps *pipeSort) optimize() {
-	// nothing to do
+	if neededFields.contains("*") {
+		unneededFields.removeFields(ps.partitionByFields)
+	} else {
+		neededFields.addFields(ps.partitionByFields)
+	}
 }
 
 func (ps *pipeSort) hasFilterInWithQuery() bool {
 	return false
 }
 
-func (ps *pipeSort) initFilterInValues(_ map[string][]string, _ getFieldValuesFunc) (pipe, error) {
+func (ps *pipeSort) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
 	return ps, nil
 }
 
-func (ps *pipeSort) newPipeProcessor(workersCount int, stopCh <-chan struct{}, cancel func(), ppNext pipeProcessor) pipeProcessor {
-	if ps.limit > 0 {
-		return newPipeTopkProcessor(ps, workersCount, stopCh, cancel, ppNext)
-	}
-	return newPipeSortProcessor(ps, workersCount, stopCh, cancel, ppNext)
+func (ps *pipeSort) visitSubqueries(_ func(q *Query)) {
+	// nothing to do
 }
 
-func newPipeSortProcessor(ps *pipeSort, workersCount int, stopCh <-chan struct{}, cancel func(), ppNext pipeProcessor) pipeProcessor {
-	maxStateSize := int64(float64(memory.Allowed()) * 0.2)
-
-	shards := make([]pipeSortProcessorShard, workersCount)
-	for i := range shards {
-		shards[i] = pipeSortProcessorShard{
-			pipeSortProcessorShardNopad: pipeSortProcessorShardNopad{
-				ps: ps,
-			},
-		}
+func (ps *pipeSort) newPipeProcessor(_ int, stopCh <-chan struct{}, cancel func(), ppNext pipeProcessor) pipeProcessor {
+	if ps.limit > 0 {
+		return newPipeTopkProcessor(ps, stopCh, cancel, ppNext)
 	}
+	return newPipeSortProcessor(ps, stopCh, cancel, ppNext)
+}
+
+func (ps *pipeSort) addPartitionByTime(step int64) {
+	if step <= 0 {
+		return
+	}
+	if ps.limit <= 0 {
+		return
+	}
+	if !slices.Contains(ps.partitionByFields, "_time") {
+		ps.partitionByFields = append(ps.partitionByFields, "_time")
+	}
+}
+
+func newPipeSortProcessor(ps *pipeSort, stopCh <-chan struct{}, cancel func(), ppNext pipeProcessor) pipeProcessor {
+	maxStateSize := int64(float64(memory.Allowed()) * 0.2)
 
 	psp := &pipeSortProcessor{
 		ps:     ps,
@@ -126,9 +157,10 @@ func newPipeSortProcessor(ps *pipeSort, workersCount int, stopCh <-chan struct{}
 		cancel: cancel,
 		ppNext: ppNext,
 
-		shards: shards,
-
 		maxStateSize: maxStateSize,
+	}
+	psp.shards.Init = func(shard *pipeSortProcessorShard) {
+		shard.ps = ps
 	}
 	psp.stateSizeBudget.Store(maxStateSize)
 
@@ -141,20 +173,13 @@ type pipeSortProcessor struct {
 	cancel func()
 	ppNext pipeProcessor
 
-	shards []pipeSortProcessorShard
+	shards atomicutil.Slice[pipeSortProcessorShard]
 
 	maxStateSize    int64
 	stateSizeBudget atomic.Int64
 }
 
 type pipeSortProcessorShard struct {
-	pipeSortProcessorShardNopad
-
-	// The padding prevents false sharing on widespread platforms with 128 mod (cache line size) = 0 .
-	_ [128 - unsafe.Sizeof(pipeSortProcessorShardNopad{})%128]byte
-}
-
-type pipeSortProcessorShardNopad struct {
 	// ps points to the parent pipeSort.
 	ps *pipeSort
 
@@ -406,7 +431,7 @@ func (psp *pipeSortProcessor) writeBlock(workerID uint, br *blockResult) {
 		return
 	}
 
-	shard := &psp.shards[workerID]
+	shard := psp.shards.Get(workerID)
 
 	for shard.stateSizeBudget < 0 {
 		// steal some budget for the state size from the global budget.
@@ -435,15 +460,26 @@ func (psp *pipeSortProcessor) flush() error {
 	}
 
 	// Sort every shard in parallel
+	shards := psp.shards.GetSlice()
+	if len(shards) == 0 {
+		return nil
+	}
+
 	var wg sync.WaitGroup
-	shards := psp.shards
-	for i := range shards {
+	for _, shard := range shards {
 		wg.Add(1)
 		go func(shard *pipeSortProcessorShard) {
+			defer wg.Done()
+
 			// TODO: interrupt long sorting when psp.stopCh is closed.
+
+			if sort.IsSorted(shard) {
+				// Fast path - the shard is already sorted. This is the case when the sorted rows
+				// are received from the remote storage.
+				return
+			}
 			sort.Sort(shard)
-			wg.Done()
-		}(&shards[i])
+		}(shard)
 	}
 	wg.Wait()
 
@@ -453,8 +489,7 @@ func (psp *pipeSortProcessor) flush() error {
 
 	// Merge sorted results across shards
 	sh := pipeSortProcessorShardsHeap(make([]*pipeSortProcessorShard, 0, len(shards)))
-	for i := range shards {
-		shard := &shards[i]
+	for _, shard := range shards {
 		if len(shard.rowRefs) > 0 {
 			sh = append(sh, shard)
 		}
@@ -668,19 +703,6 @@ func sortBlockLess(shardA *pipeSortProcessorShard, rowIdxA int, shardB *pipeSort
 			isDesc = !isDesc
 		}
 
-		if cA.c.isConst && cB.c.isConst {
-			// Fast path - compare const values
-			ccA := cA.c.valuesEncoded[0]
-			ccB := cB.c.valuesEncoded[0]
-			if ccA == ccB {
-				continue
-			}
-			if isDesc {
-				return ccB < ccA
-			}
-			return ccA < ccB
-		}
-
 		if cA.c.isTime && cB.c.isTime {
 			// Fast path - sort by _time
 			timestampsA := bA.br.getTimestamps()
@@ -737,14 +759,15 @@ func sortBlockLess(shardA *pipeSortProcessorShard, rowIdxA int, shardB *pipeSort
 			continue
 		}
 		if isDesc {
-			return lessString(sB, sA)
+			sA, sB = sB, sA
 		}
-		return lessString(sA, sB)
+		// Do not use lessString() here, since we already tried comparing by int64 and float64 values
+		return stringsutil.LessNatural(sA, sB)
 	}
 	return false
 }
 
-func parsePipeSort(lex *lexer) (*pipeSort, error) {
+func parsePipeSort(lex *lexer) (pipe, error) {
 	if !lex.isKeyword("sort") && !lex.isKeyword("order") {
 		return nil, fmt.Errorf("expecting 'sort' or 'order'; got %q", lex.token)
 	}
@@ -802,7 +825,23 @@ func parsePipeSort(lex *lexer) (*pipeSort, error) {
 				return nil, fmt.Errorf("cannot read rank field name: %s", err)
 			}
 			ps.rankFieldName = rankFieldName
+		case lex.isKeyword("partition"):
+			if len(ps.partitionByFields) > 0 {
+				return nil, fmt.Errorf("duplicate 'partition by'")
+			}
+			lex.nextToken()
+			if lex.isKeyword("by") {
+				lex.nextToken()
+			}
+			fields, err := parseFieldNamesInParens(lex)
+			if err != nil {
+				return nil, fmt.Errorf("cannot parse 'partition by' args: %w", err)
+			}
+			ps.partitionByFields = fields
 		default:
+			if len(ps.partitionByFields) > 0 && ps.limit <= 0 {
+				return nil, fmt.Errorf("missing 'limit' for 'partition by'")
+			}
 			return &ps, nil
 		}
 	}
@@ -860,31 +899,6 @@ func parseBySortFields(lex *lexer) ([]*bySortField, error) {
 			return nil, fmt.Errorf("unexpected token: %q; expecting ',' or ')'", lex.token)
 		}
 	}
-}
-
-func tryParseInt64(s string) (int64, bool) {
-	if len(s) == 0 {
-		return 0, false
-	}
-
-	isMinus := s[0] == '-'
-	if isMinus {
-		s = s[1:]
-	}
-	u64, ok := tryParseUint64(s)
-	if !ok {
-		return 0, false
-	}
-	if !isMinus {
-		if u64 > math.MaxInt64 {
-			return 0, false
-		}
-		return int64(u64), true
-	}
-	if u64 > -math.MinInt64 {
-		return 0, false
-	}
-	return -int64(u64), true
 }
 
 func marshalJSONKeyValue(dst []byte, k, v string) []byte {

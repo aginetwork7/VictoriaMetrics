@@ -12,8 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/utils"
+	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/vmalertutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promauth"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
 )
 
 var (
@@ -71,12 +72,14 @@ func TestVMInstantQuery(t *testing.T) {
 			w.Write([]byte(`{"status":"success","data":{"resultType":"scalar","result":[1583786142, "1"]}}`))
 		case 7:
 			w.Write([]byte(`{"status":"success","data":{"resultType":"scalar","result":[1583786142, "1"]},"stats":{"seriesFetched": "42"}}`))
+		case 8:
+			w.Write([]byte(`{"status":"success", "isPartial":true, "data":{"resultType":"scalar","result":[1583786142, "1"]}}`))
 		}
 	})
 	mux.HandleFunc("/render", func(w http.ResponseWriter, _ *http.Request) {
 		c++
 		switch c {
-		case 8:
+		case 9:
 			w.Write([]byte(`[{"target":"constantLine(10)","tags":{"name":"constantLine(10)"},"datapoints":[[10,1611758343],[10,1611758373],[10,1611758403]]}]`))
 		}
 	})
@@ -99,9 +102,9 @@ func TestVMInstantQuery(t *testing.T) {
 			t.Fatalf("failed to parse 'time' query param %q: %s", timeParam, err)
 		}
 		switch c {
-		case 9:
-			w.Write([]byte("[]"))
 		case 10:
+			w.Write([]byte("[]"))
+		case 11:
 			w.Write([]byte(`{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"total","foo":"bar"},"value":[1583786142,"13763"]},{"metric":{"__name__":"total","foo":"baz"},"value":[1583786140,"2000"]}]}}`))
 		}
 	})
@@ -144,12 +147,12 @@ func TestVMInstantQuery(t *testing.T) {
 	}
 	expected := []Metric{
 		{
-			Labels:     []Label{{Value: "vm_rows", Name: "__name__"}, {Value: "bar", Name: "foo"}},
+			Labels:     []prompbmarshal.Label{{Value: "vm_rows", Name: "__name__"}, {Value: "bar", Name: "foo"}},
 			Timestamps: []int64{1583786142},
 			Values:     []float64{13763},
 		},
 		{
-			Labels:     []Label{{Value: "vm_requests", Name: "__name__"}, {Value: "baz", Name: "foo"}},
+			Labels:     []prompbmarshal.Label{{Value: "vm_requests", Name: "__name__"}, {Value: "baz", Name: "foo"}},
 			Timestamps: []int64{1583786140},
 			Values:     []float64{2000},
 		},
@@ -202,10 +205,18 @@ func TestVMInstantQuery(t *testing.T) {
 			*res.SeriesFetched)
 	}
 
+	res, _, err = pq.Query(ctx, vmQuery, ts) // 8
+	if err != nil {
+		t.Fatalf("unexpected %s", err)
+	}
+	if res.IsPartial != nil && !*res.IsPartial {
+		t.Fatalf("unexpected metric isPartial want %+v", true)
+	}
+
 	// test graphite
 	gq := s.BuildWithParams(QuerierParams{DataSourceType: string(datasourceGraphite)})
 
-	res, _, err = gq.Query(ctx, queryRender, ts) // 8 - graphite
+	res, _, err = gq.Query(ctx, queryRender, ts) // 9 - graphite
 	if err != nil {
 		t.Fatalf("unexpected %s", err)
 	}
@@ -214,7 +225,7 @@ func TestVMInstantQuery(t *testing.T) {
 	}
 	exp := []Metric{
 		{
-			Labels:     []Label{{Value: "constantLine(10)", Name: "name"}},
+			Labels:     []prompbmarshal.Label{{Value: "constantLine(10)", Name: "name"}},
 			Timestamps: []int64{1611758403},
 			Values:     []float64{10},
 		},
@@ -225,9 +236,9 @@ func TestVMInstantQuery(t *testing.T) {
 	vlogs := datasourceVLogs
 	pq = s.BuildWithParams(QuerierParams{DataSourceType: string(vlogs), EvaluationInterval: 15 * time.Second})
 
-	expErr(vlogsQuery, "error parsing response") // 9
+	expErr(vlogsQuery, "error parsing response") // 10
 
-	res, _, err = pq.Query(ctx, vlogsQuery, ts) // 10
+	res, _, err = pq.Query(ctx, vlogsQuery, ts) // 11
 	if err != nil {
 		t.Fatalf("unexpected %s", err)
 	}
@@ -236,12 +247,12 @@ func TestVMInstantQuery(t *testing.T) {
 	}
 	expected = []Metric{
 		{
-			Labels:     []Label{{Value: "total", Name: "stats_result"}, {Value: "bar", Name: "foo"}},
+			Labels:     []prompbmarshal.Label{{Value: "total", Name: "stats_result"}, {Value: "bar", Name: "foo"}},
 			Timestamps: []int64{1583786142},
 			Values:     []float64{13763},
 		},
 		{
-			Labels:     []Label{{Value: "total", Name: "stats_result"}, {Value: "baz", Name: "foo"}},
+			Labels:     []prompbmarshal.Label{{Value: "total", Name: "stats_result"}, {Value: "baz", Name: "foo"}},
 			Timestamps: []int64{1583786140},
 			Values:     []float64{2000},
 		},
@@ -444,7 +455,7 @@ func TestVMRangeQuery(t *testing.T) {
 		t.Fatalf("expected 1 metric  got %d in %+v", len(m), m)
 	}
 	expected := Metric{
-		Labels:     []Label{{Value: "vm_rows", Name: "__name__"}},
+		Labels:     []prompbmarshal.Label{{Value: "vm_rows", Name: "__name__"}},
 		Timestamps: []int64{1583786142},
 		Values:     []float64{13763},
 	}
@@ -475,7 +486,7 @@ func TestVMRangeQuery(t *testing.T) {
 		t.Fatalf("expected 1 metric  got %d in %+v", len(m), m)
 	}
 	expected = Metric{
-		Labels:     []Label{{Value: "total", Name: "stats_result"}},
+		Labels:     []prompbmarshal.Label{{Value: "total", Name: "stats_result"}},
 		Timestamps: []int64{1583786142},
 		Values:     []float64{10},
 	}
@@ -752,7 +763,7 @@ func TestHeaders(t *testing.T) {
 
 	// basic auth
 	f(func() *Client {
-		cfg, err := utils.AuthConfig(utils.WithBasicAuth("foo", "bar", ""))
+		cfg, err := vmalertutil.AuthConfig(vmalertutil.WithBasicAuth("foo", "bar", ""))
 		if err != nil {
 			t.Fatalf("Error get auth config: %s", err)
 		}
@@ -765,7 +776,7 @@ func TestHeaders(t *testing.T) {
 
 	// bearer auth
 	f(func() *Client {
-		cfg, err := utils.AuthConfig(utils.WithBearer("foo", ""))
+		cfg, err := vmalertutil.AuthConfig(vmalertutil.WithBearer("foo", ""))
 		if err != nil {
 			t.Fatalf("Error get auth config: %s", err)
 		}
@@ -797,7 +808,7 @@ func TestHeaders(t *testing.T) {
 
 	// custom header overrides basic auth
 	f(func() *Client {
-		cfg, err := utils.AuthConfig(utils.WithBasicAuth("foo", "bar", ""))
+		cfg, err := vmalertutil.AuthConfig(vmalertutil.WithBasicAuth("foo", "bar", ""))
 		if err != nil {
 			t.Fatalf("Error get auth config: %s", err)
 		}

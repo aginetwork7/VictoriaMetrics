@@ -7,7 +7,7 @@ import (
 
 	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/graphiteql"
 	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/netstorage"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/searchutils"
+	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmselect/searchutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/storage"
@@ -21,7 +21,7 @@ type evalConfig struct {
 	startTime   int64
 	endTime     int64
 	storageStep int64
-	deadline    searchutils.Deadline
+	deadline    searchutil.Deadline
 
 	currentTime time.Time
 
@@ -64,7 +64,7 @@ type series struct {
 
 	expr graphiteql.Expr
 
-	// consolidateFunc is applied to raw samples in order to generate data points algined to the given step.
+	// consolidateFunc is applied to raw samples in order to generate data points aligned to the given step.
 	// see series.consolidate() function for details.
 	consolidateFunc aggrFunc
 

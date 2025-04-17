@@ -6,45 +6,53 @@ import (
 	"math"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/VictoriaMetrics/metrics"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/common"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/opentelemetry/pb"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/writeconcurrencylimiter"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/protoparserutil"
 )
+
+var maxRequestSize = flagutil.NewBytes("opentelemetry.maxRequestSize", 64*1024*1024, "The maximum size in bytes of a single OpenTelemetry request")
 
 // ParseStream parses OpenTelemetry protobuf or json data from r and calls callback for the parsed rows.
 //
 // callback shouldn't hold tss items after returning.
 //
 // optional processBody can be used for pre-processing the read request body from r before parsing it in OpenTelemetry format.
-func ParseStream(r io.Reader, isGzipped bool, processBody func([]byte) ([]byte, error), callback func(tss []prompbmarshal.TimeSeries) error) error {
-	wcr := writeconcurrencylimiter.GetReader(r)
-	defer writeconcurrencylimiter.PutReader(wcr)
-	r = wcr
-
-	if isGzipped {
-		zr, err := common.GetGzipReader(r)
-		if err != nil {
-			return fmt.Errorf("cannot read gzip-compressed OpenTelemetry protocol data: %w", err)
+func ParseStream(r io.Reader, encoding string, processBody func(data []byte) ([]byte, error), callback func(tss []prompbmarshal.TimeSeries) error) error {
+	err := protoparserutil.ReadUncompressedData(r, encoding, maxRequestSize, func(data []byte) error {
+		if processBody != nil {
+			dataNew, err := processBody(data)
+			if err != nil {
+				return fmt.Errorf("cannot process request body: %w", err)
+			}
+			data = dataNew
 		}
-		defer common.PutGzipReader(zr)
-		r = zr
+		return parseData(data, callback)
+	})
+	if err != nil {
+		return fmt.Errorf("cannot decode OpenTelemetry protocol data: %w", err)
+	}
+	return nil
+}
+
+func parseData(data []byte, callback func(tss []prompbmarshal.TimeSeries) error) error {
+	var req pb.ExportMetricsServiceRequest
+	if err := req.UnmarshalProtobuf(data); err != nil {
+		return fmt.Errorf("cannot unmarshal request from %d bytes: %w", len(data), err)
 	}
 
 	wr := getWriteContext()
 	defer putWriteContext(wr)
-	req, err := wr.readAndUnpackRequest(r, processBody)
-	if err != nil {
-		return fmt.Errorf("cannot unpack OpenTelemetry metrics: %w", err)
-	}
-	wr.parseRequestToTss(req)
+
+	wr.parseRequestToTss(&req)
 
 	if err := callback(wr.tss); err != nil {
 		return fmt.Errorf("error when processing OpenTelemetry samples: %w", err)
@@ -52,6 +60,8 @@ func ParseStream(r io.Reader, isGzipped bool, processBody func([]byte) ([]byte, 
 
 	return nil
 }
+
+var skippedSampleLogger = logger.WithThrottler("otlp_skipped_sample", 5*time.Second)
 
 func (wr *writeContext) appendSamplesFromScopeMetrics(sc *pb.ScopeMetrics) {
 	for _, m := range sc.Metrics {
@@ -68,6 +78,7 @@ func (wr *writeContext) appendSamplesFromScopeMetrics(sc *pb.ScopeMetrics) {
 		case m.Sum != nil:
 			if m.Sum.AggregationTemporality != pb.AggregationTemporalityCumulative {
 				rowsDroppedUnsupportedSum.Inc()
+				skippedSampleLogger.Warnf("unsupported delta temporality for %q ('sum'): skipping it", metricName)
 				continue
 			}
 			for _, p := range m.Sum.DataPoints {
@@ -80,6 +91,7 @@ func (wr *writeContext) appendSamplesFromScopeMetrics(sc *pb.ScopeMetrics) {
 		case m.Histogram != nil:
 			if m.Histogram.AggregationTemporality != pb.AggregationTemporalityCumulative {
 				rowsDroppedUnsupportedHistogram.Inc()
+				skippedSampleLogger.Warnf("unsupported delta temporality for %q ('histogram'): skipping it", metricName)
 				continue
 			}
 			for _, p := range m.Histogram.DataPoints {
@@ -88,6 +100,7 @@ func (wr *writeContext) appendSamplesFromScopeMetrics(sc *pb.ScopeMetrics) {
 		case m.ExponentialHistogram != nil:
 			if m.ExponentialHistogram.AggregationTemporality != pb.AggregationTemporalityCumulative {
 				rowsDroppedUnsupportedExponentialHistogram.Inc()
+				skippedSampleLogger.Warnf("unsupported delta temporality for %q ('exponential histogram'): skipping it", metricName)
 				continue
 			}
 			for _, p := range m.ExponentialHistogram.DataPoints {
@@ -95,7 +108,7 @@ func (wr *writeContext) appendSamplesFromScopeMetrics(sc *pb.ScopeMetrics) {
 			}
 		default:
 			rowsDroppedUnsupportedMetricType.Inc()
-			logger.Warnf("unsupported type for metric %q", metricName)
+			skippedSampleLogger.Warnf("unsupported type for metric %q", metricName)
 		}
 	}
 }
@@ -132,6 +145,7 @@ func (wr *writeContext) appendSamplesFromSummary(metricName string, p *pb.Summar
 }
 
 // appendSamplesFromHistogram appends histogram p to wr.tss
+// histograms are processed according to spec at https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#histogram
 func (wr *writeContext) appendSamplesFromHistogram(metricName string, p *pb.HistogramDataPoint) {
 	if len(p.BucketCounts) == 0 {
 		// nothing to append
@@ -139,7 +153,7 @@ func (wr *writeContext) appendSamplesFromHistogram(metricName string, p *pb.Hist
 	}
 	if len(p.BucketCounts) != len(p.ExplicitBounds)+1 {
 		// fast path, broken data format
-		logger.Warnf("opentelemetry bad histogram format: %q, size of buckets: %d, size of bounds: %d", metricName, len(p.BucketCounts), len(p.ExplicitBounds))
+		skippedSampleLogger.Warnf("opentelemetry bad histogram format: %q, size of buckets: %d, size of bounds: %d", metricName, len(p.BucketCounts), len(p.ExplicitBounds))
 		return
 	}
 
@@ -147,15 +161,10 @@ func (wr *writeContext) appendSamplesFromHistogram(metricName string, p *pb.Hist
 	isStale := (p.Flags)&uint32(1) != 0
 	wr.pointLabels = appendAttributesToPromLabels(wr.pointLabels[:0], p.Attributes)
 	wr.appendSample(metricName+"_count", t, float64(p.Count), isStale)
-	if p.Sum == nil {
-		// fast path, convert metric as simple counter.
-		// given buckets cannot be used for histogram functions.
-		// Negative threshold buckets MAY be used, but then the Histogram MetricPoint MUST NOT contain a sum value as it would no longer be a counter semantically.
-		// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#histogram
-		return
+	if p.Sum != nil {
+		// A Histogram MetricPoint SHOULD contain Sum
+		wr.appendSample(metricName+"_sum", t, *p.Sum, isStale)
 	}
-
-	wr.appendSample(metricName+"_sum", t, *p.Sum, isStale)
 
 	var cumulative uint64
 	for index, bound := range p.ExplicitBounds {
@@ -265,16 +274,13 @@ func appendAttributesToPromLabels(dst []prompbmarshal.Label, attributes []*pb.Ke
 	for _, at := range attributes {
 		dst = append(dst, prompbmarshal.Label{
 			Name:  sanitizeLabelName(at.Key),
-			Value: at.Value.FormatString(),
+			Value: at.Value.FormatString(true),
 		})
 	}
 	return dst
 }
 
 type writeContext struct {
-	// bb holds the original data (json or protobuf), which must be parsed.
-	bb bytesutil.ByteBuffer
-
 	// tss holds parsed time series
 	tss []prompbmarshal.TimeSeries
 
@@ -290,8 +296,6 @@ type writeContext struct {
 }
 
 func (wr *writeContext) reset() {
-	wr.bb.Reset()
-
 	clear(wr.tss)
 	wr.tss = wr.tss[:0]
 
@@ -305,24 +309,6 @@ func (wr *writeContext) reset() {
 func resetLabels(labels []prompbmarshal.Label) []prompbmarshal.Label {
 	clear(labels)
 	return labels[:0]
-}
-
-func (wr *writeContext) readAndUnpackRequest(r io.Reader, processBody func([]byte) ([]byte, error)) (*pb.ExportMetricsServiceRequest, error) {
-	if _, err := wr.bb.ReadFrom(r); err != nil {
-		return nil, fmt.Errorf("cannot read request: %w", err)
-	}
-	var req pb.ExportMetricsServiceRequest
-	if processBody != nil {
-		data, err := processBody(wr.bb.B)
-		if err != nil {
-			return nil, fmt.Errorf("cannot process request body: %w", err)
-		}
-		wr.bb.B = append(wr.bb.B[:0], data...)
-	}
-	if err := req.UnmarshalProtobuf(wr.bb.B); err != nil {
-		return nil, fmt.Errorf("cannot unmarshal request from %d bytes: %w", len(wr.bb.B), err)
-	}
-	return &req, nil
 }
 
 func (wr *writeContext) parseRequestToTss(req *pb.ExportMetricsServiceRequest) {

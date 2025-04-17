@@ -2,8 +2,8 @@ package logstorage
 
 import (
 	"fmt"
-	"unsafe"
 
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/atomicutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil"
 )
@@ -18,20 +18,24 @@ func (ps *pipeBlockStats) String() string {
 	return "block_stats"
 }
 
-func (ps *pipeBlockStats) canLiveTail() bool {
-	return false
+func (ps *pipeBlockStats) splitToRemoteAndLocal(_ int64) (pipe, []pipe) {
+	return ps, nil
 }
 
-func (ps *pipeBlockStats) optimize() {
-	// nothing to do
+func (ps *pipeBlockStats) canLiveTail() bool {
+	return false
 }
 
 func (ps *pipeBlockStats) hasFilterInWithQuery() bool {
 	return false
 }
 
-func (ps *pipeBlockStats) initFilterInValues(_ map[string][]string, _ getFieldValuesFunc) (pipe, error) {
+func (ps *pipeBlockStats) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
 	return ps, nil
+}
+
+func (ps *pipeBlockStats) visitSubqueries(_ func(q *Query)) {
+	// nothing to do
 }
 
 func (ps *pipeBlockStats) updateNeededFields(neededFields, unneededFields fieldsSet) {
@@ -39,28 +43,19 @@ func (ps *pipeBlockStats) updateNeededFields(neededFields, unneededFields fields
 	neededFields.add("*")
 }
 
-func (ps *pipeBlockStats) newPipeProcessor(workersCount int, _ <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
+func (ps *pipeBlockStats) newPipeProcessor(_ int, _ <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
 	return &pipeBlockStatsProcessor{
 		ppNext: ppNext,
-
-		shards: make([]pipeBlockStatsProcessorShard, workersCount),
 	}
 }
 
 type pipeBlockStatsProcessor struct {
 	ppNext pipeProcessor
 
-	shards []pipeBlockStatsProcessorShard
+	shards atomicutil.Slice[pipeBlockStatsProcessorShard]
 }
 
 type pipeBlockStatsProcessorShard struct {
-	pipeBlockStatsProcessorShardNopad
-
-	// The padding prevents false sharing on widespread platforms with 128 mod (cache line size) = 0 .
-	_ [128 - unsafe.Sizeof(pipeBlockStatsProcessorShardNopad{})%128]byte
-}
-
-type pipeBlockStatsProcessorShardNopad struct {
 	wctx pipeBlockStatsWriteContext
 }
 
@@ -69,13 +64,18 @@ func (psp *pipeBlockStatsProcessor) writeBlock(workerID uint, br *blockResult) {
 		return
 	}
 
-	shard := &psp.shards[workerID]
+	shard := psp.shards.Get(workerID)
 	shard.wctx.init(workerID, psp.ppNext, br.rowsLen)
 
 	cs := br.getColumns()
 	for _, c := range cs {
+		partPath := "inmemory"
+		if br.bs != nil {
+			partPath = br.bs.partPath()
+		}
+
 		if c.isConst {
-			shard.wctx.writeRow(c.name, "const", uint64(len(c.valuesEncoded[0])), 0, 0, 0)
+			shard.wctx.writeRow(c.name, "const", uint64(len(c.valuesEncoded[0])), 0, 0, 0, partPath)
 			continue
 		}
 		if c.isTime {
@@ -83,11 +83,11 @@ func (psp *pipeBlockStatsProcessor) writeBlock(workerID uint, br *blockResult) {
 			if br.bs != nil {
 				blockSize = br.bs.bsw.bh.timestampsHeader.blockSize
 			}
-			shard.wctx.writeRow(c.name, "time", blockSize, 0, 0, 0)
+			shard.wctx.writeRow(c.name, "time", blockSize, 0, 0, 0, partPath)
 			continue
 		}
 		if br.bs == nil {
-			shard.wctx.writeRow(c.name, "inmemory", 0, 0, 0, 0)
+			shard.wctx.writeRow(c.name, "inmemory", 0, 0, 0, 0, partPath)
 			continue
 		}
 
@@ -100,7 +100,7 @@ func (psp *pipeBlockStatsProcessor) writeBlock(workerID uint, br *blockResult) {
 				dictSize += len(v)
 			}
 		}
-		shard.wctx.writeRow(c.name, typ, ch.valuesSize, ch.bloomFilterSize, uint64(dictItemsCount), uint64(dictSize))
+		shard.wctx.writeRow(c.name, typ, ch.valuesSize, ch.bloomFilterSize, uint64(dictItemsCount), uint64(dictSize), partPath)
 	}
 
 	shard.wctx.flush()
@@ -111,7 +111,7 @@ func (psp *pipeBlockStatsProcessor) flush() error {
 	return nil
 }
 
-func parsePipeBlockStats(lex *lexer) (*pipeBlockStats, error) {
+func parsePipeBlockStats(lex *lexer) (pipe, error) {
 	if !lex.isKeyword("block_stats") {
 		return nil, fmt.Errorf("unexpected token: %q; want %q", lex.token, "block_stats")
 	}
@@ -163,10 +163,10 @@ func (wctx *pipeBlockStatsWriteContext) init(workerID uint, ppNext pipeProcessor
 	wctx.rowsLen = rowsLen
 }
 
-func (wctx *pipeBlockStatsWriteContext) writeRow(columnName, columnType string, valuesSize, bloomSize, dictItems, dictSize uint64) {
+func (wctx *pipeBlockStatsWriteContext) writeRow(columnName, columnType string, valuesSize, bloomSize, dictItems, dictSize uint64, partPath string) {
 	rcs := wctx.rcs
 	if len(rcs) == 0 {
-		wctx.rcs = slicesutil.SetLength(wctx.rcs, 7)
+		wctx.rcs = slicesutil.SetLength(wctx.rcs, 8)
 		rcs = wctx.rcs
 
 		rcs[0].name = "field"
@@ -176,6 +176,7 @@ func (wctx *pipeBlockStatsWriteContext) writeRow(columnName, columnType string, 
 		rcs[4].name = "dict_items"
 		rcs[5].name = "dict_bytes"
 		rcs[6].name = "rows"
+		rcs[7].name = "part_path"
 	}
 
 	wctx.addValue(&rcs[0], columnName)
@@ -185,9 +186,12 @@ func (wctx *pipeBlockStatsWriteContext) writeRow(columnName, columnType string, 
 	wctx.addUint64Value(&rcs[4], dictItems)
 	wctx.addUint64Value(&rcs[5], dictSize)
 	wctx.addUint64Value(&rcs[6], uint64(wctx.rowsLen))
+	wctx.addValue(&rcs[7], partPath)
 
 	wctx.rowsCount++
-	if len(wctx.a.b) >= 1_000_000 {
+
+	// The 64_000 limit provides the best performance results.
+	if len(wctx.a.b) >= 64_000 {
 		wctx.flush()
 	}
 }
